@@ -9,10 +9,10 @@ description = "Fast and simple HTTP client library with async support and beauti
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "FastHTTP Team", email = "contact@fasthttp.dev"},
+    {name = "White NEFOR", email = "n7for8572@gmail.com"},
 ]
 maintainers = [
-    {name = "FastHTTP Team", email = "contact@fasthttp.dev"},
+    {name = "White NEFOR", email = "n7for8572@gmail.com"},
 ]
 keywords = [
     "http",
