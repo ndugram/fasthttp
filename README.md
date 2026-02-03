@@ -10,7 +10,7 @@
 
 **🚀 Simple & Fast HTTP Client for Python**
 
-[Documentation](docs/index.md) • [Quick Start](#quick-start) • [Examples](docs/examples.md)
+[Documentation](docs/en/index.md) • [Quick Start](docs/en/quick-start.md) • [Examples](docs/en/examples.md)
 
 </div>
 

@@ -20,4 +20,4 @@ Quick navigation to all documentation sections.
 
 ---
 
-*For the main README, see the repository root [README.md](../README.md)*
+*For the main README, see the repository root [README.md](/README.md)*
