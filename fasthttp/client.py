@@ -1,6 +1,5 @@
 import asyncio
 import time
-from typing import Optional
 
 import aiohttp
 
@@ -20,7 +19,7 @@ class HTTPClient:
         self.request_configs = request_configs
         self.logger = logger
 
-    async def send(self, session: aiohttp.ClientSession, route: Route) -> Optional[Response]:
+    async def send(self, session: aiohttp.ClientSession, route: Route) -> Response | None:
         """
         Send a single HTTP request based on a Route definition.
 
