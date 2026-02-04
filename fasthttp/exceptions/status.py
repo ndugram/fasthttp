@@ -73,9 +73,6 @@ class FastHTTPBadStatusError(FastHTTPError):
         status_msg = message or (
             f"HTTP {status_code}" if status_code else "Bad status"
             )
-
-        # Status message colorization is handled by logging.py
-
         details = {}
         if response_body:
             details["body_preview"] = response_body[:100] + "..." if len(response_body) > 100 else response_body
