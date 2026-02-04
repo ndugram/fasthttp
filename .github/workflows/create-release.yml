@@ -3,40 +3,49 @@ name: Create Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
-    
+
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Generate changelog
-      id: changelog
-      run: |
-        # Get the previous tag
-        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-        
-        if [ -n "$PREVIOUS_TAG" ]; then
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        else
-          echo "body=Initial release" >> $GITHUB_OUTPUT
-        fi
-        
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: Release ${{ github.ref_name }}
-        body: ${{ steps.changelog.outputs.body }}
-        draft: false
-        prerelease: false
-        files: dist/*
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        shell: bash
+        run: |
+          set -e
+
+          CURRENT_TAG="${GITHUB_REF_NAME}"
+
+          PREVIOUS_TAG=$(git tag --sort=-creatordate | grep -v "^${CURRENT_TAG}$" | head -n 1 || true)
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            CHANGELOG=$(git log "$PREVIOUS_TAG..HEAD" --pretty=format:"- %s")
+          else
+            CHANGELOG="🎉 Initial release"
+          fi
+
+          {
+            echo "body<<EOF"
+            echo "$CHANGELOG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.body }}
+          draft: false
+          prerelease: false
+          files: dist/*
+
