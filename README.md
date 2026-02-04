@@ -106,7 +106,7 @@ async def delete_user(resp: Response):
 ## 📚 Documentation
 
 - **[📖 Documentation](docs/index.md)** - Complete guide
-- **[⚡ Quick Start](docs/quick-start.md)** - Get started in 2 minutes  
+- **[⚡ Quick Start](docs/quick-start.md)** - Get started in 2 minutes
 - **[🔧 API Reference](docs/api-reference.md)** - Full API documentation
 - **[💡 Examples](docs/examples.md)** - Real-world examples
 - **[⚙️ Configuration](docs/configuration.md)** - Advanced settings
