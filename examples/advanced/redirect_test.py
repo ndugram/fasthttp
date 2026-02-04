@@ -8,7 +8,7 @@ app = FastHTTP(debug=True)
 async def redirect_test(resp: Response):
     return {
         "status": resp.status,
-        "history": getattr(resp, 'history', [])
+        "history": getattr(resp, "history", [])
     }
 
 
