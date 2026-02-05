@@ -2,13 +2,13 @@
 
 Get up and running with FastHTTP Client in under 2 minutes!
 
-## 📦 Installation
+## Installation
 
 ```bash
 pip install fasthttp
 ```
 
-## 🎯 Your First Request
+## Your First Request
 
 Create a file `example.py`:
 
@@ -44,7 +44,7 @@ python example.py
 16:09:20.037 │ INFO     │ fasthttp │ ✔ Done in 1.08s
 ```
 
-## 🔧 Basic Configuration
+## Basic Configuration
 
 ### Add Custom Headers
 ```python
@@ -64,7 +64,7 @@ app = FastHTTP(
 app = FastHTTP(debug=True)  # Shows detailed logging
 ```
 
-## 📋 HTTP Methods
+## HTTP Methods
 
 ### GET Request
 ```python
@@ -105,7 +105,7 @@ async def delete_user(resp: Response):
     return f"Delete status: {resp.status}"
 ```
 
-## 🎨 Response Handling
+## Response Handling
 
 ### JSON Response
 ```python
@@ -129,7 +129,7 @@ async def check_status(resp: Response):
     return f"Status: {resp.status}, Headers: {dict(resp.headers)}"
 ```
 
-## 🚨 Automatic Error Handling
+## Automatic Error Handling
 
 FastHTTP automatically catches and logs all HTTP errors for you:
 
@@ -159,7 +159,6 @@ ERROR | fasthttp.exceptions | ✖ FastHTTPTimeoutError: Request timed out | URL:
 ERROR | fasthttp.exceptions | ✖ FastHTTPBadStatusError: HTTP 404 | URL: https://httpbin.org/status/404 | Status: 404
 ```
 
-You can also manually raise these exceptions in your handlers:
 ```python
 @app.get(url="https://api.example.com/data")
 async def get_data(resp: Response):
@@ -168,7 +167,7 @@ async def get_data(resp: Response):
     return resp.json()
 ```
 
-## 🔗 Multiple Requests
+## Multiple Requests
 
 ```python
 from fasthttp import FastHTTP
@@ -194,7 +193,7 @@ if __name__ == "__main__":
     app.run()
 ```
 
-## 🚀 Advanced Examples
+## Advanced Examples
 
 ### GitHub API Example
 ```python
@@ -218,7 +217,7 @@ async def get_vscode_stats(resp: Response):
     return f"VS Code has {repo_data['stargazers_count']} stars!"
 ```
 
-## 📝 Return Values
+## Return Values
 
 Your handler function can return:
 
@@ -242,10 +241,10 @@ async def example3(resp: Response):
     return f"Status: {resp.status}"  # Returns string
 ```
 
-## 🎯 Next Steps
+## Next Steps
 
 - Read the [API Reference](api-reference.md) for detailed documentation
 - Check out [Examples](examples.md) for more use cases
 - Learn about [Configuration](configuration.md) options
 
-**Happy coding!** 🚀
+**Happy coding!**
