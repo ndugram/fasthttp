@@ -2,7 +2,7 @@
 
 Real-world examples and use cases for FastHTTP Client.
 
-## 📚 Table of Contents
+## Table of Contents
 
 - [GitHub API Integration](#github-api-integration)
 - [JSONPlaceholder Examples](#jsonplaceholder-examples)
@@ -12,7 +12,7 @@ Real-world examples and use cases for FastHTTP Client.
 - [Error Handling](#error-handling)
 - [Performance Testing](#performance-testing)
 
-## 🐙 GitHub API Integration
+## GitHub API Integration
 
 ### Get User Information
 ```python
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     app.run()
 ```
 
-## 📝 JSONPlaceholder Examples
+## JSONPlaceholder Examples
 
 ### Blog Post Management
 ```python
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     app.run()
 ```
 
-## 🌐 HTTPBin Testing
+## HTTPBin Testing
 
 ### Request Testing
 ```python
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     app.run()
 ```
 
-## 📁 File Upload Simulation
+## File Upload Simulation
 
 ```python
 from fasthttp import FastHTTP
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     app.run()
 ```
 
-## 🔐 Authentication Examples
+## Authentication Examples
 
 ### Bearer Token Authentication
 ```python
@@ -287,7 +287,7 @@ async def get_weather(resp: Response):
 """
 ```
 
-## ⚠️ Error Handling
+## Error Handling
 
 ### Robust Error Handling
 ```python
@@ -321,7 +321,7 @@ if __name__ == "__main__":
         print(f"💥 Unexpected error: {e}")
 ```
 
-## ⚡ Performance Testing
+## Performance Testing
 
 ### Concurrent Request Testing
 ```python
@@ -362,7 +362,7 @@ if __name__ == "__main__":
     app.run()
 ```
 
-## 🔄 Real-World API Examples
+## Real-World API Examples
 
 ### REST API Client
 ```python
@@ -430,7 +430,7 @@ if __name__ == "__main__":
     app.run()
 ```
 
-## 🎯 Best Practices
+## Best Practices
 
 ### 1. Environment Configuration
 ```python
@@ -494,6 +494,6 @@ client.add_endpoint("GET", "/repos", params={"sort": "updated"})
 
 ---
 
-*These examples demonstrate the flexibility and power of FastHTTP Client! 🚀*
+*These examples demonstrate the flexibility and power of FastHTTP Client!*
 
-*For more advanced usage, check out the [API Reference](api-reference.md)* 📚
+*For more advanced usage, check out the [API Reference](api-reference.md)*
