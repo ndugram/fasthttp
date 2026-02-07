@@ -20,31 +20,37 @@ class Response:
         self,
         status: Annotated[
             int,
-            Doc("""
+            Doc(
+                """
                 HTTP status code of the response.
 
                 Indicates the result of the HTTP request
                 (e.g. 200 for success, 404 for not found,
                 500 for server error).
-                """),
+                """
+            ),
         ],
         text: Annotated[
             str,
-            Doc("""
+            Doc(
+                """
                 Raw response body as a string.
 
                 Contains the response payload exactly as
                 returned by the server.
-                """),
+                """
+            ),
         ],
         headers: Annotated[
             dict,
-            Doc("""
+            Doc(
+                """
                 HTTP response headers.
 
                 A mapping of header names to their values
                 returned by the server.
-                """),
+                """
+            ),
         ],
     ) -> None:
         self.status = status
