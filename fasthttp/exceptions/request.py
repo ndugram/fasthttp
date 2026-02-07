@@ -29,25 +29,34 @@ class FastHTTPRequestError(FastHTTPError):
                 fails before receiving a response
                 (e.g. invalid URL, invalid parameters).
                 """
-            )],
-        url: Annotated[
-            str,
-            Doc(
-                """
+            ),
+        ],
+        url: (
+            Annotated[
+                str,
+                Doc(
+                    """
                 Target request URL that caused the error.
 
                 May be invalid, malformed or unsupported.
                 """
-            )] | None = None,
-        method: Annotated[
-            str,
-            Doc(
-                """
+                ),
+            ]
+            | None
+        ) = None,
+        method: (
+            Annotated[
+                str,
+                Doc(
+                    """
                 HTTP method that was being used
 
                 when the request error occurred.
                 """
-            )] | None = None,
+                ),
+            ]
+            | None
+        ) = None,
         **kwargs,
     ) -> None:
         super().__init__(
