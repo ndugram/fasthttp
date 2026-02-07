@@ -13,4 +13,3 @@ __all__ = (
     "FastHTTPValidationError",
     "log_success",
 )
-
