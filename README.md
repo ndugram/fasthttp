@@ -1,6 +1,4 @@
-<p align="center">
-  <a href="https://neforceo.github.io/NEFORDEV/"><img src="./docs/logo-repo.png" alt="FastHTTP Client"></a>
-</p>
+![image](./docs/logo-repo.png)
 
 <div align="center">
 
