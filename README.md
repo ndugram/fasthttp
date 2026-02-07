@@ -1,4 +1,6 @@
-![image](./docs/logo-repo.png)
+<p align="center">
+  <img src="./docs/logo-repo.png" style="background:white; padding:12px; border-radius:10px;">
+</p>
 
 <div align="center">
 
