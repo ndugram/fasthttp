@@ -31,7 +31,8 @@ class FastHTTPValidationError(FastHTTPError):
                 Examples include missing required fields,
                 invalid data types or malformed input.
                 """
-            )] = "Validation failed",
+            ),
+        ] = "Validation failed",
         **kwargs,
     ) -> None:
         super().__init__(
