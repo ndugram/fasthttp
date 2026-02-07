@@ -30,48 +30,65 @@ class FastHTTPError(Exception):
                 Describes what went wrong during request
                 execution or response handling.
                 """
-            )],
-        url: Annotated[
-            str,
-            Doc(
-                """
+            ),
+        ],
+        url: (
+            Annotated[
+                str,
+                Doc(
+                    """
                 Request URL associated with the error.
 
                 Contains the full URL of the HTTP request
                 that caused this exception, if available.
                 """
-            )] | None = None,
-        method: Annotated[
-            str,
-            Doc(
-                """
+                ),
+            ]
+            | None
+        ) = None,
+        method: (
+            Annotated[
+                str,
+                Doc(
+                    """
                 HTTP method of the failed request.
 
                 Examples: GET, POST, PUT, PATCH, DELETE.
                 """
-            )] | None = None,
-        status_code: Annotated[
-            int,
-            Doc(
-                """
+                ),
+            ]
+            | None
+        ) = None,
+        status_code: (
+            Annotated[
+                int,
+                Doc(
+                    """
                 HTTP response status code.
 
                 Represents the server response code
                 (e.g. 404, 500). May be None if the request
                 failed before receiving a response.
                 """
-            )] | None = None,
-        details: Annotated[
-            dict[str, Any],
-            Doc(
-                """
+                ),
+            ]
+            | None
+        ) = None,
+        details: (
+            Annotated[
+                dict[str, Any],
+                Doc(
+                    """
                 Additional error details.
 
                 Arbitrary dictionary with extra diagnostic
                 information such as response body, headers,
                 exception metadata or debug context.
                 """
-            )] | None = None,
+                ),
+            ]
+            | None
+        ) = None,
     ) -> None:
         self.message = message
         self.url = url
@@ -91,9 +108,7 @@ class FastHTTPError(Exception):
             parts.append(f"Status: {self.status_code}")
 
         if self.details:
-            details_str = ", ".join(
-                f"{k}={v}" for k, v in self.details.items()
-                )
+            details_str = ", ".join(f"{k}={v}" for k, v in self.details.items())
             parts.append(f"Details: {details_str}")
 
         return " | ".join(parts)
