@@ -1,15 +1,15 @@
 import asyncio
 import time
 from collections.abc import Callable
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 import aiohttp
 from annotated_doc import Doc
 
-from fasthttp.client import HTTPClient
-from fasthttp.logging import setup_logger
-from fasthttp.routing import Route
-from fasthttp.types import RequestsOptinal
+from .client import HTTPClient
+from .logging import setup_logger
+from .routing import Route
+from .types import RequestsOptinal
 
 
 class FastHTTP:
@@ -139,9 +139,9 @@ class FastHTTP:
         *,
         method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"],
         url: str,
-        params=None,
-        json=None,
-        data=None,
+        params: dict | None = None,
+        json: dict | None = None,
+        data: Any | None = None,
     ):
         def decorator(func: Callable):
             self.routes.append(
