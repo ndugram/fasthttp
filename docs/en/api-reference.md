@@ -7,6 +7,7 @@ Complete reference for all FastHTTP Client classes, methods, and options.
 - [FastHTTP Class](#fasthttp-class)
 - [Response Class](#response-class)
 - [Route Class](#route-class)
+- [BaseMiddleware Class](#basemiddleware-class)
 - [Configuration Options](#configuration-options)
 
 ## FastHTTP Class
@@ -29,6 +30,7 @@ FastHTTP(
 #### Parameters
 
 - `debug` (bool): Enable detailed logging (default: `False`)
+- `middleware` (list[BaseMiddleware] | BaseMiddleware): Middleware instances to apply to all requests
 - `get_request` (dict): Default configuration for GET requests
 - `post_request` (dict): Default configuration for POST requests
 - `put_request` (dict): Default configuration for PUT requests
@@ -217,6 +219,137 @@ Internal class representing a registered route. Usually you won't interact with 
 - `params` (dict): Query parameters
 - `json` (dict): JSON data
 - `data` (dict): Form data
+
+## BaseMiddleware Class
+
+Base class for creating middleware to intercept and modify HTTP requests and responses.
+
+### Constructor
+
+```python
+class BaseMiddleware:
+    async def before_request(
+        self, route: Route, config: RequestsOptinal
+    ) -> RequestsOptinal:
+        return config
+
+    async def after_response(
+        self, response: Response, route: Route, config: RequestsOptinal
+    ) -> Response:
+        return response
+
+    async def on_error(
+        self, error: Exception, route: Route, config: RequestsOptinal
+    ) -> None:
+        pass
+```
+
+### Methods
+
+#### `.before_request()`
+
+Called before sending the HTTP request. Use this to modify request configuration.
+
+```python
+async def before_request(
+    self, route: Route, config: RequestsOptinal
+) -> RequestsOptinal
+```
+
+**Parameters:**
+- `route` (Route): The route being executed
+- `config` (RequestsOptinal): Request configuration dict
+
+**Returns:** Modified or original request configuration
+
+**Example:**
+```python
+class AuthMiddleware(BaseMiddleware):
+    async def before_request(
+        self, route: Route, config: RequestsOptinal
+    ) -> RequestsOptinal:
+        headers = config.get("headers", {})
+        headers["Authorization"] = "Bearer token"
+        config["headers"] = headers
+        return config
+```
+
+#### `.after_response()`
+
+Called after receiving a successful response. Use this to modify the response.
+
+```python
+async def after_response(
+    self, response: Response, route: Route, config: RequestsOptinal
+) -> Response
+```
+
+**Parameters:**
+- `response` (Response): The HTTP response object
+- `route` (Route): The route that was executed
+- `config` (RequestsOptinal): Request configuration that was used
+
+**Returns:** Modified or original response object
+
+**Example:**
+```python
+class LoggingMiddleware(BaseMiddleware):
+    async def after_response(
+        self, response: Response, route: Route, config: RequestsOptinal
+    ) -> Response:
+        print(f"Response: {response.status}")
+        return response
+```
+
+#### `.on_error()`
+
+Called when an error occurs during the request.
+
+```python
+async def on_error(
+    self, error: Exception, route: Route, config: RequestsOptinal
+) -> None
+```
+
+**Parameters:**
+- `error` (Exception): The exception that occurred
+- `route` (Route): The route that failed
+- `config` (RequestsOptinal): Request configuration that was used
+
+**Returns:** None
+
+**Example:**
+```python
+class ErrorTrackingMiddleware(BaseMiddleware):
+    async def on_error(
+        self, error: Exception, route: Route, config: RequestsOptinal
+    ) -> None:
+        print(f"Error: {error.__class__.__name__} on {route.url}")
+```
+
+### Using Middleware
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.middleware import BaseMiddleware
+
+class MyMiddleware(BaseMiddleware):
+    async def before_request(self, route, config):
+        print(f"Request: {route.method} {route.url}")
+        return config
+
+# Single middleware
+app = FastHTTP(middleware=MyMiddleware())
+
+# Multiple middleware
+app = FastHTTP(middleware=[
+    AuthMiddleware(),
+    LoggingMiddleware(),
+    ErrorTrackingMiddleware()
+])
+```
+
+For more details, see the [Middleware](middleware.md) guide.
 
 ## Configuration Options
 
