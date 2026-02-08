@@ -8,6 +8,7 @@ from annotated_doc import Doc
 
 from .client import HTTPClient
 from .logging import setup_logger
+from .middleware import BaseMiddleware
 from .routing import Route
 from .types import RequestsOptinal
 
@@ -59,6 +60,17 @@ class FastHTTP:
                 """
             ),
         ] = False,
+        middleware: Annotated[
+            list[BaseMiddleware] | BaseMiddleware | None,
+            Doc(
+                """
+                Middleware to apply to all requests.
+
+                Can be a single middleware instance or a list of middleware instances.
+                Middleware will be executed in the order they are provided.
+                """
+            ),
+        ] = None,
         get_request: (
             Annotated[
                 RequestsOptinal,
@@ -136,6 +148,17 @@ class FastHTTP:
         self.logger = setup_logger(debug=debug)
         self.routes: list[Route] = []
 
+        if middleware is None:
+            normalized_middleware = []
+        elif isinstance(middleware, list):
+            normalized_middleware = middleware
+        else:
+            normalized_middleware = [middleware]
+
+        from .middleware import MiddlewareManager
+
+        self.middleware_manager = MiddlewareManager(normalized_middleware)
+
         self.request_configs = {
             "GET": get_request or {},
             "POST": post_request or {},
@@ -144,7 +167,9 @@ class FastHTTP:
             "DELETE": delete_request or {},
         }
 
-        self.client = HTTPClient(self.request_configs, self.logger)
+        self.client = HTTPClient(
+            self.request_configs, self.logger, self.middleware_manager
+        )
 
     def _add_route(
         self,
