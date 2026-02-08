@@ -7,6 +7,7 @@
 - [Класс FastHTTP](#класс-fasthttp)
 - [Класс Response](#класс-response)
 - [Класс Route](#класс-route)
+- [Класс BaseMiddleware](#класс-basemiddleware)
 - [Опции конфигурации](#опции-конфигурации)
 
 ## Класс FastHTTP
@@ -29,6 +30,7 @@ FastHTTP(
 #### Параметры
 
 - `debug` (bool): Включить подробное логирование (по умолчанию: `False`)
+- `middleware` (list[BaseMiddleware] | BaseMiddleware): Экземпляры middleware для применения ко всем запросам
 - `get_request` (dict): Конфигурация по умолчанию для GET запросов
 - `post_request` (dict): Конфигурация по умолчанию для POST запросов
 - `put_request` (dict): Конфигурация по умолчанию для PUT запросов
@@ -217,6 +219,137 @@ print(resp)  # <Response [200]>
 - `params` (dict): Параметры запроса
 - `json` (dict): JSON данные
 - `data` (dict): Данные формы
+
+## Класс BaseMiddleware
+
+Базовый класс для создания middleware для перехвата и модификации HTTP запросов и ответов.
+
+### Конструктор
+
+```python
+class BaseMiddleware:
+    async def before_request(
+        self, route: Route, config: RequestsOptinal
+    ) -> RequestsOptinal:
+        return config
+
+    async def after_response(
+        self, response: Response, route: Route, config: RequestsOptinal
+    ) -> Response:
+        return response
+
+    async def on_error(
+        self, error: Exception, route: Route, config: RequestsOptinal
+    ) -> None:
+        pass
+```
+
+### Методы
+
+#### `.before_request()`
+
+Вызывается перед отправкой HTTP запроса. Используйте этот метод для изменения конфигурации запроса.
+
+```python
+async def before_request(
+    self, route: Route, config: RequestsOptinal
+) -> RequestsOptinal
+```
+
+**Параметры:**
+- `route` (Route): Выполняемый маршрут
+- `config` (RequestsOptinal): Словарь конфигурации запроса
+
+**Возвращает:** Измененная или исходная конфигурация запроса
+
+**Пример:**
+```python
+class AuthMiddleware(BaseMiddleware):
+    async def before_request(
+        self, route: Route, config: RequestsOptinal
+    ) -> RequestsOptinal:
+        headers = config.get("headers", {})
+        headers["Authorization"] = "Bearer token"
+        config["headers"] = headers
+        return config
+```
+
+#### `.after_response()`
+
+Вызывается после получения успешного ответа. Используйте этот метод для изменения ответа.
+
+```python
+async def after_response(
+    self, response: Response, route: Route, config: RequestsOptinal
+) -> Response
+```
+
+**Параметры:**
+- `response` (Response): Объект HTTP ответа
+- `route` (Route): Маршрут, который был выполнен
+- `config` (RequestsOptinal): Конфигурация запроса, которая была использована
+
+**Возвращает:** Измененный или исходный объект ответа
+
+**Пример:**
+```python
+class LoggingMiddleware(BaseMiddleware):
+    async def after_response(
+        self, response: Response, route: Route, config: RequestsOptinal
+    ) -> Response:
+        print(f"Ответ: {response.status}")
+        return response
+```
+
+#### `.on_error()`
+
+Вызывается при возникновении ошибки во время запроса.
+
+```python
+async def on_error(
+    self, error: Exception, route: Route, config: RequestsOptinal
+) -> None
+```
+
+**Параметры:**
+- `error` (Exception): Исключение, которое произошло
+- `route` (Route): Маршрут, который завершился ошибкой
+- `config` (RequestsOptinal): Конфигурация запроса, которая была использована
+
+**Возвращает:** None
+
+**Пример:**
+```python
+class ErrorTrackingMiddleware(BaseMiddleware):
+    async def on_error(
+        self, error: Exception, route: Route, config: RequestsOptinal
+    ) -> None:
+        print(f"Ошибка: {error.__class__.__name__} на {route.url}")
+```
+
+### Использование Middleware
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.middleware import BaseMiddleware
+
+class MyMiddleware(BaseMiddleware):
+    async def before_request(self, route, config):
+        print(f"Запрос: {route.method} {route.url}")
+        return config
+
+# Один middleware
+app = FastHTTP(middleware=MyMiddleware())
+
+# Несколько middleware
+app = FastHTTP(middleware=[
+    AuthMiddleware(),
+    LoggingMiddleware(),
+    ErrorTrackingMiddleware()
+])
+```
+
+Для получения подробной информации см. руководство [Middleware](middleware.md).
 
 ## Опции конфигурации
 
