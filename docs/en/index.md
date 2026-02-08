@@ -1,27 +1,28 @@
-# FastHTTP Client Documentation
+# Документация FastHTTP Client
 
-Welcome to the FastHTTP Client documentation! This guide will help you get started with our fast and simple HTTP client library.
+Добро пожаловать в документацию FastHTTP Client! Это руководство поможет вам начать работу с нашей быстрой и простой HTTP клиентской библиотекой.
 
-## Documentation Structure
+## Структура документации
 
-- [Quick Start](quick-start.md) - Get up and running in 2 minutes
-- [API Reference](api-reference.md) - Complete API documentation
-- [Examples](examples.md) - Real-world usage examples
-- [Configuration](configuration.md) - Advanced configuration options
+- [Быстрый старт](quick-start.md) - Начните работу за 2 минуты
+- [Справочник API](api-reference.md) - Полная документация API
+- [Примеры](examples.md) - Примеры использования в реальных проектах
+- [Конфигурация](configuration.md) - Продвинутые настройки конфигурации
+- [Middleware](middleware.md) - Перехват запросов и ответов
 
-## What is FastHTTP Client?
+## Что такое FastHTTP Client?
 
-FastHTTP Client is a modern, async HTTP client library built on top of aiohttp. It provides:
+FastHTTP Client - это современная асинхронная HTTP клиентская библиотека, построенная на основе aiohttp. Она предоставляет:
 
-- **Simple API** - Minimal boilerplate for HTTP requests
-- **Beautiful Logging** - Detailed request/response logging with timing
-- **Type Safety** - Full type annotations for better development experience
-- **Async Support** - High performance async operations
-- **All HTTP Methods** - GET, POST, PUT, PATCH, DELETE support
+- **Простой API** - Минимальный шаблонный код для HTTP запросов
+- **Красивое логирование** - Подробное логирование запросов/ответов с измерением времени
+- **Безопасность типов** - Полные аннотации типов для лучшего опыта разработки
+- **Асинхронная поддержка** - Высокопроизводительные асинхронные операции
+- **Все HTTP методы** - Поддержка GET, POST, PUT, PATCH, DELETE
 
-## Key Features
+## Ключевые возможности
 
-### Simple & Intuitive
+### Простой и интуитивно понятный
 ```python
 from fasthttp import FastHTTP
 
@@ -32,13 +33,13 @@ async def get_user(resp):
     return resp.json()
 ```
 
-### Detailed Logging
+### Подробное логирование
 ```
-16:09:18.955 │ INFO     │ fasthttp │ ✔ Sending 1 requests
+16:09:18.955 │ INFO     │ fasthttp │ ✔ Отправка 1 запроса
 16:09:19.519 │ INFO     │ fasthttp │ ✔ ← GET https://api.github.com [200] 458.26ms
 ```
 
-### Type Safe
+### Безопасность типов
 ```python
 from fasthttp.response import Response
 
@@ -47,13 +48,17 @@ async def handler(resp: Response) -> str:
     return resp.json()
 ```
 
-## Perfect For
+## Идеально подходит для
 
-- **API Testing** - Quick and easy API client development
-- **Web Scraping** - Simple HTTP requests with logging
-- **Microservices** - Lightweight HTTP client for service communication
-- **Prototyping** - Fast development with beautiful output
+- **Тестирование API** - Быстрая и простая разработка HTTP клиентов
+- **Веб-скрапинг** - Простые HTTP запросы с логированием
+- **Микросервисы** - Легковесный HTTP клиент для взаимодействия сервисов
+- **Прототипирование** - Быстрая разработка с красивым выводом
 
-## Next Steps
+## Следующие шаги
 
-Ready to get started? Jump to our [Quick Start Guide](quick-start.md) or explore the [API Reference](api-reference.md).
+Готовы начать? Переходите к нашему [Руководству по быстрому старту](quick-start.md) или изучите [Справочник API](api-reference.md).
+
+---
+
+*FastHTTP Client - Делаем HTTP запросы быстрыми и красивыми*
