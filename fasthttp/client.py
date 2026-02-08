@@ -23,9 +23,10 @@ class HTTPClient:
     logs request lifecycle events, and returns normalized Response objects.
     """
 
-    def __init__(self, request_configs: dict, logger) -> None:
+    def __init__(self, request_configs: dict, logger, middleware_manager=None) -> None:
         self.request_configs = request_configs
         self.logger = logger
+        self.middleware_manager = middleware_manager
 
     async def send(
         self, session: aiohttp.ClientSession, route: Route
@@ -35,9 +36,12 @@ class HTTPClient:
 
         This method:
         - Applies request configuration based on HTTP method
+        - Executes before_request middleware hooks
         - Sends the request using an existing aiohttp ClientSession
         - Measures request execution time
         - Logs request lifecycle events
+        - Executes after_response middleware hooks
+        - Executes on_error middleware hooks on errors
         - Automatically handles and logs errors
         - Executes the route handler with the Response object
 
@@ -47,6 +51,9 @@ class HTTPClient:
         - None if a connection or timeout error occurred
         """
         config = self.request_configs.get(route.method, {})
+
+        if self.middleware_manager:
+            config = await self.middleware_manager.process_before_request(route, config)
 
         self.logger.debug(
             "→ %s %s | headers=%s",
@@ -79,6 +86,12 @@ class HTTPClient:
                         response_body=text,
                     )
                     error.log()
+
+                    if self.middleware_manager:
+                        await self.middleware_manager.process_on_error(
+                            error, route, config
+                        )
+
                     return None
 
                 text = await resp.text()
@@ -90,6 +103,11 @@ class HTTPClient:
                     text=text,
                     headers=dict(resp.headers),
                 )
+
+                if self.middleware_manager:
+                    response = await self.middleware_manager.process_after_response(
+                        response, route, config
+                    )
 
                 handler_result = await route.handler(response)
                 if isinstance(handler_result, Response):
@@ -107,6 +125,10 @@ class HTTPClient:
                 method=route.method,
             )
             error.log()
+
+            if self.middleware_manager:
+                await self.middleware_manager.process_on_error(error, route, config)
+
             return None
 
         except asyncio.TimeoutError as e:
@@ -118,6 +140,10 @@ class HTTPClient:
                 timeout=timeout,
             )
             error.log()
+
+            if self.middleware_manager:
+                await self.middleware_manager.process_on_error(error, route, config)
+
             return None
 
         except Exception as e:
@@ -127,4 +153,8 @@ class HTTPClient:
                 method=route.method,
             )
             error.log()
+
+            if self.middleware_manager:
+                await self.middleware_manager.process_on_error(error, route, config)
+
             return None
