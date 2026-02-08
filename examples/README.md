@@ -11,6 +11,7 @@ All examples are tested and working.
 - **endpoints** — working with various APIs
 - **advanced** — redirects and other advanced features
 - **error** — automatic error handling and testing various error scenarios
+- **middleware** - test middleware for FastHTTP
 
 ## Tested APIs
 
