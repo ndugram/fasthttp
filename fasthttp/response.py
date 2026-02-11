@@ -1,5 +1,5 @@
 import json
-from typing import Annotated, Any
+from typing import Annotated
 
 from annotated_doc import Doc
 
@@ -97,7 +97,7 @@ class Response:
             ),
         ] = None,
         req_data: Annotated[
-            Any | None,
+            object | None,
             Doc(
                 """
                 Raw data of the request.
