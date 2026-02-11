@@ -62,12 +62,13 @@ app = FastHTTP(
 Регистрирует GET запрос.
 
 ```python
-def get(*, url: str, params: dict | None = None) -> Callable
+def get(*, url: str, params: dict | None = None, response_model: type | None = None) -> Callable
 ```
 
 **Параметры:**
 - `url` (str): Целевой URL
 - `params` (dict): Параметры запроса (опционально)
+- `response_model` (type): Модель Pydantic для валидации ответа (опционально)
 
 **Пример:**
 ```python
@@ -81,7 +82,7 @@ async def get_users(resp: Response):
 Регистрирует POST запрос.
 
 ```python
-def post(*, url: str, json: dict | None = None, data: dict | None = None, params: dict | None = None) -> Callable
+def post(*, url: str, json: dict | None = None, data: dict | None = None, params: dict | None = None, response_model: type | None = None) -> Callable
 ```
 
 **Параметры:**
@@ -89,6 +90,7 @@ def post(*, url: str, json: dict | None = None, data: dict | None = None, params
 - `json` (dict): JSON данные для отправки (опционально)
 - `data` (dict): Данные формы для отправки (опционально)
 - `params` (dict): Параметры запроса (опционально)
+- `response_model` (type): Модель Pydantic для валидации ответа (опционально)
 
 **Пример:**
 ```python
@@ -102,7 +104,7 @@ async def create_user(resp: Response):
 Регистрирует PUT запрос.
 
 ```python
-def put(*, url: str, json: dict | None = None, data: dict | None = None, params: dict | None = None) -> Callable
+def put(*, url: str, json: dict | None = None, data: dict | None = None, params: dict | None = None, response_model: type | None = None) -> Callable
 ```
 
 **Параметры:** Те же, что и у `.post()`
@@ -119,7 +121,7 @@ async def update_user(resp: Response):
 Регистрирует PATCH запрос.
 
 ```python
-def patch(*, url: str, json: dict | None = None, data: dict | None = None, params: dict | None = None) -> Callable
+def patch(*, url: str, json: dict | None = None, data: dict | None = None, params: dict | None = None, response_model: type | None = None) -> Callable
 ```
 
 **Параметры:** Те же, что и у `.post()`
@@ -136,7 +138,7 @@ async def patch_user(resp: Response):
 Регистрирует DELETE запрос.
 
 ```python
-def delete(*, url: str, json: dict | None = None, data: dict | None = None, params: dict | None = None) -> Callable
+def delete(*, url: str, json: dict | None = None, data: dict | None = None, params: dict | None = None, response_model: type | None = None) -> Callable
 ```
 
 **Параметры:** Те же, что и у `.post()`

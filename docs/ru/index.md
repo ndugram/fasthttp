@@ -8,6 +8,8 @@
 - [Справочник API](api-reference.md) - Полная документация API
 - [Примеры](examples.md) - Примеры использования в реальных проектах
 - [Конфигурация](configuration.md) - Продвинутые настройки конфигурации
+- [Middleware](middleware.md) - Перехват запросов и ответов
+- [Валидация Pydantic](pydantic-validation.md) - Типобезопасная валидация ответов
 
 ## Что такое FastHTTP Client?
 
