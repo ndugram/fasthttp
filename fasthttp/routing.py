@@ -1,7 +1,8 @@
 from collections.abc import Callable
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from annotated_doc import Doc
+from pydantic import BaseModel
 
 
 class Route:
@@ -81,7 +82,7 @@ class Route:
             ),
         ] = None,
         data: Annotated[
-            Any | None,
+            object | None,
             Doc(
                 """
 
@@ -93,6 +94,19 @@ class Route:
                 """
             ),
         ] = None,
+        response_model: Annotated[
+            type[BaseModel] | None,
+            Doc(
+                """
+                Optional Pydantic model for validating handler results.
+
+                If provided, the handler return value will be
+                validated before returning.
+
+                If None, the result is returned unchanged.
+                """
+            ),
+        ] = None
     ) -> None:
         self.method = method
         self.url = url
@@ -100,3 +114,4 @@ class Route:
         self.params = params
         self.json = json
         self.data = data
+        self.response_model = response_model
