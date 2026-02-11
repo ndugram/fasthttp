@@ -1,7 +1,10 @@
 import asyncio
+import logging
 import time
 
 import aiohttp
+
+from fasthttp.middleware import MiddlewareManager
 
 from .exceptions import (
     FastHTTPBadStatusError,
@@ -23,13 +26,20 @@ class HTTPClient:
     logs request lifecycle events, and returns normalized Response objects.
     """
 
-    def __init__(self, request_configs: dict, logger, middleware_manager=None) -> None:
+    def __init__(
+        self,
+        request_configs: dict,
+        logger: logging.Logger,
+        middleware_manager: MiddlewareManager | None = None
+    ) -> None:
         self.request_configs = request_configs
         self.logger = logger
         self.middleware_manager = middleware_manager
 
     async def send(
-        self, session: aiohttp.ClientSession, route: Route
+        self,
+        session: aiohttp.ClientSession,
+        route: Route
     ) -> Response | None:
         """
         Send a single HTTP request based on a Route definition.
