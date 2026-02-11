@@ -12,6 +12,7 @@ All examples are tested and working.
 - **advanced** — redirects and other advanced features
 - **error** — automatic error handling and testing various error scenarios
 - **middleware** - test middleware for FastHTTP
+- **pydantic** - pydantic response validation examples
 
 ## Tested APIs
 
