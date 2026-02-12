@@ -179,11 +179,9 @@ class FastHTTP:
         params: dict | None = None,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None
+        response_model: type[BaseModel] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
-        def decorator(
-            func: Callable[..., object]
-        ) -> Callable[..., object]:
+        def decorator(func: Callable[..., object]) -> Callable[..., object]:
             self.routes.append(
                 Route(
                     method=method,
@@ -192,7 +190,7 @@ class FastHTTP:
                     params=params,
                     json=json,
                     data=data,
-                    response_model=response_model
+                    response_model=response_model,
                 )
             )
             self.logger.debug("Registered route: %s %s", method, url)
@@ -208,10 +206,7 @@ class FastHTTP:
         response_model: type[BaseModel] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="GET",
-            url=url,
-            params=params,
-            response_model=response_model
+            method="GET", url=url, params=params, response_model=response_model
         )
 
     def post(
@@ -223,11 +218,7 @@ class FastHTTP:
         response_model: type[BaseModel] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="POST",
-            url=url,
-            json=json,
-            data=data,
-            response_model=response_model
+            method="POST", url=url, json=json, data=data, response_model=response_model
         )
 
     def put(
@@ -239,31 +230,25 @@ class FastHTTP:
         response_model: type[BaseModel] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="PUT",
-            url=url,
-            json=json,
-            data=data,
-            response_model=response_model
+            method="PUT", url=url, json=json, data=data, response_model=response_model
         )
 
     def patch(
         self,
-        *, url: str,
+        *,
+        url: str,
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="PATCH",
-            url=url,
-            json=json,
-            data=data,
-            response_model=response_model
+            method="PATCH", url=url, json=json, data=data, response_model=response_model
         )
 
     def delete(
         self,
-        *, url: str,
+        *,
+        url: str,
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
@@ -273,7 +258,7 @@ class FastHTTP:
             url=url,
             json=json,
             data=data,
-            response_model=response_model
+            response_model=response_model,
         )
 
     async def _run(self) -> None:
@@ -300,15 +285,16 @@ class FastHTTP:
 
                     handler_result = getattr(result, "_handler_result", None)
                     if route.response_model and handler_result is not None:
-
                         if get_origin(route.response_model) is list:
                             item_model = get_args(route.response_model)[0]
                             handler_result = [
                                 item_model.model_validate(item)
                                 for item in handler_result
-                                ]
+                            ]
                         else:
-                            handler_result = route.response_model.model_validate(handler_result)
+                            handler_result = route.response_model.model_validate(
+                                handler_result
+                            )
 
                         self.logger.debug("[RESULT] %s", handler_result)
                     elif result.text:
