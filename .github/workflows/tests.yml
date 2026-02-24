@@ -43,11 +43,11 @@ jobs:
       
       - name: Run unit tests
         run: |
-          python -m pytest tests/ -v -m unit
+          python -m pytest tests/ -v
       
       - name: Run integration tests
         run: |
-          python -m pytest tests/ -v -m integration
+          python -m pytest tests/ -v
       
       - name: Check code coverage
         run: |
