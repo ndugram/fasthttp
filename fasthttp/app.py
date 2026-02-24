@@ -88,7 +88,7 @@ class FastHTTP:
         ] = False,
         get_request: (
             Annotated[
-                RequestsOptinal,
+                RequestsOptinal | None,
                 Doc(
                     """
                 Default configuration for GET requests.
@@ -98,11 +98,10 @@ class FastHTTP:
                 """
                 ),
             ]
-            | None
         ) = None,
         post_request: (
             Annotated[
-                RequestsOptinal,
+                RequestsOptinal | None,
                 Doc(
                     """
                 Default configuration for POST requests.
@@ -113,11 +112,10 @@ class FastHTTP:
                 """
                 ),
             ]
-            | None
         ) = None,
         put_request: (
             Annotated[
-                RequestsOptinal,
+                RequestsOptinal | None,
                 Doc(
                     """
                 Default configuration for PUT requests.
@@ -128,11 +126,10 @@ class FastHTTP:
                 """
                 ),
             ]
-            | None
         ) = None,
         patch_request: (
             Annotated[
-                RequestsOptinal,
+                RequestsOptinal | None,
                 Doc(
                     """
                # Create the app
@@ -144,11 +141,10 @@ class FastHTTP:
                 """
                 ),
             ]
-            | None
         ) = None,
         delete_request: (
             Annotated[
-                RequestsOptinal,
+                RequestsOptinal | None,
                 Doc(
                     """
                 Default configuration for DELETE requests.
@@ -158,7 +154,6 @@ class FastHTTP:
                 """
                 ),
             ]
-            | None
         ) = None,
     ) -> None:
         self.logger = setup_logger(debug=debug)
