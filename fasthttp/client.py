@@ -1,8 +1,10 @@
 import asyncio
 import logging
 import time
+from typing import Annotated
 
 import httpx
+from annotated_doc import Doc
 
 from fasthttp.middleware import MiddlewareManager
 
@@ -28,16 +30,46 @@ class HTTPClient:
 
     def __init__(
         self,
-        request_configs: dict,
-        logger: logging.Logger,
-        middleware_manager: MiddlewareManager | None = None,
+        request_configs: Annotated[
+            dict,
+            Doc(
+                """
+                Dictionary mapping HTTP methods to default request configurations.
+                Each key is an HTTP method (GET, POST, PUT, DELETE, etc.) and
+                the value is a dict containing default headers, timeout, and
+                other request options for that method.
+                """
+            )
+        ],
+        logger: Annotated[
+            logging.Logger,
+            Doc(
+                """
+                Logger instance for recording request lifecycle events including
+                errors, success responses, and middleware processing. Should be
+                configured by the application for appropriate log output.
+                """
+            )
+        ],
+        middleware_manager: Annotated[
+            MiddlewareManager | None,
+            Doc(
+                """
+                Optional MiddlewareManager instance for processing middleware
+                hooks (before_request, after_response, on_error). If None,
+                no middleware processing will be applied. Defaults to None.
+                """
+            )
+        ] = None,
     ) -> None:
         self.request_configs = request_configs
         self.logger = logger
         self.middleware_manager = middleware_manager
 
     async def send(
-        self, client: httpx.AsyncClient, route: Route
+        self,
+        client: httpx.AsyncClient,
+        route: Route
     ) -> Response | None:
         """
         Send a single HTTP request based on a Route definition.
