@@ -57,11 +57,6 @@ dependencies = [
 http2 = [
     "httpx[http2]>=0.28.1",
 ]
-
-[project.scripts]
-fasthttp = "fasthttp.cli.main:app"
-
-[project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
@@ -70,6 +65,9 @@ dev = [
     "mypy>=1.13.0",
     "pre-commit>=4.0.0",
 ]
+
+[project.scripts]
+fasthttp = "fasthttp.cli.main:app"
 
 [project.urls]
 Homepage = "https://github.com/ndugram/fasthttp"
