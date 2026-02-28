@@ -1,25 +1,23 @@
-# Dependabot configuration
-# https://docs.github.com/en/code-security/dependabot
-
 version: 2
 updates:
-  - package-ecosystem: 'pip'
-    directory: '/'
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: 'weekly'
-      day: 'sunday'
-      time: '00:00'
-      timezone: 'UTC'
-    open-pull-requests-limit: 10
-    
-    labels:
-      - 'dependencies'
-      - 'pip'
-    
+      interval: daily
+    groups:
+      actions:
+        patterns:
+          - "*"
     commit-message:
-      prefix: '⬆️'
-    
-    versioning-strategy: increase
-    
-    ignore:
-      - dependency-name: 'python'
+      prefix: ⬆️
+
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      python-deps:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: ⬆️
