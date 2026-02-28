@@ -55,16 +55,8 @@ jobs:
       - name: Update pyproject.toml
         run: |
           NEW_VERSION="${{ steps.bump.outputs.new_version }}"
-          python -c "
-import tomllib
-with open('pyproject.toml', 'rb') as f:
-    data = tomllib.load(f)
-data['project']['version'] = '$NEW_VERSION'
-with open('pyproject.toml', 'w') as f:
-    import tomli
-    import tomli_w
-    tomli_w.dump(data, f)
-"
+          sed -i "s/version = \".*\"/version = \"$NEW_VERSION\"/" pyproject.toml
+          cat pyproject.toml | grep version
       
       - name: Create and push tag
         run: |
