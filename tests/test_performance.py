@@ -38,7 +38,7 @@ async def server():
 
     runner = web.AppRunner(app)
     await runner.setup()
-    site = runner.make_site(host="127.0.0.1", port=8080)
+    site = web.TCPSite(runner, host="127.0.0.1", port=8080)
     await site.start()
 
     yield "http://127.0.0.1:8080"
