@@ -20,7 +20,8 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -e .
-          pip install pytest pytest-asyncio pytest-codspeed aiohttp
+          pip install pytest pytest-asyncio pytest-codspeed aiohttp pytest-cov # Добавь pytest-cov сюда
+
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v4
