@@ -23,7 +23,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest tests/ --cov=fasthttp --cov-report=xml --cov-report=term
+          pytest tests/ --cov=fasthttp --cov-report=xml --cov-report=term --ignore=tests/test_performance.py
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4

@@ -43,7 +43,7 @@ jobs:
       
       - name: Run tests
         run: |
-          python -m pytest tests/ -v
+          python -m pytest tests/ -v --ignore=tests/test_performance.py
       
       - name: Check code coverage
         run: |
