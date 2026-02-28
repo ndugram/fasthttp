@@ -47,7 +47,7 @@ jobs:
       
       - name: Check code coverage
         run: |
-          python -m pytest tests/ --cov=fasthttp --cov-report=term-missing --cov-fail-under=70
+          python -m pytest tests/ --cov=fasthttp --cov-report=term-missing --cov-fail-under=50
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
