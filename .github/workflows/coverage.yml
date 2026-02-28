@@ -18,12 +18,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pytest pytest-cov
+          pip install pytest pytest-cov pytest-asyncio
           pip install -e .
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=. --cov-report=xml --cov-report=term
+          pytest tests/ --cov=fasthttp --cov-report=xml --cov-report=term
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
