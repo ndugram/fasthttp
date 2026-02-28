@@ -75,6 +75,11 @@ Documentation = "https://github.com/ndugram/fasthttp"
 Repository = "https://github.com/ndugram/fasthttp"
 Issues = "https://github.com/ndugram/fasthttp/issues"
 
+[dependency-groups]
+dev = [
+    "pytest-codspeed>=4.3.0",
+]
+
 [tool.ruff]
 line-length = 88
 target-version = "py310"

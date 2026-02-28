@@ -9,6 +9,7 @@
 ![mypy](https://img.shields.io/badge/type%20checked-mypy-2E5090.svg)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/ndugram/fasthttp?utm_source=badge)
 
 **Simple & Fast HTTP Client for Python**
 
