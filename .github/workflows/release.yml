@@ -14,20 +14,44 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Get current version
-        id: version
+      - name: Get latest tag
+        id: latest_tag
         run: |
-          CURRENT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
-          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          # Get latest tag from remote
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
       
-      - name: Bump version
+      - name: Get current version from pyproject
+        id: pyproject_version
+        run: |
+          PYPROJECT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          echo "version=$PYPROJECT_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Determine new version
         id: bump
         run: |
-          VERSION="${{ steps.version.outputs.current_version }}"
+          LATEST_TAG="${{ steps.latest_tag.outputs.latest_tag }}"
+          PYPROJECT_VERSION="${{ steps.pyproject_version.outputs.version }}"
+          
+          # Extract version number from tag (remove 'v' prefix)
+          TAG_VERSION=${LATEST_TAG#v}
+          
+          # Compare versions - use higher one
+          if [ "$(printf '%s\n' "$TAG_VERSION" "$PYPROJECT_VERSION" | sort -V | tail -n1)" = "$TAG_VERSION" ]; then
+            # Tag version is higher, use it as base
+            CURRENT_VERSION=$TAG_VERSION
+          else
+            # pyproject version is higher, use it as base
+            CURRENT_VERSION=$PYPROJECT_VERSION
+          fi
           
           # Split version into parts
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
           
           # Increase patch version
           NEW_PATCH=$((PATCH + 1))
@@ -35,9 +59,27 @@ jobs:
           
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
       
-      - name: Create tag
+      - name: Create and push tag
         run: |
+          NEW_TAG="v${{ steps.bump.outputs.new_version }}"
+          
+          # Delete existing tag if exists
+          git push origin --delete "$NEW_TAG" 2>/dev/null || true
+          git tag -d "$NEW_TAG" 2>/dev/null || true
+          
+          # Create new tag
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v${{ steps.bump.outputs.new_version }}"
-          git push origin "v${{ steps.bump.outputs.new_version }}"
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.new_version }}
+          name: Release v${{ steps.bump.outputs.new_version }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
