@@ -5,6 +5,7 @@ Welcome to the FastHTTP Client documentation! This guide will help you get start
 ## Documentation Structure
 
 - [Quick Start](quick-start.md) - Get up and running in 2 minutes
+- [CLI](cli.md) - Command-line interface for HTTP requests
 - [API Reference](api-reference.md) - Complete API documentation
 - [Examples](examples.md) - Real-world usage examples
 - [Configuration](configuration.md) - Advanced configuration options
