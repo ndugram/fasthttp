@@ -1,0 +1,35 @@
+# Labeler configuration
+# https://github.com/actions/labeler
+
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '*.md'
+
+code:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'fasthttp/**/*.py'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - '.github/*.yml'
+
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pyproject.toml'
+          - 'setup.py'
+          - 'setup.cfg'
+          - '.ruff*'
+          - '.editorconfig'
+          - '.pre-commit-config.yaml'

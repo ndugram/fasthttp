@@ -1,0 +1,30 @@
+# Dependabot configuration
+# https://docs.github.com/en/code-security/dependabot
+
+version: 2
+updates:
+  - package-ecosystem: 'pip'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'sunday'
+      time: '00:00'
+      timezone: 'UTC'
+    open-pull-requests-limit: 10
+    
+    labels:
+      - 'dependencies'
+      - 'pip'
+    
+    commit-message:
+      prefix: '⬆️'
+    
+    versioning-strategy: increase
+    
+    allow:
+      - dependency-name: '*'
+        update-types: ['minor', 'patch', 'major']
+    
+    ignore:
+      - dependency-name: 'python'
+        versions: ['4.0.0']

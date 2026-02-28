@@ -1,0 +1,95 @@
+name: 🐛 Bug Report
+description: Report something that isn't working correctly
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this bug! Please fill out this template so we can investigate and fix it quickly.
+        
+        **For security vulnerabilities, please DO NOT open an issue. Instead, contact us directly at n7for8572@gmail.com**
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is
+      placeholder: "Describe the bug here..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: |
+        How to reproduce the bug:
+        1. Go to '...'
+        2. Run '...'
+        3. See error
+      placeholder: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+      placeholder: "What should happen instead..."
+
+  - type: input
+    id: version
+    attributes:
+      label: fasthttp Version
+      description: Version of fasthttp (pip show fasthttp-client)
+      placeholder: "e.g., 0.1.7"
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: Python version (python --version)
+      placeholder: "e.g., 3.11.4"
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: Your operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/Traceback
+      description: Any relevant logs or traceback (use ``` to format)
+      placeholder: |
+        ```python
+        # Your traceback here
+        ```
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context about the problem (code snippets, screenshots, etc.)
+      placeholder: "Add any other context about the problem here..."
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched for similar issues
+          required: true
+        - label: I tested with the latest version
+          required: true

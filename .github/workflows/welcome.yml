@@ -1,0 +1,65 @@
+name: Welcome Bot
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Welcome new contributor
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { issue, pull_request, sender } = context.payload;
+            
+            // Check if it's a first contribution
+            const { data: events } = await github.rest.activity.listEventsForUser({
+              username: sender.login,
+              per_page: 100
+            });
+            
+            const hasContributed = events.some(event => 
+              event.type === 'PullRequestEvent' || 
+              event.type === 'IssuesEvent'
+            );
+            
+            let message;
+            
+            if (issue) {
+              // Issue opened
+              if (!hasContributed) {
+                message = `👋 **Welcome @${sender.login}!** 🎉\n\nThanks for opening your first issue! We're happy to have you here. Please make sure you've read our [contributing guidelines](CONTRIBUTING.md) and feel free to ask any questions.\n\n💡 **Tips:**\n- Use descriptive titles for your issues\n- Include steps to reproduce if it's a bug\n- Check existing issues before creating a new one\n\nWe're looking forward to your contribution! ❤️`;
+              } else {
+                message = `👋 Thanks @${sender.login} for opening this issue! We'll review it soon.`;
+              }
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: message
+              });
+              
+            } else if (pull_request) {
+              // PR opened
+              if (!hasContributed) {
+                message = `👋 **Welcome @${sender.login}!** 🎉\n\nThanks for your first contribution! We're excited to review your PR.\n\n💡 **Tips:**\n- Make sure you've read our [contributing guidelines](CONTRIBUTING.md)\n- Keep your PR focused and atomic\n- Add tests if applicable\n\nHappy coding! 🚀`;
+              } else {
+                message = `👋 Thanks @${sender.login} for this contribution! We'll review your PR shortly.`;
+              }
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pull_request.number,
+                body: message
+              });
+            }

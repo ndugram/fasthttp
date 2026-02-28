@@ -1,0 +1,47 @@
+name: ❓ Question
+description: Ask a question about fasthttp
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question? Please use this template. For faster answers, check:
+        - [Documentation](https://github.com/ndugram/fasthttp#readme)
+        - [Existing Issues](https://github.com/ndugram/fasthttp/issues)
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: "Your question here..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: |
+        Provide context about what you're trying to accomplish.
+        Code snippets are helpful!
+      placeholder: |
+        ```python
+        # Your code snippet
+        ```
+
+  - type: input
+    id: version
+    attributes:
+      label: fasthttp Version
+      description: Version you're using (optional)
+      placeholder: "e.g., 0.1.7"
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched for the answer first
+        - label: I checked the documentation
