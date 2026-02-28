@@ -50,12 +50,16 @@ dependencies = [
     "annotated-doc>=0.0.4",
     "httpx>=0.28.1",
     "pydantic>=2.12.5",
+    "typer>=0.24.1",
 ]
 
 [project.optional-dependencies]
 http2 = [
     "httpx[http2]>=0.28.1",
 ]
+
+[project.scripts]
+fasthttp = "fasthttp.cli.main:app"
 
 dev = [
     "pytest>=8.0.0",
