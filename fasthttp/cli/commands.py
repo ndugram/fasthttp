@@ -171,5 +171,3 @@ def _execute_request(
         formatter.error(f"Error: {e}")
         raise typer.Exit(1)
 
-
-CLIResponse = "CLIResponse"
