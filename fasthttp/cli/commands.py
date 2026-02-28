@@ -170,4 +170,3 @@ def _execute_request(
     except Exception as e:
         formatter.error(f"Error: {e}")
         raise typer.Exit(1)
-
