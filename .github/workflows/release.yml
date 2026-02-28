@@ -34,19 +34,15 @@ jobs:
       - name: Determine new version
         id: bump
         run: |
-          LATEST_TAG="${{ steps.latest_tag.outputs.latest_tag }}"
-          PYPROJECT_VERSION="${{ steps.pyproject_version.outputs.version }}"
+          CURRENT_VERSION="${{ steps.pyproject_version.outputs.version }}"
           
-          TAG_VERSION=${LATEST_TAG#v}
+          # Split version by dots
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR="${VERSION_PARTS[0]}"
+          MINOR="${VERSION_PARTS[1]}"
+          PATCH="${VERSION_PARTS[2]}"
           
-          if [ "$(printf '%s\n' "$TAG_VERSION" "$PYPROJECT_VERSION" | sort -V | tail -n1)" = "$TAG_VERSION" ]; then
-            CURRENT_VERSION=$TAG_VERSION
-          else
-            CURRENT_VERSION=$PYPROJECT_VERSION
-          fi
-          
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-          
+          # Increase patch version
           NEW_PATCH=$((PATCH + 1))
           NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
           
