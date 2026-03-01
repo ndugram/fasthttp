@@ -1,9 +1,10 @@
 name: All Contributors
 
 on:
-  push:
-    branches:
-      - master
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
 
 jobs:
   all-contributors:
@@ -11,12 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: all-contributors/add-contributor-action@v2
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          imageSize: 100
-          commitConvention: angular
-
-      - uses: all-contributors/generate-contributors-markdown-action@v6
-        with:
-          output: AUTHORS.md
+      - uses: sinchang/all-contributors-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
