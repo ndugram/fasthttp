@@ -169,6 +169,8 @@ async def get_data(resp: Response):
 
 ## Multiple Requests
 
+> **Note:** If you have 2+ requests, they run in parallel.
+
 ```python
 from fasthttp import FastHTTP
 from fasthttp.response import Response
