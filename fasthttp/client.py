@@ -93,7 +93,7 @@ class HTTPClient:
         config = self.request_configs.get(route.method, {})
 
         headers = dict(config.get("headers") or {})
-        headers.setdefault("User-Agent", "fasthttp/0.1.9")
+        headers.setdefault("User-Agent", "fasthttp/0.1.10")
         config["headers"] = headers
         if self.middleware_manager:
             config = await self.middleware_manager.process_before_request(route, config)
