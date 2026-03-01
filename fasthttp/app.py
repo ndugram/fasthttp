@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import time
 from collections.abc import Callable
@@ -6,6 +8,8 @@ from typing import Annotated, Literal, get_args, get_origin
 import httpx
 from annotated_doc import Doc
 from pydantic import BaseModel
+
+from fasthttp.response import Response
 
 from .client import HTTPClient
 from .logging import setup_logger
@@ -271,6 +275,47 @@ class FastHTTP:
             response_model=response_model,
         )
 
+    def _log_result(
+        self,
+        route: Route,
+        elapsed: float,
+        result: Response | None
+    ) -> None:
+        if result and isinstance(result.status, int):
+            self.logger.info(
+                "✔️ %-6s %-30s %s %6.2fms",
+                route.method,
+                route.url,
+                result.status,
+                elapsed,
+            )
+
+            handler_result = getattr(result, "_handler_result", None)
+            if route.response_model and handler_result is not None:
+                if get_origin(route.response_model) is list:
+                    item_model = get_args(route.response_model)[0]
+                    handler_result = [
+                        item_model.model_validate(item)
+                        for item in handler_result
+                    ]
+                else:
+                    handler_result = route.response_model.model_validate(
+                        handler_result
+                    )
+
+                self.logger.debug("[RESULT] %s", handler_result)
+            elif handler_result is not None:
+                self.logger.debug("[RESULT] %s", handler_result)
+            elif result.text:
+                self.logger.debug("[RESULT] %s", result.text)
+        else:
+            self.logger.error(
+                "✖️ %-6s %-30s ERR %6.2fms",
+                route.method,
+                route.url,
+                elapsed,
+            )
+
     async def _run(self) -> None:
         total = len(self.routes)
 
@@ -281,51 +326,31 @@ class FastHTTP:
         start_all = time.perf_counter()
 
         async with httpx.AsyncClient(http2=self.http2_enabled) as client:
-            for route in self.routes:
-                start = time.perf_counter()
+            if total > 1:
+                tasks = [
+                    self._run_route(client, route)
+                    for route in self.routes
+                ]
+                results = await asyncio.gather(*tasks)
 
-                result = await self.client.send(client, route)
-                elapsed = (time.perf_counter() - start) * 1000
-
-                if result and isinstance(result.status, int):
-                    self.logger.info(
-                        "✔️ %-6s %-30s %s %6.2fms",
-                        route.method,
-                        route.url,
-                        result.status,
-                        elapsed,
-                    )
-
-                    handler_result = getattr(result, "_handler_result", None)
-                    if route.response_model and handler_result is not None:
-                        if get_origin(route.response_model) is list:
-                            item_model = get_args(route.response_model)[0]
-                            handler_result = [
-                                item_model.model_validate(item)
-                                for item in handler_result
-                            ]
-                        else:
-                            handler_result = route.response_model.model_validate(
-                                handler_result
-                            )
-
-                        self.logger.debug("[RESULT] %s", handler_result)
-                    elif handler_result is not None:
-                        self.logger.debug("[RESULT] %s", handler_result)
-                    elif result.text:
-                        self.logger.debug("[RESULT] %s", result.text)
-                else:
-                    self.logger.error(
-                        "✖️ %-6s %-30s ERR %6.2fms",
-                        route.method,
-                        route.url,
-                        elapsed,
-                    )
-
-                await asyncio.sleep(0.5)
+                for route, elapsed, result in results:
+                    self._log_result(route, elapsed, result)
+            else:
+                route, elapsed, result = await self._run_route(
+                    client, self.routes[0]
+                )
+                self._log_result(route, elapsed, result)
 
         total_time = time.perf_counter() - start_all
         self.logger.info("Done in %.2fs", total_time)
+
+    async def _run_route(
+        self, client: httpx.AsyncClient, route: Route
+    ) -> tuple[Route, float, Response | None]:
+        start = time.perf_counter()
+        result = await self.client.send(client, route)
+        elapsed = (time.perf_counter() - start) * 1000
+        return route, elapsed, result
 
     def run(self) -> None:
         self.logger.info("FastHTTP started")
