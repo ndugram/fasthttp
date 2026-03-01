@@ -3,33 +3,34 @@ site_description: Fast and simple HTTP client library with async support and bea
 site_author: White NEFOR
 site_url: https://fasthttp-client.readthedocs.io/
 
+docs_dir: docs
+
 repo_url: https://github.com/ndugram/fasthttp
 repo_name: ndugram/fasthttp
 
-copyright: Copyright &copy; 2024 White NEFOR
+copyright: Copyright &copy; 2026 White NEFOR
 
 # Navigation
 nav:
-  - English:
-    - en/index.md
-    - en/quick-start.md
-    - en/cli.md
-    - en/configuration.md
-    - en/examples.md
-    - en/middleware.md
-    - en/pydantic-validation.md
-    - en/http2-support.md
-    - en/api-reference.md
-  - Russian (Русский):
-    - ru/index.md
-    - ru/quick-start.md
-    - ru/cli.md
-    - ru/configuration.md
-    - ru/examples.md
-    - ru/middleware.md
-    - ru/pydantic-validation.md
-    - ru/http2-support.md
-    - ru/api-reference.md
+  - Home: index.md
+  - Home (EN): en/index.md
+  - Quick Start (EN): en/quick-start.md
+  - CLI (EN): en/cli.md
+  - Configuration (EN): en/configuration.md
+  - Examples (EN): en/examples.md
+  - Middleware (EN): en/middleware.md
+  - Pydantic (EN): en/pydantic-validation.md
+  - HTTP/2 (EN): en/http2-support.md
+  - API Reference (EN): en/api-reference.md
+  - Главная (RU): ru/index.md
+  - Быстрый старт (RU): ru/quick-start.md
+  - CLI (RU): ru/cli.md
+  - Конфигурация (RU): ru/configuration.md
+  - Примеры (RU): ru/examples.md
+  - Мидлвар (RU): ru/middleware.md
+  - Pydantic (RU): ru/pydantic-validation.md
+  - HTTP/2 (RU): ru/http2-support.md
+  - API (RU): ru/api-reference.md
 
 theme:
   name: material
@@ -64,6 +65,4 @@ markdown_extensions:
   - pymdownx.superfences
 
 plugins:
-  - search:
-      lang: en
-      lang_to: ru
+  - search
