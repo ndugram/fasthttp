@@ -186,6 +186,43 @@ Each middleware receives the result from the previous middleware, allowing you t
 4. Use middleware for cross-cutting concerns
 5. Test middleware independently
 
+## Response Caching (CacheMiddleware)
+
+CacheMiddleware stores HTTP responses in memory so you don't need to make repeated requests to the server. This is useful when you frequently request the same data.
+
+**Why use it?**
+- Reduces API load
+- Responses return instantly (from cache)
+- Saves bandwidth
+
+**How it works:**
+1. First request → goes to server → saved to cache
+2. Second request (within TTL) → returns from cache
+3. After 1 hour (TTL) → new request to server
+
+### Example
+
+```python
+from fasthttp import FastHTTP, CacheMiddleware
+from fasthttp.response import Response
+
+# Create app with caching (TTL: 1 hour, max: 100 responses)
+app = FastHTTP(
+    middleware=[CacheMiddleware(ttl=3600, max_size=100)]
+)
+
+
+@app.get(url="https://api.example.com/users")
+async def get_users(resp: Response):
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+Now all GET requests will be cached for 1 hour. If you request `/users` again within that hour — the response will return instantly from cache.
+
 ---
 
 For more examples, see the [Examples](examples.md) section.

@@ -1,3 +1,8 @@
+import asyncio
+import hashlib
+import json
+import time
+from collections import OrderedDict
 from typing import TYPE_CHECKING, Annotated
 
 from annotated_doc import Doc
@@ -297,7 +302,9 @@ class MiddlewareManager:
         """
         current_config = config
         for middleware in self.middlewares:
-            current_config = await middleware.before_request(route, current_config)
+            current_config = await middleware.before_request(
+                route, current_config
+            )
         return current_config
 
     async def process_after_response(
@@ -417,3 +424,208 @@ class MiddlewareManager:
         """
         for middleware in self.middlewares:
             await middleware.on_error(error, route, config)
+
+
+class CacheEntry:
+    """
+    Represents a cached response entry.
+
+    Internal class used by CacheMiddleware to store
+    cached responses with expiration time.
+    """
+
+    def __init__(
+        self,
+        response: Annotated[
+            "Response",
+            Doc("The HTTP response to cache."),
+        ],
+        ttl: Annotated[
+            int,
+            Doc(
+                """
+                Time to live in seconds.
+
+                The cached response will expire after this
+                many seconds from creation.
+                """
+            ),
+        ],
+    ) -> None:
+        self.response = response
+        self.expires_at = time.time() + ttl
+
+
+class CacheMiddleware(BaseMiddleware):
+    """
+    Middleware for caching HTTP responses in memory.
+
+    Caches responses based on HTTP method and URL with query parameters.
+    Subsequent requests within the TTL period return cached responses.
+
+    Example:
+        ```python
+            from fasthttp import FastHTTP
+            from fasthttp.middleware import CacheMiddleware
+            from fasthttp.response import Response
+
+            app = FastHTTP(
+                middleware=[CacheMiddleware(ttl=3600, max_size=100)]
+            )
+
+            @app.get(url="https://api.example.com/users")
+            async def get_users(resp: Response):
+                return resp.json()
+        ```
+    """
+
+    def __init__(
+        self,
+        ttl: Annotated[
+            int,
+            Doc(
+                """
+                Time to live for cached responses in seconds.
+
+                Default is 3600 (1 hour). After this time,
+                the cached response is considered expired.
+                """
+            ),
+        ] = 3600,
+        max_size: Annotated[
+            int,
+            Doc(
+                """
+                Maximum number of cached responses.
+
+                When the cache reaches this size, the oldest
+                entry is evicted to make room for new ones.
+                """
+            ),
+        ] = 100,
+        cache_methods: Annotated[
+            list[str] | None,
+            Doc(
+                """
+                HTTP methods to cache.
+
+                Default is ["GET"] - only GET requests are cached.
+                Set to ["GET", "POST"] to cache POST responses as well.
+                """
+            ),
+        ] = None,
+    ) -> None:
+        self.ttl = ttl
+        self.max_size = max_size
+        self.cache_methods = cache_methods or ["GET"]
+        self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
+        self._lock = asyncio.Lock()
+        self._cached_response: Response | None = None
+
+    def _generate_key(self, route: "Route") -> str:
+        key_data = f"{route.method}:{route.url}:{json.dumps(route.params or {}, sort_keys=True)}"
+        return hashlib.md5(key_data.encode()).hexdigest()
+
+    async def before_request(
+        self,
+        route: Annotated[
+            "Route",
+            Doc("The route being executed."),
+        ],
+        config: Annotated[
+            "RequestsOptinal",
+            Doc("Request configuration."),
+        ],
+    ) -> Annotated[
+        "RequestsOptinal",
+        Doc("Modified or original request configuration."),
+    ]:
+        if route.method not in self.cache_methods:
+            return config
+
+        key = self._generate_key(route)
+
+        async with self._lock:
+            if key in self._cache:
+                entry = self._cache[key]
+
+                if time.time() < entry.expires_at:
+                    self._cache.move_to_end(key)
+                    self._cached_response = entry.response
+                    return config
+                del self._cache[key]
+
+        return config
+
+    async def after_response(
+        self,
+        response: Annotated[
+            "Response",
+            Doc("The HTTP response object."),
+        ],
+        route: Annotated[
+            "Route",
+            Doc("The route that was executed."),
+        ],
+        config: Annotated[
+            "RequestsOptinal",
+            Doc("Request configuration that was used."),
+        ],
+    ) -> Annotated[
+        "Response",
+        Doc("Modified or original response object."),
+    ]:
+        if route.method not in self.cache_methods:
+            return response
+
+        if self._cached_response is not None:
+            cached = self._cached_response
+            self._cached_response = None
+            return cached
+
+        key = self._generate_key(route)
+
+        async with self._lock:
+            if len(self._cache) >= self.max_size:
+                self._cache.popitem(last=False)
+
+            self._cache[key] = CacheEntry(response, self.ttl)
+
+        return response
+
+    async def on_error(
+        self,
+        error: Annotated[
+            Exception,
+            Doc("The exception that occurred."),
+        ],
+        route: Annotated[
+            "Route",
+            Doc("The route that failed."),
+        ],
+        config: Annotated[
+            "RequestsOptinal",
+            Doc("Request configuration that was used."),
+        ],
+    ) -> None:
+        key = self._generate_key(route)
+        async with self._lock:
+            self._cache.pop(key, None)
+
+    def clear(self) -> Annotated[
+        None,
+        Doc("Clears all cached responses."),
+    ]:
+        """Clear all cached responses."""
+        self._cache.clear()
+
+    def get_stats(self) -> Annotated[
+        dict,
+        Doc("Returns cache statistics."),
+    ]:
+        return {
+            "size": len(self._cache),
+            "max_size": self.max_size,
+            "ttl": self.ttl,
+            "methods": self.cache_methods,
+        }
