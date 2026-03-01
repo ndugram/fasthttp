@@ -1,0 +1,69 @@
+site_name: FastHTTP Client
+site_description: Fast and simple HTTP client library with async support and beautiful logging
+site_author: White NEFOR
+site_url: https://fasthttp-client.readthedocs.io/
+
+repo_url: https://github.com/ndugram/fasthttp
+repo_name: ndugram/fasthttp
+
+copyright: Copyright &copy; 2024 White NEFOR
+
+# Navigation
+nav:
+  - English:
+    - en/index.md
+    - en/quick-start.md
+    - en/cli.md
+    - en/configuration.md
+    - en/examples.md
+    - en/middleware.md
+    - en/pydantic-validation.md
+    - en/http2-support.md
+    - en/api-reference.md
+  - Russian (Русский):
+    - ru/index.md
+    - ru/quick-start.md
+    - ru/cli.md
+    - ru/configuration.md
+    - ru/examples.md
+    - ru/middleware.md
+    - ru/pydantic-validation.md
+    - ru/http2-support.md
+    - ru/api-reference.md
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+plugins:
+  - search:
+      lang: en
+      lang_to: ru
