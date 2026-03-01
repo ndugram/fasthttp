@@ -1,7 +1,7 @@
 site_name: FastHTTP Client
 site_description: Fast and simple HTTP client library with async support and beautiful logging
 site_author: White NEFOR
-site_url: https://fasthttp-client.readthedocs.io/
+site_url: https://fasthttp.readthedocs.io/
 
 docs_dir: docs
 
@@ -13,24 +13,25 @@ copyright: Copyright &copy; 2026 White NEFOR
 # Navigation
 nav:
   - Home: index.md
-  - Home (EN): en/index.md
-  - Quick Start (EN): en/quick-start.md
-  - CLI (EN): en/cli.md
-  - Configuration (EN): en/configuration.md
-  - Examples (EN): en/examples.md
-  - Middleware (EN): en/middleware.md
-  - Pydantic (EN): en/pydantic-validation.md
-  - HTTP/2 (EN): en/http2-support.md
-  - API Reference (EN): en/api-reference.md
-  - Главная (RU): ru/index.md
-  - Быстрый старт (RU): ru/quick-start.md
-  - CLI (RU): ru/cli.md
-  - Конфигурация (RU): ru/configuration.md
-  - Примеры (RU): ru/examples.md
-  - Мидлвар (RU): ru/middleware.md
-  - Pydantic (RU): ru/pydantic-validation.md
-  - HTTP/2 (RU): ru/http2-support.md
-  - API (RU): ru/api-reference.md
+  - English:
+    - Quick Start: en/quick-start.md
+    - CLI: en/cli.md
+    - Configuration: en/configuration.md
+    - Examples: en/examples.md
+    - Middleware: en/middleware.md
+    - Pydantic: en/pydantic-validation.md
+    - HTTP/2: en/http2-support.md
+    - API Reference: en/api-reference.md
+  - Русский:
+    - Главная: ru/index.md
+    - Быстрый старт: ru/quick-start.md
+    - CLI: ru/cli.md
+    - Конфигурация: ru/configuration.md
+    - Примеры: ru/examples.md
+    - Мидлвар: ru/middleware.md
+    - Pydantic: ru/pydantic-validation.md
+    - HTTP/2: ru/http2-support.md
+    - API: ru/api-reference.md
 
 theme:
   name: material
