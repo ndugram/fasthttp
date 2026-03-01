@@ -15,8 +15,7 @@
         "code",
         "doc",
         "maintenance",
-        "test",
-        "ci"
+        "test"
       ]
     }
   ],
