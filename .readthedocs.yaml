@@ -9,7 +9,7 @@ build:
     python: "3.12"
   commands:
     - pip install mkdocs-material
-    - mkdocs build
+    - mkdocs build -d $READTHEDOCS_OUTPUT/html
 
 mkdocs:
   configuration: mkdocs.yml
