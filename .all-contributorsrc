@@ -1,0 +1,29 @@
+{
+  "files": [
+    "AUTHORS.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "ndugram",
+      "name": "ndugram",
+      "avatar_url": "https://avatars.githubusercontent.com/u/???",
+      "profile": "https://github.com/ndugram",
+      "contributions": [
+        "code",
+        "doc",
+        "maintenance",
+        "test",
+        "ci"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "fasthttp",
+  "projectOwner": "ndugram",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
+}

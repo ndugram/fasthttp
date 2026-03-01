@@ -1,0 +1,22 @@
+name: All Contributors
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  all-contributors:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: all-contributors/add-contributor@master
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          imageSize: 100
+          commitConvention: angular
+
+      - uses: all-contributors/generate-contributors-markdown@master
+        with:
+          output: AUTHORS.md
