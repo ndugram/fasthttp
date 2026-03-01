@@ -17,6 +17,15 @@
         "maintenance",
         "test"
       ]
+    },
+    {
+      "login": "NEFORCEO",
+      "name": "安𝐍ᴇғᴏʀ | ᵈᵉᵛ",
+      "avatar_url": "https://avatars.githubusercontent.com/u/205934457?v=4",
+      "profile": "https://neforceo.github.io/NEFORDEV/",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
@@ -24,5 +33,6 @@
   "projectOwner": "ndugram",
   "repoType": "github",
   "repoHost": "https://github.com",
-  "skipCi": true
+  "skipCi": true,
+  "commitType": "docs"
 }
