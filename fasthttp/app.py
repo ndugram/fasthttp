@@ -353,6 +353,12 @@ class FastHTTP:
         return route, elapsed, result
 
     def run(self) -> None:
+        """
+        Run all registered HTTP requests.
+
+        Executes all routes sequentially or in parallel
+        and logs the results.
+        """
         self.logger.info("FastHTTP started")
         try:
             asyncio.run(self._run())
@@ -360,3 +366,4 @@ class FastHTTP:
             self.logger.error("Connection error: %s", e)
         except KeyboardInterrupt:
             self.logger.warning("Interrupted by user")
+
