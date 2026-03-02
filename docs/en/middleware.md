@@ -1,120 +1,92 @@
 # Middleware
 
-Middleware allows you to intercept and modify HTTP requests and responses in FastHTTP. This is useful for adding authentication, logging, error handling, and other cross-cutting concerns.
+Middleware lets you intercept and modify requests/responses. Use it for authentication, logging, caching, etc.
 
-## What is Middleware?
+## Create Middleware
 
-Middleware is a class that hooks into the request lifecycle. You can use it to execute code before sending a request, after receiving a response, or when an error occurs.
-
-## Creating Middleware
-
-To create middleware, inherit from `BaseMiddleware` and override the methods you need:
+Inherit from `BaseMiddleware` and override methods you need:
 
 ```python
 from fasthttp import FastHTTP
 from fasthttp.middleware import BaseMiddleware
 from fasthttp.response import Response
-from fasthttp.routing import Route
-from fasthttp.types import RequestsOptinal
 
 
-class LoggingMiddleware(BaseMiddleware):
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
-        print(f"Sending {route.method} to {route.url}")
+class MyMiddleware(BaseMiddleware):
+    async def before_request(self, route, config):
+        """Called before request is sent"""
+        # Modify request config (headers, timeout, etc.)
         return config
 
-    async def after_response(
-        self, response: Response, route: Route, config: RequestsOptinal
-    ) -> Response:
-        print(f"Received response: {response.status}")
+    async def after_response(self, response, route, config):
+        """Called after response received"""
+        # Modify or log response
         return response
 
-
-app = FastHTTP(middleware=[LoggingMiddleware()])
-
-
-@app.get(url="https://httpbin.org/get")
-async def get_data(resp: Response):
-    return resp.json()
-
-
-if __name__ == "__main__":
-    app.run()
+    async def on_error(self, error, route, config):
+        """Called when error occurs"""
+        # Handle error (log, notify, etc.)
+        pass
 ```
 
-## Middleware Methods
+### Method Parameters
 
-### before_request
+- `route` — Route object with method, url, handler info
+- `config` — request configuration dict
+- `response` — Response object
+- `error` — Exception that occurred
 
-Called before sending the HTTP request. Use this to modify request headers, add authentication, or log outgoing requests.
+## Usage
 
 ```python
-async def before_request(
-    self, route: Route, config: RequestsOptinal
-) -> RequestsOptinal:
-    headers = config.get("headers", {})
-    headers["Authorization"] = "Bearer token"
-    config["headers"] = headers
-    return config
+app = FastHTTP(middleware=MyMiddleware())
 ```
 
-### after_response
-
-Called after receiving a successful response. Use this to transform response data, log metrics, or cache responses.
+Multiple middleware — executed in order:
 
 ```python
-async def after_response(
-    self, response: Response, route: Route, config: RequestsOptinal
-) -> Response:
-    json_data = response.json()
-    json_data["custom_field"] = "value"
-    response.text = json.dumps(json_data)
-    return response
+app = FastHTTP(middleware=[
+    AuthMiddleware(),
+    LoggingMiddleware(),
+    ErrorTrackingMiddleware(),
+])
 ```
 
-### on_error
+Execution order:
+1. `before_request` — first middleware to last
+2. `after_response` — last middleware to first
+3. `on_error` — first to last
 
-Called when an error occurs during the request. Use this for custom error logging or error tracking.
-
-```python
-async def on_error(
-    self, error: Exception, route: Route, config: RequestsOptinal
-) -> None:
-    print(f"Error on {route.url}: {error}")
-```
-
-## Using Multiple Middleware
-
-You can use multiple middleware instances. They will be executed in the order you provide them.
-
-```python
-app = FastHTTP(
-    middleware=[
-        AuthMiddleware(),
-        LoggingMiddleware(),
-        ErrorTrackingMiddleware()
-    ]
-)
-```
-
-## Common Use Cases
+## Examples
 
 ### Authentication
 
-Add authentication headers to all requests:
+Add Bearer token to all requests:
 
 ```python
 class AuthMiddleware(BaseMiddleware):
     def __init__(self, token: str):
         self.token = token
 
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
+    async def before_request(self, route, config):
         headers = config.get("headers", {})
         headers["Authorization"] = f"Bearer {self.token}"
+        config["headers"] = headers
+        return config
+```
+
+### Request ID
+
+Add unique ID for tracing:
+
+```python
+import uuid
+
+
+class RequestIDMiddleware(BaseMiddleware):
+    async def before_request(self, route, config):
+        headers = config.get("headers", {})
+        headers["X-Request-ID"] = str(uuid.uuid4())
         config["headers"] = headers
         return config
 ```
@@ -125,104 +97,45 @@ Log all requests and responses:
 
 ```python
 class LoggingMiddleware(BaseMiddleware):
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
-        print(f"Request: {route.method} {route.url}")
+    async def before_request(self, route, config):
+        print(f"→ {route.method} {route.url}")
         return config
 
-    async def after_response(
-        self, response: Response, route: Route, config: RequestsOptinal
-    ) -> Response:
-        print(f"Response: {response.status}")
+    async def after_response(self, response, route, config):
+        print(f"← {route.method} {route.url} [{response.status}]")
         return response
 ```
 
 ### Error Tracking
 
-Track and log errors:
-
 ```python
 class ErrorTrackingMiddleware(BaseMiddleware):
-    async def on_error(
-        self, error: Exception, route: Route, config: RequestsOptinal
-    ) -> None:
-        print(f"Error: {error.__class__.__name__} on {route.url}")
+    async def on_error(self, error, route, config):
+        print(f"✗ {route.method} {route.url} failed: {error}")
 ```
 
-### Request ID
+### Caching
 
-Add unique request IDs for tracing:
+Built-in CacheMiddleware stores responses in memory:
 
 ```python
-import uuid
+from fasthttp import CacheMiddleware
 
-
-class RequestIDMiddleware(BaseMiddleware):
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
-        headers = config.get("headers", {})
-        headers["X-Request-ID"] = str(uuid.uuid4())
-        config["headers"] = headers
-        return config
+app = FastHTTP(middleware=[
+    CacheMiddleware(ttl=3600, max_size=100)  # 1 hour, 100 items
+])
 ```
 
-## Middleware Execution Order
+How it works:
+1. First request → goes to server → saved to cache
+2. Subsequent requests (within TTL) → returns from cache
+3. After TTL expires → new request to server
 
-Middleware is executed in the order they are provided:
-
-1. Before request: Middleware[0] -> Middleware[1] -> ... -> Middleware[n]
-2. After response: Middleware[0] -> Middleware[1] -> ... -> Middleware[n]
-3. On error: Middleware[0] -> Middleware[1] -> ... -> Middleware[n]
-
-Each middleware receives the result from the previous middleware, allowing you to chain transformations.
+Only GET requests are cached.
 
 ## Best Practices
 
-1. Keep middleware focused on a single responsibility
-2. Return the modified config or response object
-3. Handle exceptions in middleware methods
-4. Use middleware for cross-cutting concerns
-5. Test middleware independently
-
-## Response Caching (CacheMiddleware)
-
-CacheMiddleware stores HTTP responses in memory so you don't need to make repeated requests to the server. This is useful when you frequently request the same data.
-
-**Why use it?**
-- Reduces API load
-- Responses return instantly (from cache)
-- Saves bandwidth
-
-**How it works:**
-1. First request → goes to server → saved to cache
-2. Second request (within TTL) → returns from cache
-3. After 1 hour (TTL) → new request to server
-
-### Example
-
-```python
-from fasthttp import FastHTTP, CacheMiddleware
-from fasthttp.response import Response
-
-# Create app with caching (TTL: 1 hour, max: 100 responses)
-app = FastHTTP(
-    middleware=[CacheMiddleware(ttl=3600, max_size=100)]
-)
-
-
-@app.get(url="https://api.example.com/users")
-async def get_users(resp: Response):
-    return resp.json()
-
-
-if __name__ == "__main__":
-    app.run()
-```
-
-Now all GET requests will be cached for 1 hour. If you request `/users` again within that hour — the response will return instantly from cache.
-
----
-
-For more examples, see the [Examples](examples.md) section.
+1. Keep middleware focused on single responsibility
+2. Always return the modified config/response
+3. Use `__init__` for configuration (token, settings)
+4. Handle errors in `on_error` method

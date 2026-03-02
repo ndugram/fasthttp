@@ -1,10 +1,8 @@
-# CLI - Command Line Interface
+# CLI
 
-FastHTTP includes a powerful command-line interface for making HTTP requests directly from your terminal.
+Command-line tool for making HTTP requests directly from terminal.
 
-## Installation
-
-Make sure the package is installed:
+## Install
 
 ```bash
 pip install fasthttp-client
@@ -12,187 +10,111 @@ pip install fasthttp-client
 
 ## Usage
 
-The CLI is available via the `fasthttp` command:
-
 ```bash
-fasthttp [command] [options]
+fasthttp [command] [url] [output]
 ```
 
-## Available Commands
+## Commands
 
-### GET Request
+### GET
 
-Perform a GET request:
+Fetch data from server:
 
 ```bash
-fasthttp get <url> [options]
+fasthttp get https://api.example.com/data
 ```
 
-**Options:**
-- `url` - Target URL (required)
-- `output` - Output format: `status`, `headers`, `json`, `text`, `all` (default: `status`)
-- `-H, --header` - Headers in format `Key:Value,Key2:Value2`
-- `-t, --timeout` - Request timeout in seconds (default: 30.0)
-
-**Examples:**
+Output format options:
+- `status` — just status code (default)
+- `json` — pretty-printed JSON
+- `headers` — response headers
+- `text` — raw body
+- `all` — everything
 
 ```bash
-# Get status code
-fasthttp get https://api.github.com
-
-# Get JSON response
-fasthttp get https://api.github.com/users/octocat json
-
-# Get full response details
-fasthttp get https://api.github.com/users/octocat all
-
-# With custom headers
-fasthttp get https://api.github.com/users/octocat json -H "Authorization: Bearer token"
-
-# With timeout
-fasthttp get https://api.github.com -t 10
+fasthttp get https://api.example.com/data json
 ```
 
----
-
-### POST Request
-
-Perform a POST request:
+With custom headers:
 
 ```bash
-fasthttp post <url> [options]
+fasthttp get https://api.example.com/data json -H "Authorization: Bearer token"
 ```
 
-**Options:**
-- `url` - Target URL (required)
-- `output` - Output format: `status`, `headers`, `json`, `text`, `all` (default: `status`)
-- `-H, --header` - Headers in format `Key:Value,Key2:Value2`
-- `-j, --json` - JSON body
-- `-d, --data` - Form data
-- `-t, --timeout` - Request timeout in seconds (default: 30.0)
-
-**Examples:**
+With timeout:
 
 ```bash
-# Post JSON data
+fasthttp get https://api.example.com/data -t 10
+```
+
+### POST
+
+Send JSON data:
+
+```bash
 fasthttp post https://api.example.com/users json -j '{"name": "John", "age": 30}'
+```
 
-# Post form data
+Send form data:
+
+```bash
 fasthttp post https://api.example.com/users json -d "name=John&age=30"
-
-# With headers
-fasthttp post https://api.example.com/users json -j '{"name": "John"}' -H "Content-Type: application/json"
 ```
 
----
+### PUT / PATCH / DELETE
 
-### PUT Request
-
-Perform a PUT request:
+Same options as POST:
 
 ```bash
-fasthttp put <url> [options]
-```
-
-**Options:**
-- `url` - Target URL (required)
-- `output` - Output format: `status`, `headers`, `json`, `text`, `all` (default: `status`)
-- `-H, --header` - Headers in format `Key:Value,Key2:Value2`
-- `-j, --json` - JSON body
-- `-d, --data` - Form data
-- `-t, --timeout` - Request timeout in seconds (default: 30.0)
-
-**Examples:**
-
-```bash
-fasthttp put https://api.example.com/users/1 json -j '{"name": "John Updated"}'
-```
-
----
-
-### PATCH Request
-
-Perform a PATCH request:
-
-```bash
-fasthttp patch <url> [options]
-```
-
-**Options:**
-- `url` - Target URL (required)
-- `output` - Output format: `status`, `headers`, `json`, `text`, `all` (default: `status`)
-- `-H, --header` - Headers in format `Key:Value,Key2:Value2`
-- `-j, --json` - JSON body
-- `-d, --data` - Form data
-- `-t, --timeout` - Request timeout in seconds (default: 30.0)
-
-**Examples:**
-
-```bash
-fasthttp patch https://api.example.com/users/1 json -j '{"age": 31}'
-```
-
----
-
-### DELETE Request
-
-Perform a DELETE request:
-
-```bash
-fasthttp delete <url> [options]
-```
-
-**Options:**
-- `url` - Target URL (required)
-- `output` - Output format: `status`, `headers`, `json`, `text`, `all` (default: `status`)
-- `-H, --header` - Headers in format `Key:Value,Key2:Value2`
-- `-t, --timeout` - Request timeout in seconds (default: 30.0)
-
-**Examples:**
-
-```bash
+fasthttp put https://api.example.com/users/1 json -j '{"name": "Jane"}'
+fasthttp patch https://api.example.com/users/1 json -j '{"age": 25}'
 fasthttp delete https://api.example.com/users/1
-fasthttp delete https://api.example.com/users/1 all -H "Authorization: Bearer token"
 ```
-
----
 
 ### Version
 
-Check CLI version:
+Check installed version:
 
 ```bash
 fasthttp version
 ```
 
-Output:
-```
-FastHTTP CLI v0.1.6
-```
-
----
-
 ## Output Formats
 
-| Format | Description |
-|--------|-------------|
-| `status` | HTTP status code only (default) |
-| `headers` | Response headers as JSON |
-| `body` | Response body as text |
-| `json` | Response body parsed as JSON |
-| `all` | Status, elapsed time, headers, and body preview |
+| Format | Description | Example |
+|--------|-------------|---------|
+| `status` | Just status code | `200` |
+| `json` | Pretty JSON | `{"id": 1, "name": "John"}` |
+| `headers` | Headers as JSON | `{"Content-Type": "application/json"}` |
+| `text` | Raw text | `Hello World` |
+| `all` | Everything | Status + time + headers + body |
 
----
+## Headers
 
-## Error Handling
+Pass custom headers with `-H` or `--header`:
 
-The CLI returns exit code 1 on errors:
-- Connection failures
-- Timeouts
-- HTTP 4xx/5xx responses
+```bash
+fasthttp get https://api.example.com/data json -H "Authorization: Bearer token" -H "Accept: application/json"
+```
 
-Example error output:
+## Timeout
+
+Set request timeout with `-t` or `--timeout`:
+
+```bash
+fasthttp get https://slow-api.com/data -t 60
+```
+
+Default is 30 seconds.
+
+## Errors
+
+Exit codes:
+- `0` — success
+- `1` — error (connection failed, timeout, HTTP 4xx/5xx)
+
+Error output:
 ```
 ✗ HTTP 404
-  body: {"error": "Resource not found"}
+  body: {"error": "Not found"}
 ```
