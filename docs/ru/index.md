@@ -1,71 +1,141 @@
-# Документация FastHTTP Client
+# FastHTTP
 
-Добро пожаловать в документацию FastHTTP Client! Это руководство поможет вам начать работу с нашей быстрой и простой HTTP клиентской библиотекой.
+Современный async HTTP-клиент с красивым логированием.
 
-## Структура документации
+## Установка
 
-- [Быстрый старт](quick-start.md) - Начните работу за 2 минуты
-- [CLI](cli.md) - Интерфейс командной строки для HTTP-запросов
-- [Справочник API](api-reference.md) - Полная документация API
-- [Примеры](examples.md) - Примеры использования в реальных проектах
-- [Конфигурация](configuration.md) - Продвинутые настройки конфигурации
-- [Middleware](middleware.md) - Перехват запросов и ответов
-- [Валидация Pydantic](pydantic-validation.md) - Типобезопасная валидация ответов
-- [Поддержка HTTP/2](http2-support.md) - Поддержка протокола HTTP/2
+```bash
+pip install fasthttp-client
+```
 
-## Что такое FastHTTP Client?
+## Быстрый пример
 
-FastHTTP Client - это современная асинхронная HTTP клиентская библиотека, построенная на основе httpx. Она предоставляет:
-
-- **Простой API** - Минимальный шаблонный код для HTTP запросов
-- **Красивое логирование** - Подробное логирование запросов/ответов с измерением времени
-- **Безопасность типов** - Полные аннотации типов для лучшего опыта разработки
-- **Асинхронная поддержка** - Высокопроизводительные асинхронные операции
-- **Все HTTP методы** - Поддержка GET, POST, PUT, PATCH, DELETE
-- **Поддержка HTTP/2** - Необязательная поддержка протокола HTTP/2
-- **Middleware** - Перехват и модификация запросов и ответов
-- **Rate limiting** - Несколько стратегий для контроля частоты запросов
-- **Валидация Pydantic** - Типобезопасная валидация ответов с моделями
-
-## Ключевые возможности
-
-### Простой и интуитивно понятный
 ```python
 from fasthttp import FastHTTP
 
 app = FastHTTP()
 
-@app.get(url="https://api.github.com/users/octocat")
+
+@app.get(url="https://jsonplaceholder.typicode.com/users/1")
+async def main(resp):
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+Вывод:
+
+```
+✔ GET https://jsonplaceholder.typicode.com/users/1 [200] 234.56ms
+```
+
+## Почему FastHTTP?
+
+### Простой API
+
+Без boilerplate, без сложной настройки:
+
+```python
+@app.get(url="https://api.example.com/data")
+async def handler(resp):
+    return resp.json()
+```
+
+### Красивое логирование
+
+Видите что происходит — коды статуса, время, ошибки:
+
+```
+✔ GET https://api.example.com/users [200] 156.32ms
+✔ POST https://api.example.com/users [201] 89.12ms
+✗ GET https://api.example.com/missing [404]
+```
+
+Включите режим отладки для полных деталей:
+
+```python
+app = FastHTTP(debug=True)
+```
+
+### Все HTTP методы
+
+```python
+@app.get(url="https://api.example.com/users")
+async def get_users(resp):
+    return resp.json()
+
+
+@app.post(url="https://api.example.com/users", json={"name": "John"})
+async def create_user(resp):
+    return resp.status
+
+
+@app.put(url="https://api.example.com/users/1", json={"name": "Jane"})
+async def update_user(resp):
+    return resp.status
+
+
+@app.patch(url="https://api.example.com/users/1", json={"age": 25})
+async def patch_user(resp):
+    return resp.status
+
+
+@app.delete(url="https://api.example.com/users/1")
+async def delete_user(resp):
+    return resp.status
+```
+
+### Параметры запроса
+
+```python
+@app.get(url="https://api.example.com/search", params={"q": "fast", "page": 1})
+async def search(resp):
+    return resp.json()
+```
+
+### Параллельные запросы
+
+Все зарегистрированные запросы выполняются параллельно:
+
+```python
+app = FastHTTP()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/posts/1")
+async def get_post(resp):
+    return resp.json()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/users/1")
 async def get_user(resp):
     return resp.json()
-```
 
-### Подробное логирование
-```
-16:09:18.955 │ INFO     │ fasthttp │ ✔ Отправка 1 запроса
-16:09:19.519 │ INFO     │ fasthttp │ ✔ ← GET https://api.github.com [200] 458.26ms
-```
 
-### Безопасность типов
-```python
-from fasthttp.response import Response
-
-@app.get(url="https://api.example.com")
-async def handler(resp: Response) -> str:
+@app.get(url="https://jsonplaceholder.typicode.com/comments/1")
+async def get_comment(resp):
     return resp.json()
+
+
+app.run()  # Все три запроса выполняются параллельно
 ```
 
-## Идеально подходит для
+## Возможности
 
-- **Тестирование API** - Быстрая и простая разработка HTTP клиентов
-- **Веб-скрапинг** - Простые HTTP запросы с логированием
-- **Микросервисы** - Легковесный HTTP клиент для взаимодействия сервисов
-- **Прототипирование** - Быстрая разработка с красивым выводом
+| Возможность | Описание |
+|-------------|----------|
+| **Async** | Построен на httpx для высокой производительности |
+| **Логирование** | Красивый цветной вывод с таймингом |
+| **Типизация** | Полная поддержка IDE автодополнения |
+| **Middleware** | Перехват и модификация запросов/ответов |
+| **Pydantic** | Валидация ответов с моделями |
+| **HTTP/2** | Опциональная поддержка HTTP/2 |
 
 ## Следующие шаги
 
-Готовы начать? Переходите к нашему [Руководству по быстрому старту](quick-start.md) или изучите [Справочник API](api-reference.md).
-
----
-
-*FastHTTP Client - Делаем HTTP запросы быстрыми и красивыми*
+- [Быстрый старт](ru/quick-start.md) — начните за 2 минуты
+- [CLI](ru/cli.md) — командная строка
+- [API](ru/api-reference.md) — полная документация
+- [Middleware](ru/middleware.md) — перехват запросов
+- [Конфигурация](ru/configuration.md) — настройки
