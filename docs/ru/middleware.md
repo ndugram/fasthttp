@@ -1,228 +1,80 @@
 # Middleware
 
-Middleware позволяет перехватывать и модифицировать HTTP запросы и ответы в FastHTTP. Это полезно для добавления аутентификации, логирования, обработки ошибок и других сквозных задач.
+Перехват и модификация запросов/ответов.
 
-## Что такое Middleware?
-
-Middleware - это класс, который подключается к жизненному циклу запроса. Вы можете использовать его для выполнения кода перед отправкой запроса, после получения ответа или при возникновении ошибки.
-
-## Создание Middleware
-
-Для создания middleware наследуйтесь от `BaseMiddleware` и переопределите нужные методы:
+## Создание
 
 ```python
 from fasthttp import FastHTTP
 from fasthttp.middleware import BaseMiddleware
 from fasthttp.response import Response
-from fasthttp.routing import Route
-from fasthttp.types import RequestsOptinal
 
 
-class LoggingMiddleware(BaseMiddleware):
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
-        print(f"Отправка {route.method} на {route.url}")
+class MyMiddleware(BaseMiddleware):
+    async def before_request(self, route, config):
+        # изменить конфиг до запроса
         return config
 
-    async def after_response(
-        self, response: Response, route: Route, config: RequestsOptinal
-    ) -> Response:
-        print(f"Получен ответ: {response.status}")
+    async def after_response(self, response, route, config):
+        # изменить ответ после запроса
         return response
 
-
-app = FastHTTP(middleware=[LoggingMiddleware()])
-
-
-@app.get(url="https://httpbin.org/get")
-async def get_data(resp: Response):
-    return resp.json()
-
-
-if __name__ == "__main__":
-    app.run()
+    async def on_error(self, error, route, config):
+        # обработать ошибку
+        pass
 ```
 
-## Методы Middleware
-
-### before_request
-
-Вызывается перед отправкой HTTP запроса. Используйте этот метод для изменения заголовков запроса, добавления аутентификации или логирования исходящих запросов.
+## Использование
 
 ```python
-async def before_request(
-    self, route: Route, config: RequestsOptinal
-) -> RequestsOptinal:
-    headers = config.get("headers", {})
-    headers["Authorization"] = "Bearer token"
-    config["headers"] = headers
-    return config
+app = FastHTTP(middleware=MyMiddleware())
 ```
 
-### after_response
-
-Вызывается после получения успешного ответа. Используйте этот метод для трансформации данных ответа, логирования метрик или кеширования ответов.
+Несколько middleware — выполняются по порядку:
 
 ```python
-async def after_response(
-    self, response: Response, route: Route, config: RequestsOptinal
-) -> Response:
-    json_data = response.json()
-    json_data["custom_field"] = "value"
-    response.text = json.dumps(json_data)
-    return response
+app = FastHTTP(middleware=[
+    AuthMiddleware(),
+    LoggingMiddleware(),
+])
 ```
 
-### on_error
-
-Вызывается при возникновении ошибки во время запроса. Используйте этот метод для кастомного логирования ошибок или отслеживания ошибок.
-
-```python
-async def on_error(
-    self, error: Exception, route: Route, config: RequestsOptinal
-) -> None:
-    print(f"Ошибка на {route.url}: {error}")
-```
-
-## Использование нескольких Middleware
-
-Вы можете использовать несколько экземпляров middleware. Они будут выполняться в том порядке, в котором вы их предоставили.
-
-```python
-app = FastHTTP(
-    middleware=[
-        AuthMiddleware(),
-        LoggingMiddleware(),
-        ErrorTrackingMiddleware()
-    ]
-)
-```
-
-## Типичные случаи использования
+## Примеры
 
 ### Аутентификация
-
-Добавление заголовков аутентификации ко всем запросам:
 
 ```python
 class AuthMiddleware(BaseMiddleware):
     def __init__(self, token: str):
         self.token = token
 
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
+    async def before_request(self, route, config):
         headers = config.get("headers", {})
         headers["Authorization"] = f"Bearer {self.token}"
         config["headers"] = headers
         return config
 ```
 
-### Логирование
-
-Логирование всех запросов и ответов:
-
-```python
-class LoggingMiddleware(BaseMiddleware):
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
-        print(f"Запрос: {route.method} {route.url}")
-        return config
-
-    async def after_response(
-        self, response: Response, route: Route, config: RequestsOptinal
-    ) -> Response:
-        print(f"Ответ: {response.status}")
-        return response
-```
-
-### Отслеживание ошибок
-
-Отслеживание и логирование ошибок:
-
-```python
-class ErrorTrackingMiddleware(BaseMiddleware):
-    async def on_error(
-        self, error: Exception, route: Route, config: RequestsOptinal
-    ) -> None:
-        print(f"Ошибка: {error.__class__.__name__} на {route.url}")
-```
-
 ### ID запроса
-
-Добавление уникальных идентификаторов запросов для трассировки:
 
 ```python
 import uuid
 
 
 class RequestIDMiddleware(BaseMiddleware):
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
+    async def before_request(self, route, config):
         headers = config.get("headers", {})
         headers["X-Request-ID"] = str(uuid.uuid4())
         config["headers"] = headers
         return config
 ```
 
-## Порядок выполнения Middleware
-
-Middleware выполняется в порядке их предоставления:
-
-1. Перед запросом: Middleware[0] -> Middleware[1] -> ... -> Middleware[n]
-2. После ответа: Middleware[0] -> Middleware[1] -> ... -> Middleware[n]
-3. При ошибке: Middleware[0] -> Middleware[1] -> ... -> Middleware[n]
-
-Каждый middleware получает результат от предыдущего middleware, что позволяет связывать трансформации в цепочку.
-
-## Лучшие практики
-
-1. Оставляйте middleware сфокусированным на одной ответственности
-2. Возвращайте измененный config или объект response
-3. Обрабатывайте исключения в методах middleware
-4. Используйте middleware для сквозных задач
-5. Тестируйте middleware независимо
-
-## Кеширование ответов (CacheMiddleware)
-
-CacheMiddleware сохраняет HTTP ответы в памяти, чтобы не делать повторные запросы к серверу. Это полезно, когда вы часто запрашиваете одни и те же данные.
-
-**Зачем это нужно?**
-- Уменьшает нагрузку на API
-- Ответы возвращаются мгновенно (из кеша)
-- Экономит трафик
-
-**Как это работает:**
-1. Первый запрос → идёт на сервер → сохраняется в кеш
-2. Второй запрос (в течение TTL) → возвращается из кеша
-3. Через час (TTL) → новый запрос на сервер
-
-### Пример
+### Кеширование
 
 ```python
-from fasthttp import FastHTTP, CacheMiddleware
-from fasthttp.response import Response
+from fasthttp import CacheMiddleware
 
-# Создаём приложение с кешированием (TTL: 1 час, max: 100 ответов)
-app = FastHTTP(
-    middleware=[CacheMiddleware(ttl=3600, max_size=100)]
-)
-
-
-@app.get(url="https://api.example.com/users")
-async def get_users(resp: Response):
-    return resp.json()
-
-
-if __name__ == "__main__":
-    app.run()
+app = FastHTTP(middleware=[CacheMiddleware(ttl=3600, max_size=100)])
 ```
 
-Теперь все GET запросы будут кешироваться на 1 час. Если повторно запросить `/users` в течение часа — ответ вернётся мгновенно из кеша.
-
----
-
-Для большего количества примеров см. раздел [Примеры](examples.md).
+Кеширует GET запросы на 1 час.
