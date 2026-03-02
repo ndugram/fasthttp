@@ -8,9 +8,15 @@ docs_dir: docs
 repo_url: https://github.com/ndugram/fasthttp
 repo_name: ndugram/fasthttp
 
-site_url: https://github.com/ndugram/fasthttp
-
 copyright: Copyright &copy; 2026 White NEFOR
+
+# Logo
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ndugram/fasthttp
+    - icon: fontawesome/brands/pypi
+      link: https://pypi.org/project/fasthttp-client
 
 # Navigation
 nav:
@@ -38,16 +44,18 @@ nav:
 theme:
   name: material
   language: en
+  logo: docs/logo-repo.png
+  favicon: docs/logo-repo.png
   palette:
     - scheme: default
-      primary: green
-      accent: green
+      primary: deep orange
+      accent: deep orange
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - scheme: slate
-      primary: green
-      accent: green
+      primary: deep orange
+      accent: deep orange
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
@@ -58,6 +66,8 @@ theme:
     - navigation.tabs.sticky
     - search.suggest
     - search.highlight
+    - navigation.top
+    - content.code.annotate
 
 markdown_extensions:
   - admonition
@@ -66,6 +76,10 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
 
 plugins:
   - search
