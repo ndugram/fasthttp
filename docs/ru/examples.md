@@ -105,3 +105,39 @@ app = FastHTTP(http2=True)
 ```
 
 Требует: `pip install fasthttp-client[http2]`
+
+## Теги для группировки запросов
+
+Теги позволяют группировать запросы и запускать только определённые группы.
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/users", tags=["users", "v1"])
+async def get_users(resp: Response):
+    return resp.json()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/posts", tags=["posts", "v1"])
+async def get_posts(resp: Response):
+    return resp.json()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/comments", tags=["comments", "v2"])
+async def get_comments(resp: Response):
+    return resp.json()
+
+
+# Запустить только пользователей
+app.run(tags=["users"])
+
+# Запустить все v1 запросы
+app.run(tags=["v1"])
+
+# Запустить несколько групп
+app.run(tags=["users", "posts"])
+```

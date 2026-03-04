@@ -14,6 +14,7 @@ All examples are tested and working.
 - **middleware** - test middleware for FastHTTP
 - **pydantic** - pydantic response validation examples
 - **http2** - http2 test for fasthttp
+- **tags** - grouping and filtering requests by tags
 ## Tested APIs
 
 - [httpbin.org](https://httpbin.org)

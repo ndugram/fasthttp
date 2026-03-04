@@ -9,11 +9,10 @@ import httpx
 from annotated_doc import Doc
 from pydantic import BaseModel
 
-from fasthttp.response import Response
-
 from .client import HTTPClient
 from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
+from .response import Response
 from .routing import Route
 from .types import RequestsOptinal
 
@@ -194,6 +193,7 @@ class FastHTTP:
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
             self.routes.append(
@@ -205,6 +205,7 @@ class FastHTTP:
                     json=json,
                     data=data,
                     response_model=response_model,
+                    tags=tags,
                 )
             )
             self.logger.debug("Registered route: %s %s", method, url)
@@ -218,9 +219,10 @@ class FastHTTP:
         url: str,
         params: dict | None = None,
         response_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="GET", url=url, params=params, response_model=response_model
+            method="GET", url=url, params=params, response_model=response_model, tags=tags
         )
 
     def post(
@@ -230,9 +232,10 @@ class FastHTTP:
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="POST", url=url, json=json, data=data, response_model=response_model
+            method="POST", url=url, json=json, data=data, response_model=response_model, tags=tags
         )
 
     def put(
@@ -242,9 +245,10 @@ class FastHTTP:
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="PUT", url=url, json=json, data=data, response_model=response_model
+            method="PUT", url=url, json=json, data=data, response_model=response_model, tags=tags
         )
 
     def patch(
@@ -254,9 +258,10 @@ class FastHTTP:
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="PATCH", url=url, json=json, data=data, response_model=response_model
+            method="PATCH", url=url, json=json, data=data, response_model=response_model, tags=tags
         )
 
     def delete(
@@ -266,6 +271,7 @@ class FastHTTP:
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="DELETE",
@@ -273,6 +279,7 @@ class FastHTTP:
             json=json,
             data=data,
             response_model=response_model,
+            tags=tags,
         )
 
     def _log_result(
@@ -316,8 +323,9 @@ class FastHTTP:
                 elapsed,
             )
 
-    async def _run(self) -> None:
-        total = len(self.routes)
+    async def _run(self, routes: list[Route] | None = None) -> None:
+        routes = routes or self.routes
+        total = len(routes)
 
         self.logger.info("Sending %d requests", total)
         if self.http2_enabled:
@@ -329,7 +337,7 @@ class FastHTTP:
             if total > 1:
                 tasks = [
                     self._run_route(client, route)
-                    for route in self.routes
+                    for route in routes
                 ]
                 results = await asyncio.gather(*tasks)
 
@@ -337,7 +345,7 @@ class FastHTTP:
                     self._log_result(route, elapsed, result)
             else:
                 route, elapsed, result = await self._run_route(
-                    client, self.routes[0]
+                    client, routes[0]
                 )
                 self._log_result(route, elapsed, result)
 
@@ -352,18 +360,35 @@ class FastHTTP:
         elapsed = (time.perf_counter() - start) * 1000
         return route, elapsed, result
 
-    def run(self) -> None:
+    def run(self, tags: list[str] | None = None) -> None:
         """
         Run all registered HTTP requests.
 
         Executes all routes sequentially or in parallel
         and logs the results.
+
+        Args:
+            tags: Optional list of tags to filter which routes to run.
+                  If provided, only routes with matching tags will be executed.
+                  If None, all routes will be executed.
         """
         self.logger.info("FastHTTP started")
+
+        routes_to_run = self.routes
+        if tags:
+            routes_to_run = [
+                route for route in self.routes
+                if any(tag in route.tags for tag in tags)
+            ]
+            self.logger.info("Running %d routes with tags: %s", len(routes_to_run), tags)
+
+        if not routes_to_run:
+            self.logger.warning("No routes to run")
+            return
+
         try:
-            asyncio.run(self._run())
+            asyncio.run(self._run(routes_to_run))
         except httpx.ConnectError as e:
             self.logger.error("Connection error: %s", e)
         except KeyboardInterrupt:
             self.logger.warning("Interrupted by user")
-

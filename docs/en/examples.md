@@ -270,3 +270,39 @@ async def get_user_posts(resp):
 if __name__ == "__main__":
     app.run()
 ```
+
+## Tags for Grouping Requests
+
+Tags allow you to organize routes and run only specific groups of requests.
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/users", tags=["users", "v1"])
+async def get_users(resp: Response):
+    return resp.json()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/posts", tags=["posts", "v1"])
+async def get_posts(resp: Response):
+    return resp.json()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/comments", tags=["comments", "v2"])
+async def get_comments(resp: Response):
+    return resp.json()
+
+
+# Run only users
+app.run(tags=["users"])
+
+# Run all v1 requests
+app.run(tags=["v1"])
+
+# Run multiple groups
+app.run(tags=["users", "posts"])
+```
