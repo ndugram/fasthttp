@@ -4,14 +4,10 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
-
-python:
-  install:
-    - method: pip
-      packages:
-        - mkdocs==1.6.1
-        - mkdocs-material==9.5.18
+  commands:
+    - python -m pip install --upgrade pip
+    - python -m pip install mkdocs==1.6.1 mkdocs-material==9.5.18
+    - python -m mkdocs build -d $READTHEDOCS_OUTPUT/html
 
 mkdocs:
   configuration: mkdocs.yml
-  fail_on_warning: false
