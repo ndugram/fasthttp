@@ -140,6 +140,6 @@ async def get_data(resp):
 
 ## Next
 
-* [API Reference](en/api-reference.md) — full API
-* [Configuration](en/configuration.md) — options
-* [Middleware](en/middleware.md) — request interception
+* [API Reference](api-reference.md) — full API
+* [Configuration](configuration.md) — options
+* [Middleware](middleware.md) — request interception

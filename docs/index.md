@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo-repo.png" alt="FastHTTP" width="600">
+  <img src="logo-repo.png" alt="FastHTTP" width="600">
 </p>
 
 # FastHTTP Client
@@ -16,5 +16,5 @@ Fast and simple HTTP client library with async support and beautiful logging.
 
 ## Documentation
 
-- [English Documentation](./en/)
-- [Русская документация](./ru/)
+- [English Documentation](en/index.md)
+- [Русская документация](ru/index.md)

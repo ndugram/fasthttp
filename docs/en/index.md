@@ -156,8 +156,8 @@ app.run()  # All three requests run in parallel
 
 ## Next Steps
 
-- [Quick Start](en/quick-start.md) — get started in 2 minutes
-- [CLI](en/cli.md) — command-line usage
-- [API Reference](en/api-reference.md) — complete API
-- [Middleware](en/middleware.md) — request interception
-- [Configuration](en/configuration.md) — options
+- [Quick Start](quick-start.md) — get started in 2 minutes
+- [CLI](cli.md) — command-line usage
+- [API Reference](api-reference.md) — complete API
+- [Middleware](middleware.md) — request interception
+- [Configuration](configuration.md) — options

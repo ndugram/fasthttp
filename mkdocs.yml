@@ -11,12 +11,7 @@ repo_name: ndugram/fasthttp
 copyright: Copyright &copy; 2026 White NEFOR
 
 # Logo
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/ndugram/fasthttp
-    - icon: fontawesome/brands/pypi
-      link: https://pypi.org/project/fasthttp-client
+extra: {}
 
 # Navigation
 nav:
