@@ -107,6 +107,21 @@ class Route:
                 """
             ),
         ] = None,
+        tags: Annotated[
+            list[str] | None,
+            Doc(
+                """
+                Tags for grouping and filtering requests.
+
+                Tags allow you to organize routes and run only
+                specific groups of requests. Useful for running
+                subsets of requests in large applications.
+
+                Example:
+                    tags=["users"] - route belongs to "users" group
+                """
+            ),
+        ] = None,
     ) -> None:
         self.method = method
         self.url = url
@@ -115,3 +130,4 @@ class Route:
         self.json = json
         self.data = data
         self.response_model = response_model
+        self.tags = tags or []
