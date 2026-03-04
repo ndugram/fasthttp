@@ -39,21 +39,8 @@ nav:
 theme:
   name: material
   language: en
-  logo: docs/logo-repo.png
-  favicon: docs/logo-repo.png
-  palette:
-    - scheme: default
-      primary: deep orange
-      accent: deep orange
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - scheme: slate
-      primary: deep orange
-      accent: deep orange
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
+  logo: logo-repo.png
+  favicon: logo-repo.png
   features:
     - navigation.instant
     - navigation.tracking

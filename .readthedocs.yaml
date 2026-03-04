@@ -6,7 +6,7 @@ build:
     python: "3.11"
   commands:
     - python -m pip install --upgrade pip
-    - python -m pip install mkdocs-material==9.5.40
+    - python -m pip install mkdocs-material
     - python -m pip install -e .
     - python -m mkdocs build -d $READTHEDOCS_OUTPUT/html
 
