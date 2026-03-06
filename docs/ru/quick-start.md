@@ -1,14 +1,22 @@
 # Быстрый старт
 
-Начните работу менее чем за 2 минуты.
+Установка и первый запрос менее чем за 2 минуты.
 
 ## Установка
+
+Установите FastHTTP с помощью pip:
 
 ```bash
 pip install fasthttp-client
 ```
 
-## Первый запрос
+Для HTTP/2 поддержки установите с дополнительными зависимостями:
+
+```bash
+pip install fasthttp-client[http2]
+```
+
+## Ваш первый запрос
 
 Создайте файл `example.py`:
 
@@ -20,6 +28,7 @@ app = FastHTTP()
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1")
 async def main(resp):
+    """Получает пост и возвращает JSON."""
     return resp.json()
 
 
@@ -36,115 +45,390 @@ python example.py
 Вывод:
 
 ```
-✔ GET https://jsonplaceholder.typicode.com/posts/1 [200] 234.56ms
+INFO    │ fasthttp    │ ✔ FastHTTP started
+INFO    │ fasthttp    │ ✔ Sending 1 requests
+INFO    │ fasthttp    │ ✔ ✔ GET https://jsonplaceholder.typicode.com/posts/1 200 234.56ms
+INFO    │ fasthttp    │ ✔ Done in 0.24s
+```
+
+## Подробнее о приложении
+
+### Что делает FastHTTP?
+
+FastHTTP — это асинхронный HTTP-клиент, похожий на FastAPI, но для исходящих запросов. Он позволяет:
+
+- Определять HTTP-запросы как функции с декораторами
+- Выполнять несколько запросов параллельно
+- Добавлять зависимости (dependencies) для модификации запросов
+- Использовать теги для фильтрации и группировки запросов
+- Автоматически обрабатывать ошибки и логирование
+
+### Структура приложения
+
+```python
+from fasthttp import FastHTTP
+
+# Создаём приложение
+app = FastHTTP(debug=True)  # debug=True включает подробное логирование
+
+
+# Определяем запрос с помощью декоратора
+@app.get(url="https://api.example.com/data")
+async def my_request(resp):
+    # resp — объект ответа
+    return resp.json()
+
+
+# Запускаем
+if __name__ == "__main__":
+    app.run()
 ```
 
 ## HTTP методы
 
+FastHTTP поддерживает все основные HTTP методы:
+
 ```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
 app = FastHTTP()
 
 
+# GET — получение данных
 @app.get(url="https://api.example.com/users")
-async def get_users(resp):
+async def get_users(resp: Response):
+    """Получить список пользователей."""
     return resp.json()
 
 
-@app.post(url="https://api.example.com/users", json={"name": "John"})
-async def create_user(resp):
-    return resp.status
-
-
-@app.put(url="https://api.example.com/users/1", json={"name": "Jane"})
-async def update_user(resp):
+# POST — создание новых данных
+@app.post(url="https://api.example.com/users", json={"name": "John", "email": "john@example.com"})
+async def create_user(resp: Response):
+    """Создать нового пользователя."""
     return resp.json()
 
 
+# PUT — полное обновление данных
+@app.put(url="https://api.example.com/users/1", json={"name": "Jane", "email": "jane@example.com"})
+async def update_user(resp: Response):
+    """Обновить пользователя полностью."""
+    return resp.json()
+
+
+# PATCH — частичное обновление данных
 @app.patch(url="https://api.example.com/users/1", json={"age": 25})
-async def patch_user(resp):
-    return resp.status
+async def patch_user(resp: Response):
+    """Частично обновить пользователя."""
+    return resp.json()
 
 
+# DELETE — удаление данных
 @app.delete(url="https://api.example.com/users/1")
-async def delete_user(resp):
+async def delete_user(resp: Response):
+    """Удалить пользователя."""
     return resp.status
 ```
 
 ## Параметры запроса
 
+### Query параметры
+
+Используйте параметр `params` для добавления query параметров:
+
 ```python
-@app.get(url="https://api.example.com/search", params={"q": "fast", "page": 1})
-async def search(resp):
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+
+@app.get(
+    url="https://api.example.com/search",
+    params={
+        "q": "fasthttp",
+        "page": 1,
+        "limit": 10,
+    }
+)
+async def search(resp: Response):
+    """Поиск с пагинацией."""
+    return resp.json()
+
+# Фактический URL: https://api.example.com/search?q=fasthttp&page=1&limit=10
+```
+
+### JSON тело
+
+Используйте параметр `json` для отправки JSON:
+
+```python
+@app.post(
+    url="https://api.example.com/users",
+    json={
+        "name": "John",
+        "email": "john@example.com",
+        "age": 25,
+    }
+)
+async def create_user(resp: Response):
     return resp.json()
 ```
 
-## Заголовки
+### Raw данные
+
+Используйте параметр `data` для отправки raw данных:
 
 ```python
+@app.post(
+    url="https://api.example.com/upload",
+    data=b"raw bytes data",
+)
+async def upload(resp: Response):
+    return resp.json()
+```
+
+### Заголовки
+
+Добавьте заголовки с помощью параметра `get_request`:
+
+```python
+# Глобальные заголовки для всех запросов
 app = FastHTTP(
     get_request={
         "headers": {
-            "Authorization": "Bearer token",
+            "Authorization": "Bearer my-secret-token",
             "User-Agent": "MyApp/1.0",
+            "Accept": "application/json",
         },
     },
 )
 ```
 
+Или локально для конкретного запроса:
+
+```python
+@app.get(
+    url="https://api.example.com/data",
+    get_request={
+        "headers": {
+            "X-Custom-Header": "value",
+        }
+    }
+)
+async def with_headers(resp: Response):
+    return resp.json()
+```
+
 ## Режим отладки
+
+Включите режим отладки для просмотра подробной информации:
 
 ```python
 app = FastHTTP(debug=True)
 ```
 
-Показывает подробный вывод: заголовки, тело, тайминг.
+При `debug=True` вы увидите:
+- Заголовки запроса и ответа
+- Тело запроса и ответа
+- Время выполнения каждого запроса
+- Полный URL с параметрами
+
+При `debug=False` (по умолчанию):
+- Только статус и время выполнения
+
+```python
+app = FastHTTP(debug=False)  # Краткий вывод
+```
 
 ## Обработка ошибок
 
-Ошибки логируются автоматически:
+FastHTTP автоматически обрабатывает ошибки и логирует их:
 
 ```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
 app = FastHTTP(debug=True)
 
 
 @app.get(url="https://httpbin.org/status/404")
-async def handle_error(resp):
+async def handle_error(resp: Response):
+    """Обрабатывает 404 ошибку."""
+    return f"Статус: {resp.status}"
+
+
+@app.get(url="https://httpbin.org/status/500")
+async def handle_server_error(resp: Response):
+    """Обрабатывает 500 ошибку."""
     return f"Статус: {resp.status}"
 ```
 
-## Несколько запросов
-
-Все запросы выполняются параллельно:
+### Доступ к статусу и телу ответа
 
 ```python
+@app.get(url="https://api.example.com/data")
+async def handle_response(resp: Response):
+    # Код статуса (200, 404, 500 и т.д.)
+    status = resp.status
+    
+    # JSON тело
+    data = resp.json()
+    
+    # Текстовый ответ
+    text = resp.text
+    
+    # Заголовки ответа
+    headers = resp.headers
+    
+    return {"status": status, "data": data}
+```
+
+## Параллельное выполнение
+
+Все запросы выполняются параллельно с помощью asyncio:
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
 app = FastHTTP()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1")
-async def get_post(resp):
+async def get_post(resp: Response):
     return resp.json()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/users/1")
-async def get_user(resp):
+async def get_user(resp: Response):
+    return resp.json()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/comments/1")
+async def get_comment(resp: Response):
     return resp.json()
 
 
 if __name__ == "__main__":
+    # Все три запроса выполнятся параллельно
     app.run()
+```
+
+Вывод:
+
+```
+INFO    │ fasthttp    │ ✔ FastHTTP started
+INFO    │ fasthttp    │ ✔ Sending 3 requests
+INFO    │ fasthttp    │ ✔ ✔ GET https://jsonplaceholder.typicode.com/posts/1 200 150ms
+INFO    │ fasthttp    │ ✔ ✔ GET https://jsonplaceholder.typicode.com/users/1 200 120ms
+INFO    │ fasthttp    │ ✔ ✔ GET https://jsonplaceholder.typicode.com/comments/1 200 110ms
+INFO    │ fasthttp    │ ✔ Done in 0.15s  # Все запросы параллельно!
 ```
 
 ## Возвращаемые значения
 
-Обработчик может возвращать:
+Обработчик может возвращать разные типы данных:
 
-- `str` — строка
-- `int` — код статуса
-- `dict/list` — JSON
-- `Response` — объект ответа
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+
+# Возврат словаря — автоматически преобразуется в JSON
+@app.get(url="https://api.example.com/data")
+async def return_dict(resp: Response):
+    return {"message": "Hello", "status": resp.status}
+
+
+# Возврат списка
+@app.get(url="https://api.example.com/items")
+async def return_list(resp: Response):
+    return [1, 2, 3, 4, 5]
+
+
+# Возврат строки
+@app.get(url="https://api.example.com/text")
+async def return_string(resp: Response):
+    return "Hello, World!"
+
+
+# Возврат числа (код статуса)
+@app.get(url="https://api.example.com/status")
+async def return_number(resp: Response):
+    return resp.status
+
+
+# Возврат Response объекта
+@app.get(url="https://api.example.com/data")
+async def return_response(resp: Response):
+    return resp  # Вернёт весь объект ответа
+```
+
+## Теги
+
+Теги позволяют группировать и фильтровать запросы:
+
+```python
+from fasthttp import FastHTTP
+
+app = FastHTTP()
+
+
+@app.get(url="https://api.example.com/users", tags=["users"])
+async def get_users(resp):
+    return resp.json()
+
+
+@app.post(url="https://api.example.com/users", tags=["users"])
+async def create_user(resp):
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/posts", tags=["posts"])
+async def get_posts(resp):
+    return resp.json()
+
+
+# Запустить только пользователей
+app.run(tags=["users"])
+```
+
+## Зависимости
+
+Зависимости позволяют модифицировать запросы перед отправкой:
+
+```python
+from fasthttp import FastHTTP, Depends
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+
+async def add_auth(route, config):
+    """Добавляет токен авторизации."""
+    config.setdefault("headers", {})["Authorization"] = "Bearer my-token"
+    return config
+
+
+@app.get(
+    url="https://api.example.com/protected",
+    dependencies=[Depends(add_auth)]
+)
+async def protected_request(resp: Response):
+    return resp.json()
+```
+
+Подробнее в разделе [Зависимости](dependencies.md).
 
 ## Следующие шаги
 
-- [Справочник API](api-reference.md) — полная документация
+Теперь вы знаете основы. Дальше изучите:
+
+- [Конфигурация](configuration.md) — подробнее о настройках
+- [Зависимости](dependencies.md) — модификация запросов
+- [Middleware](middleware.md) — глобальная логика
 - [CLI](cli.md) — командная строка
-- [Конфигурация](configuration.md) — настройки
+- [Справочник API](api-reference.md) — полная документация

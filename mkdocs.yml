@@ -21,6 +21,7 @@ nav:
     - CLI: en/cli.md
     - Configuration: en/configuration.md
     - Examples: en/examples.md
+    - Dependencies: en/dependencies.md
     - Middleware: en/middleware.md
     - Pydantic: en/pydantic-validation.md
     - HTTP/2: en/http2-support.md
@@ -31,6 +32,7 @@ nav:
     - CLI: ru/cli.md
     - Конфигурация: ru/configuration.md
     - Примеры: ru/examples.md
+    - Зависимости: ru/dependencies.md
     - Мидлвар: ru/middleware.md
     - Pydantic: ru/pydantic-validation.md
     - HTTP/2: ru/http2-support.md

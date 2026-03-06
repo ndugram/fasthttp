@@ -1,161 +1,275 @@
-# API
+# Справочник API
 
-Полный справочник по FastHTTP.
+Полная документация по всем классам и функциям FastHTTP.
 
-## FastHTTP
+## Класс FastHTTP
 
-Основной класс для HTTP запросов.
+Основной класс приложения.
 
 ```python
 from fasthttp import FastHTTP
+```
 
+### Конструктор
+
+```python
 app = FastHTTP(
-    debug=False,
-    http2=False,
-    middleware=None,
+    debug: bool = False,
+    http2: bool = False,
+    get_request: dict = {},
+    post_request: dict = {},
+    put_request: dict = {},
+    patch_request: dict = {},
+    delete_request: dict = {},
+    middleware: list = [],
 )
 ```
 
-### Параметры конструктора
+### Параметры
 
 | Параметр | Тип | По умолчанию | Описание |
 |----------|-----|--------------|----------|
-| `debug` | `bool` | `False` | Подробное логирование |
+| `debug` | `bool` | `False` | Режим отладки |
 | `http2` | `bool` | `False` | Использовать HTTP/2 |
-| `middleware` | `BaseMiddleware` / `list` | `None` | Middleware |
-| `get_request` | `dict` | `None` | Конфигурация GET |
-| `post_request` | `dict` | `None` | Конфигурация POST |
-| `put_request` | `dict` | `None` | Конфигурация PUT |
-| `patch_request` | `dict` | `None` | Конфигурация PATCH |
-| `delete_request` | `dict` | `None` | Конфигурация DELETE |
+| `get_request` | `dict` | `{}` | Настройки для GET |
+| `post_request` | `dict` | `{}` | Настройки для POST |
+| `put_request` | `dict` | `{}` | Настройки для PUT |
+| `patch_request` | `dict` | `{}` | Настройки для PATCH |
+| `delete_request` | `dict` | `{}` | Настройки для DELETE |
+| `middleware` | `list` | `[]` | Список middleware |
 
 ### Методы
 
-#### `.get(url, params, response_model)`
+#### run()
+
+Запускает выполнение запросов.
 
 ```python
-@app.get(url="https://api.example.com/users", params={"page": 1})
-async def get_users(resp):
+app.run(
+    tags: list = None,
+)
+```
+
+**Параметры:**
+- `tags` — список тегов для фильтрации запросов
+
+**Пример:**
+
+```python
+app.run()  # Запустить все
+app.run(tags=["users"])  # Только с тегом users
+```
+
+## Декораторы HTTP методов
+
+### @app.get()
+
+```python
+@app.get(
+    url: str,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    get_request: dict = None,
+)
+```
+
+### @app.post()
+
+```python
+@app.post(
+    url: str,
+    json: dict = None,
+    data: bytes = None,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    post_request: dict = None,
+)
+```
+
+### @app.put()
+
+```python
+@app.put(
+    url: str,
+    json: dict = None,
+    data: bytes = None,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    put_request: dict = None,
+)
+```
+
+### @app.patch()
+
+```python
+@app.patch(
+    url: str,
+    json: dict = None,
+    data: bytes = None,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    patch_request: dict = None,
+)
+```
+
+### @app.delete()
+
+```python
+@app.delete(
+    url: str,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    delete_request: dict = None,
+)
+```
+
+## Зависимости
+
+### Depends()
+
+```python
+from fasthttp import Depends
+```
+
+Создаёт зависимость для модификации запроса.
+
+```python
+Depends(
+    func: Callable,
+    use_cache: bool = True,
+    scope: str = "function",
+)
+```
+
+**Параметры:**
+- `func` — async функция с сигнатурой `(route, config) -> config`
+- `use_cache` — кэшировать результат
+- `scope` — область видимости ("function" или "request")
+
+**Пример:**
+
+```python
+async def add_auth(route, config):
+    config.setdefault("headers", {})["Authorization"] = "Bearer token"
+    return config
+
+@app.get(url="/data", dependencies=[Depends(add_auth)])
+async def handler(resp):
     return resp.json()
 ```
 
-#### `.post(url, json, data, params, response_model)`
-
-```python
-@app.post(url="https://api.example.com/users", json={"name": "John"})
-async def create_user(resp):
-    return resp.status
-```
-
-#### `.put()` / `.patch()` / `.delete()` — аналогично `.post()`
-
-#### `.run()`
-
-Выполнить все запросы:
-
-```python
-if __name__ == "__main__":
-    app.run()
-```
-
-## Response
-
-HTTP ответ.
-
-### Атрибуты
-
-| Атрибут | Тип | Описание |
-|---------|-----|----------|
-| `status` | `int` | Код статуса (200, 404 и т.д.) |
-| `text` | `str` | Тело ответа |
-| `headers` | `dict` | Заголовки ответа |
-
-### Методы
-
-#### `.json()`
-
-Распарсить JSON:
-
-```python
-data = resp.json()
-```
-
-Вызывает `json.JSONDecodeError` при ошибке.
-
-## Конфигурация запроса
-
-```python
-{
-    "headers": {"User-Agent": "MyApp/1.0"},
-    "timeout": 30,
-    "allow_redirects": True,
-}
-```
-
-### Опции
-
-| Опция | Тип | По умолчанию | Описание |
-|-------|-----|--------------|----------|
-| `headers` | `dict` | `{}` | Заголовки |
-| `timeout` | `int` | `30` | Таймаут (сек) |
-| `allow_redirects` | `bool` | `True` | Следовать редиректам |
-
 ## Middleware
 
-Перехват и модификация запросов/ответов.
+### BaseMiddleware
+
+Базовый класс для создания middleware.
 
 ```python
 from fasthttp.middleware import BaseMiddleware
 
-
 class MyMiddleware(BaseMiddleware):
     async def before_request(self, route, config):
-        # Изменить конфиг до запроса
         return config
-
+    
     async def after_response(self, response, route, config):
-        # Изменить ответ после запроса
         return response
-
+    
     async def on_error(self, error, route, config):
-        # Обработать ошибку
-        pass
+        raise error
 ```
+
+### CacheMiddleware
+
+Встроенный middleware для кеширования.
 
 ```python
-app = FastHTTP(middleware=MyMiddleware())
+from fasthttp import CacheMiddleware
+
+app = FastHTTP(
+    middleware=[CacheMiddleware(ttl=3600, max_size=100)]
+)
 ```
 
-## Ошибки
+**Параметры:**
+- `ttl` — время жизни кэша в секундах
+- `max_size` — максимальное количество закэшированных запросов
 
-Автоматически перехватываются и логируются:
+## Response
 
-- `FastHTTPConnectionError` — ошибка подключения
-- `FastHTTPTimeoutError` — таймаут
-- `FastHTTPBadStatusError` — HTTP 4xx/5xx
-
-Вызвать вручную:
+Объект ответа.
 
 ```python
-from fasthttp.exceptions import FastHTTPBadStatusError
-
-raise FastHTTPBadStatusError("Not found", url=url, status_code=404)
+@app.get(url="https://api.example.com/data")
+async def handler(resp: Response):
+    # Доступные атрибуты
+    status = resp.status       # Код статуса (int)
+    text = resp.text           # Текст ответа (str)
+    json_data = resp.json()    # JSON данные (dict/list)
+    headers = resp.headers     # Заголовки ответа (dict)
+    content = resp.content     # Сырые байты (bytes)
 ```
 
-## Логирование
+## CLI
+
+### fasthttp
+
+```bash
+fasthttp <method> <url> [options]
+```
+
+**Методы:** `get`, `post`, `put`, `patch`, `delete`
+
+**Опции:**
+
+| Опция | Описание |
+|-------|----------|
+| `-H, --header` | Заголовок |
+| `-p, --param` | Query параметр |
+| `--json` | JSON тело |
+| `--timeout` | Таймаут |
+| `--debug` | Режим отладки |
+| `-o, --output` | Сохранить в файл |
+| `--format` | Формат вывода |
+
+## Типы данных
+
+### Route
+
+Объект с информацией о маршруте:
 
 ```python
-app = FastHTTP(debug=True)
+route.method          # HTTP метод
+route.url             # URL
+route.params          # Query параметры
+route.json            # JSON тело
+route.data            # Raw данные
+route.tags            # Теги
+route.dependencies    # Зависимости
 ```
 
-По умолчанию показывает статус и время:
+### Config
 
+Словарь с конфигурацией запроса:
+
+```python
+config.get("headers", {})       # Заголовки
+config.get("timeout", 30.0)     # Таймаут
+config.get("allow_redirects", True)  # Редиректы
 ```
-✔ GET https://api.example.com [200] 234.56ms
-```
 
-Debug mode показывает заголовки, тело, тайминг.
+## Смотрите также
 
-## Производительность
-
-Все запросы выполняются параллельно. Небольшая задержка (0.5с) между запросами.
+- [Быстрый старт](quick-start.md) — основы
+- [Конфигурация](configuration.md) — настройки
+- [Зависимости](dependencies.md) — модификация запросов
+- [Middleware](middleware.md) — глобальная логика

@@ -1,20 +1,22 @@
-# CLI
+# Командная строка (CLI)
 
-Командная строка для HTTP-запросов.
+FastHTTP поставляется с удобным CLI для запуска запросов из терминала.
 
 ## Установка
+
+CLI устанавливается вместе с пакетом:
 
 ```bash
 pip install fasthttp-client
 ```
 
-## Использование
+## Основное использование
 
 ```bash
-fasthttp [команда] [url] [формат]
+fasthttp get https://jsonplaceholder.typicode.com/posts/1
 ```
 
-## Команды
+## HTTP методы
 
 ### GET
 
@@ -22,71 +24,194 @@ fasthttp [команда] [url] [формат]
 fasthttp get https://api.example.com/data
 ```
 
-Форматы: `status` (по умолчанию), `json`, `headers`, `text`, `all`
+С параметрами:
 
 ```bash
-fasthttp get https://api.example.com/data json
-```
-
-С заголовками:
-
-```bash
-fasthttp get https://api.example.com/data json -H "Authorization: Bearer token"
-```
-
-С таймаутом:
-
-```bash
-fasthttp get https://api.example.com/data -t 10
+fasthttp get "https://api.example.com/search?q=test&page=1"
 ```
 
 ### POST
 
-Отправить JSON:
-
 ```bash
-fasthttp post https://api.example.com/users json -j '{"name": "John", "age": 30}'
+fasthttp post https://api.example.com/users json='{"name": "John"}'
 ```
 
-Отправить форму:
+### PUT
 
 ```bash
-fasthttp post https://api.example.com/users json -d "name=John&age=30"
+fasthttp put https://api.example.com/users/1 json='{"name": "Jane"}'
 ```
 
-### PUT / PATCH / DELETE
-
-Аналогично POST:
+### PATCH
 
 ```bash
-fasthttp put https://api.example.com/users/1 json -j '{"name": "Jane"}'
-fasthttp patch https://api.example.com/users/1 json -j '{"age": 25}'
+fasthttp patch https://api.example.com/users/1 json='{"age": 25}'
+```
+
+### DELETE
+
+```bash
 fasthttp delete https://api.example.com/users/1
 ```
 
-### Версия
+## Параметры
+
+### Заголовки
 
 ```bash
-fasthttp version
+fasthttp get https://api.example.com/data \
+  --header "Authorization: Bearer token" \
+  --header "User-Agent: MyApp/1.0"
 ```
 
-## Форматы вывода
+Сокращённая форма:
 
-| Формат | Описание |
-|--------|----------|
-| `status` | Код статуса |
-| `json` | JSON |
-| `headers` | Заголовки |
-| `text` | Текст |
-| `all` | Всё |
+```bash
+fasthttp get https://api.example.com/data -H "Authorization: Bearer token"
+```
 
-## Ошибки
+### Query параметры
 
-Код завершения:
-- `0` — успех
-- `1` — ошибка (соединение, таймаут, 4xx/5xx)
+```bash
+fasthttp get https://api.example.com/search \
+  --param "q=fast" \
+  --param "page=1"
+```
+
+Сокращённая форма:
+
+```bash
+fasthttp get https://api.example.com/search -p "q=fast" -p "page=1"
+```
+
+### Таймаут
+
+```bash
+fasthttp get https://api.example.com/data --timeout 30
+```
+
+### JSON тело
+
+```bash
+fasthttp post https://api.example.com/users \
+  --json '{"name": "John", "email": "john@example.com"}'
+```
+
+## Опции
+
+### Режим отладки
+
+```bash
+fasthttp get https://api.example.com/data --debug
+```
+
+### Вывод в файл
+
+```bash
+fasthttp get https://api.example.com/data --output response.json
+```
+
+### Формат вывода
+
+```bash
+# JSON (по умолчанию)
+fasthttp get https://api.example.com/data --format json
+
+# Только статус
+fasthttp get https://api.example.com/data --format status
+
+# Только тело
+fasthttp get https://api.example.com/data --format body
+```
+
+## Примеры
+
+### Простой GET
+
+```bash
+$ fasthttp get https://jsonplaceholder.typicode.com/posts/1
+{
+  "userId": 1,
+  "id": 1,
+  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+  "body": "..."
+}
+```
+
+### POST с JSON
+
+```bash
+$ fasthttp post https://jsonplaceholder.typicode.com/posts \
+  --json '{"title": "foo", "body": "bar", "userId": 1}'
+{
+  "title": "foo",
+  "body": "bar",
+  "userId": 1,
+  "id": 101
+}
+```
+
+### С заголовками
+
+```bash
+$ fasthttp get https://httpbin.org/headers \
+  -H "Authorization: Bearer test-token" \
+  -H "X-Custom-Header: value"
+{
+  "headers": {
+    "Authorization": "Bearer test-token",
+    "X-Custom-Header": "value",
+    "Host": "httpbin.org"
+  }
+}
+```
+
+### С параметрами
+
+```bash
+$ fasthttp get "https://jsonplaceholder.typicode.com/posts" \
+  -p "userId=1" -p "_limit=3"
+[
+  {
+    "userId": 1,
+    "id": 1,
+    "title": "...",
+    "body": "..."
+  },
+  ...
+]
+```
+
+## Справка
+
+```bash
+fasthttp --help
+```
+
+Вывод:
 
 ```
-✗ HTTP 404
-  body: {"error": "Not found"}
+usage: fasthttp [-h] [--debug] [--timeout TIMEOUT] [-H HEADER] [-p PARAM]
+                [--json JSON] [--output OUTPUT] [--format FORMAT]
+                method url
+
+positional arguments:
+  method                HTTP метод (get, post, put, patch, delete)
+  url                   URL запроса
+
+optional arguments:
+  -h, --help            Показать справку
+  --debug               Режим отладки
+  --timeout TIMEOUT     Таймаут в секундах
+  -H, --header HEADER   Заголовок (может быть несколько)
+  -p, --param PARAM     Query параметр (может быть несколько)
+  --json JSON           JSON тело запроса
+  --output OUTPUT       Сохранить ответ в файл
+  --format FORMAT       Формат вывода (json, status, body)
 ```
+
+## Смотрите также
+
+- [Быстрый старт](quick-start.md) — основы
+- [Конфигурация](configuration.md) — настройки
+- [Примеры](examples.md) — больше примеров

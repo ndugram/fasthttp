@@ -1,262 +1,275 @@
 # API Reference
 
-Complete reference for FastHTTP client.
+Complete reference for all FastHTTP classes and functions.
 
 ## FastHTTP Class
 
-Main class for creating HTTP requests.
+The main application class.
 
 ```python
 from fasthttp import FastHTTP
+```
 
+### Constructor
+
+```python
 app = FastHTTP(
-    debug=False,      # Enable debug logging
-    http2=False,      # Enable HTTP/2
-    middleware=None,  # Middleware instance(s)
+    debug: bool = False,
+    http2: bool = False,
+    get_request: dict = {},
+    post_request: dict = {},
+    put_request: dict = {},
+    patch_request: dict = {},
+    delete_request: dict = {},
+    middleware: list = [],
 )
 ```
 
-### Constructor Parameters
+### Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `debug` | `bool` | `False` | Enable detailed logging |
-| `http2` | `bool` | `False` | Use HTTP/2 protocol |
-| `middleware` | `BaseMiddleware` / `list` | `None` | Middleware to apply |
-| `get_request` | `dict` | `None` | Default GET config |
-| `post_request` | `dict` | `None` | Default POST config |
-| `put_request` | `dict` | `None` | Default PUT config |
-| `patch_request` | `dict` | `None` | Default PATCH config |
-| `delete_request` | `dict` | `None` | Default DELETE config |
+| `debug` | `bool` | `False` | Debug mode |
+| `http2` | `bool` | `False` | Use HTTP/2 |
+| `get_request` | `dict` | `{}` | GET settings |
+| `post_request` | `dict` | `{}` | POST settings |
+| `put_request` | `dict` | `{}` | PUT settings |
+| `patch_request` | `dict` | `{}` | PATCH settings |
+| `delete_request` | `dict` | `{}` | DELETE settings |
+| `middleware` | `list` | `[]` | Middleware list |
 
 ### Methods
 
-#### `.get()`
+#### run()
 
-Register a GET request:
-
-```python
-@app.get(url="https://api.example.com/users", params={"page": 1})
-async def get_users(resp: Response):
-    return resp.json()
-```
-
-**Parameters:**
-- `url` — target URL (required)
-- `params` — query parameters (optional)
-- `response_model` — Pydantic model for validation (optional)
-
-#### `.post()`
-
-Register a POST request:
+Starts executing requests.
 
 ```python
-@app.post(url="https://api.example.com/users", json={"name": "John"})
-async def create_user(resp: Response):
-    return resp.status
-```
-
-**Parameters:**
-- `url` — target URL (required)
-- `json` — JSON body (optional)
-- `data` — form data (optional)
-- `params` — query parameters (optional)
-- `response_model` — Pydantic model for validation (optional)
-
-#### `.put()` / `.patch()` / `.delete()`
-
-Same parameters as `.post()`.
-
-#### `.run()`
-
-Execute all registered requests:
-
-```python
-if __name__ == "__main__":
-    app.run()
-```
-
-## Response Class
-
-Represents HTTP response.
-
-### Attributes
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `status` | `int` | HTTP status code (200, 404, etc.) |
-| `text` | `str` | Raw response body |
-| `headers` | `dict` | Response headers |
-
-### Methods
-
-#### `.json()`
-
-Parse response body as JSON:
-
-```python
-data = resp.json()
-# Returns: dict, list, or primitive
-
-# Raises json.JSONDecodeError if invalid
-```
-
-**Returns:** Parsed JSON (dict, list, int, str, etc.)
-
-## Request Configuration
-
-Default configuration for each HTTP method:
-
-```python
-app = FastHTTP(
-    get_request={
-        "headers": {"User-Agent": "MyApp/1.0"},
-        "timeout": 30,
-        "allow_redirects": True,
-    },
+app.run(
+    tags: list = None,
 )
 ```
 
-### Options
+**Parameters:**
+- `tags` — list of tags to filter requests
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `headers` | `dict` | `{}` | Request headers |
-| `timeout` | `int` | `30` | Request timeout (seconds) |
-| `allow_redirects` | `bool` | `True` | Follow redirects |
-
-### Global vs Per-Request
-
-Global config applies to all requests of that method:
+**Example:**
 
 ```python
-app = FastHTTP(
-    get_request={"timeout": 10},  # All GET requests use 10s timeout
+app.run()  # Run all
+app.run(tags=["users"])  # Only with tag users
+```
+
+## HTTP Method Decorators
+
+### @app.get()
+
+```python
+@app.get(
+    url: str,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    get_request: dict = None,
 )
 ```
 
-Per-request params merge with global config:
+### @app.post()
 
 ```python
-@app.get(url="https://api.example.com/slow", params={"page": 1})
-async def slow_request(resp):
-    # Uses global timeout: 10s
+@app.post(
+    url: str,
+    json: dict = None,
+    data: bytes = None,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    post_request: dict = None,
+)
+```
+
+### @app.put()
+
+```python
+@app.put(
+    url: str,
+    json: dict = None,
+    data: bytes = None,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    put_request: dict = None,
+)
+```
+
+### @app.patch()
+
+```python
+@app.patch(
+    url: str,
+    json: dict = None,
+    data: bytes = None,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    patch_request: dict = None,
+)
+```
+
+### @app.delete()
+
+```python
+@app.delete(
+    url: str,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    delete_request: dict = None,
+)
+```
+
+## Dependencies
+
+### Depends()
+
+```python
+from fasthttp import Depends
+```
+
+Creates a dependency for modifying the request.
+
+```python
+Depends(
+    func: Callable,
+    use_cache: bool = True,
+    scope: str = "function",
+)
+```
+
+**Parameters:**
+- `func` — async function with signature `(route, config) -> config`
+- `use_cache` — cache result
+- `scope` — scope ("function" or "request")
+
+**Example:**
+
+```python
+async def add_auth(route, config):
+    config.setdefault("headers", {})["Authorization"] = "Bearer token"
+    return config
+
+@app.get(url="/data", dependencies=[Depends(add_auth)])
+async def handler(resp):
     return resp.json()
 ```
 
 ## Middleware
 
-Intercept and modify requests/responses.
+### BaseMiddleware
+
+Base class for creating middleware.
 
 ```python
 from fasthttp.middleware import BaseMiddleware
 
-
 class MyMiddleware(BaseMiddleware):
     async def before_request(self, route, config):
-        """Called before request is sent"""
-        # Modify headers, add auth, etc.
-        headers = config.get("headers", {})
-        headers["X-Custom"] = "value"
-        config["headers"] = headers
         return config
-
+    
     async def after_response(self, response, route, config):
-        """Called after response received"""
-        # Modify response, log, cache, etc.
         return response
-
+    
     async def on_error(self, error, route, config):
-        """Called when error occurs"""
-        # Log error, notify, etc.
-        pass
+        raise error
 ```
 
-### Using Middleware
+### CacheMiddleware
+
+Built-in middleware for caching.
 
 ```python
-# Single middleware
-app = FastHTTP(middleware=MyMiddleware())
+from fasthttp import CacheMiddleware
 
-# Multiple middleware (executed in order)
-app = FastHTTP(middleware=[
-    AuthMiddleware(),
-    LoggingMiddleware(),
-])
+app = FastHTTP(
+    middleware=[CacheMiddleware(ttl=3600, max_size=100)]
+)
 ```
 
-## Error Handling
+**Parameters:**
+- `ttl` — cache time-to-live in seconds
+- `max_size` — maximum number of cached requests
 
-All errors are caught and logged automatically.
+## Response
 
-### Error Types
-
-| Error | Description |
-|-------|-------------|
-| `FastHTTPConnectionError` | Connection failed |
-| `FastHTTPTimeoutError` | Request timed out |
-| `FastHTTPBadStatusError` | HTTP 4xx/5xx status |
-
-### Manual Raise
+The response object.
 
 ```python
-from fasthttp.exceptions import FastHTTPBadStatusError
-
-
 @app.get(url="https://api.example.com/data")
-async def get_data(resp: Response):
-    if resp.status == 404:
-        raise FastHTTPBadStatusError(
-            "Data not found",
-            url="https://api.example.com/data",
-            status_code=404
-        )
-    return resp.json()
+async def handler(resp: Response):
+    # Available attributes
+    status = resp.status       # Status code (int)
+    text = resp.text           # Response text (str)
+    json_data = resp.json()    # JSON data (dict/list)
+    headers = resp.headers     # Response headers (dict)
+    content = resp.content     # Raw bytes (bytes)
 ```
 
-## Logging
+## CLI
 
-### Default (Info)
+### fasthttp
 
-Shows status and timing:
-
-```
-✔ GET https://api.example.com [200] 234.56ms
-✔ POST https://api.example.com/users [201] 89.12ms
+```bash
+fasthttp <method> <url> [options]
 ```
 
-### Debug Mode
+**Methods:** `get`, `post`, `put`, `patch`, `delete`
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-H, --header` | Header |
+| `-p, --param` | Query parameter |
+| `--json` | JSON body |
+| `--timeout` | Timeout |
+| `--debug` | Debug mode |
+| `-o, --output` | Save to file |
+| `--format` | Output format |
+
+## Data Types
+
+### Route
+
+Object with route information:
 
 ```python
-app = FastHTTP(debug=True)
+route.method          # HTTP method
+route.url             # URL
+route.params          # Query parameters
+route.json            # JSON body
+route.data            # Raw data
+route.tags            # Tags
+route.dependencies   # Dependencies
 ```
 
-Shows:
-- Registered routes
-- Request headers
-- Response headers
-- Response body
-- Handler results
+### Config
 
-## Performance
-
-All registered requests execute concurrently using asyncio:
+Dictionary with request configuration:
 
 ```python
-app = FastHTTP()
-
-
-@app.get(url="https://api.example.com/users")
-async def get_users(resp):
-    return resp.json()
-
-
-@app.get(url="https://api.example.com/posts")
-async def get_posts(resp):
-    return resp.json()
-
-
-app.run()  # Both requests run in parallel
+config.get("headers", {})       # Headers
+config.get("timeout", 30.0)      # Timeout
+config.get("allow_redirects", True)  # Redirects
 ```
 
-Small delay (0.5s) between requests prevents server overload.
+## See Also
+
+- [Quick Start](quick-start.md) — basics
+- [Configuration](configuration.md) — settings
+- [Dependencies](dependencies.md) — request modification
+- [Middleware](middleware.md) — global logic

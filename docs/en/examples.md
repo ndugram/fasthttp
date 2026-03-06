@@ -1,8 +1,10 @@
 # Examples
 
-Practical examples for common use cases.
+Practical examples of using FastHTTP.
 
-## Basic GET
+## Basic Examples
+
+### Simple GET Request
 
 ```python
 from fasthttp import FastHTTP
@@ -11,7 +13,7 @@ app = FastHTTP()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1")
-async def get_post(resp):
+async def main(resp):
     return resp.json()
 
 
@@ -19,16 +21,22 @@ if __name__ == "__main__":
     app.run()
 ```
 
-## POST JSON
-
-Send JSON data to create resource:
+### POST Request with JSON
 
 ```python
-@app.post(url="https://jsonplaceholder.typicode.com/posts", json={
-    "title": "FastHTTP",
-    "body": "Content here",
-    "userId": 1
-})
+from fasthttp import FastHTTP
+
+app = FastHTTP()
+
+
+@app.post(
+    url="https://jsonplaceholder.typicode.com/posts",
+    json={
+        "title": "My Post",
+        "body": "Content here",
+        "userId": 1,
+    }
+)
 async def create_post(resp):
     return resp.json()
 
@@ -37,75 +45,11 @@ if __name__ == "__main__":
     app.run()
 ```
 
-## Query Parameters
-
-Pass query string parameters:
+### Multiple Parallel Requests
 
 ```python
-@app.get(url="https://jsonplaceholder.typicode.com/posts", params={
-    "userId": 1,
-    "_limit": 5
-})
-async def get_user_posts(resp):
-    posts = resp.json()
-    return f"Found {len(posts)} posts"
+from fasthttp import FastHTTP
 
-
-if __name__ == "__main__":
-    app.run()
-```
-
-## Headers
-
-Set custom headers globally:
-
-```python
-app = FastHTTP(
-    get_request={
-        "headers": {
-            "Authorization": "Bearer YOUR_TOKEN",
-            "User-Agent": "MyApp/1.0",
-        },
-    },
-)
-
-
-@app.get(url="https://api.example.com/protected")
-async def get_protected(resp):
-    return resp.json()
-
-
-if __name__ == "__main__":
-    app.run()
-```
-
-## Error Handling
-
-Errors are logged automatically. Use debug mode to see details:
-
-```python
-app = FastHTTP(debug=True)
-
-
-@app.get(url="https://httpbin.org/status/404")
-async def handle_404(resp):
-    return f"Status: {resp.status}"
-
-
-@app.get(url="https://httpbin.org/status/500")
-async def handle_500(resp):
-    return f"Error: {resp.status}"
-
-
-if __name__ == "__main__":
-    app.run()
-```
-
-## Concurrent Requests
-
-All registered requests run in parallel:
-
-```python
 app = FastHTTP()
 
 
@@ -126,51 +70,172 @@ async def get_comment(resp):
 
 if __name__ == "__main__":
     app.run()
-    # All three requests run concurrently
 ```
 
-## Multiple Methods
+## Headers and Authentication
 
-Use all HTTP methods:
+### Bearer Token
 
 ```python
-app = FastHTTP()
+from fasthttp import FastHTTP
+
+app = FastHTTP(
+    get_request={
+        "headers": {
+            "Authorization": "Bearer your-token-here",
+        }
+    }
+)
 
 
-@app.get(url="https://jsonplaceholder.typicode.com/posts/1")
-async def get_post(resp):
+@app.get(url="https://api.example.com/protected")
+async def protected(resp):
     return resp.json()
 
 
-@app.post(url="https://jsonplaceholder.typicode.com/posts", json={
-    "title": "New Post",
-    "body": "Content",
-    "userId": 1
-})
+if __name__ == "__main__":
+    app.run()
+```
+
+### API Key
+
+```python
+from fasthttp import FastHTTP
+
+app = FastHTTP(
+    get_request={
+        "headers": {
+            "X-API-Key": "your-api-key",
+        }
+    }
+)
+
+
+@app.get(url="https://api.example.com/data")
+async def with_api_key(resp):
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+## Tags
+
+### Grouping Requests
+
+```python
+from fasthttp import FastHTTP
+
+app = FastHTTP()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/users", tags=["users"])
+async def get_users(resp):
+    return resp.json()
+
+
+@app.post(url="https://jsonplaceholder.typicode.com/users", tags=["users"])
+async def create_user(resp):
+    return resp.json()
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/posts", tags=["posts"])
+async def get_posts(resp):
+    return resp.json()
+
+
+@app.post(url="https://jsonplaceholder.typicode.com/posts", tags=["posts"])
 async def create_post(resp):
-    return resp.status
+    return resp.json()
 
 
-@app.put(url="https://jsonplaceholder.typicode.com/posts/1", json={
-    "id": 1,
-    "title": "Updated",
-    "body": "New content",
-    "userId": 1
-})
-async def update_post(resp):
-    return resp.status
+# Run only users
+if __name__ == "__main__":
+    app.run(tags=["users"])
+```
+
+## Dependencies
+
+### Adding Headers
+
+```python
+from fasthttp import FastHTTP, Depends
+from fasthttp.response import Response
+
+app = FastHTTP()
 
 
-@app.patch(url="https://jsonplaceholder.typicode.com/posts/1", json={
-    "title": "Patched"
-})
-async def patch_post(resp):
-    return resp.status
+async def add_auth(route, config):
+    config.setdefault("headers", {})["Authorization"] = "Bearer token"
+    return config
 
 
-@app.delete(url="https://jsonplaceholder.typicode.com/posts/1")
-async def delete_post(resp):
-    return resp.status
+async def add_trace_id(route, config):
+    import uuid
+    config.setdefault("headers", {})["X-Trace-ID"] = str(uuid.uuid4())
+    return config
+
+
+@app.get(
+    url="https://httpbin.org/headers",
+    dependencies=[Depends(add_auth), Depends(add_trace_id)]
+)
+async def with_dependencies(resp: Response):
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+## Middleware
+
+### Logging
+
+```python
+import time
+from fasthttp import FastHTTP
+from fasthttp.middleware import BaseMiddleware
+
+app = FastHTTP()
+
+
+class LoggingMiddleware(BaseMiddleware):
+    async def before_request(self, route, config):
+        print(f"🚀 {route.method} {route.url}")
+        config["_start_time"] = time.time()
+        return config
+
+    async def after_response(self, response, route, config):
+        duration = time.time() - config.get("_start_time", 0)
+        print(f"✅ {route.method} {route.url} - {response.status} ({duration:.2f}s)")
+        return response
+
+
+app = FastHTTP(middleware=[LoggingMiddleware()])
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/posts/1")
+async def main(resp):
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+### Caching
+
+```python
+from fasthttp import FastHTTP, CacheMiddleware
+
+app = FastHTTP(middleware=[CacheMiddleware(ttl=3600)])
+
+
+@app.get(url="https://jsonplaceholder.typicode.com/posts/1")
+async def cached_request(resp):
+    return resp.json()
 
 
 if __name__ == "__main__":
@@ -179,10 +244,14 @@ if __name__ == "__main__":
 
 ## Pydantic Validation
 
-Validate responses with Pydantic models:
+### Simple Model
 
 ```python
 from pydantic import BaseModel
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP()
 
 
 class User(BaseModel):
@@ -191,79 +260,11 @@ class User(BaseModel):
     email: str
 
 
-class Post(BaseModel):
-    id: int
-    title: str
-    body: str
-    userId: int
-
-
-app = FastHTTP()
-
-
-@app.get(url="https://jsonplaceholder.typicode.com/users/1", response_model=User)
-async def get_user(resp):
-    return resp.json()
-
-
-@app.get(url="https://jsonplaceholder.typicode.com/posts/1", response_model=Post)
-async def get_post(resp):
-    return resp.json()
-
-
-if __name__ == "__main__":
-    app.run()
-```
-
-## HTTP/2
-
-Enable HTTP/2 for better performance:
-
-```bash
-pip install fasthttp-client[http2]
-```
-
-```python
-app = FastHTTP(http2=True)
-
-
-@app.get(url="https://example.com/")
-async def get_example(resp):
-    return resp.status
-
-
-if __name__ == "__main__":
-    app.run()
-```
-
-## Full Example
-
-Complete application with multiple endpoints:
-
-```python
-from fasthttp import FastHTTP
-
-app = FastHTTP(
-    debug=True,
-    get_request={
-        "headers": {"User-Agent": "MyApp/1.0"},
-    },
+@app.get(
+    url="https://jsonplaceholder.typicode.com/users/1",
+    response_model=User
 )
-
-
-@app.get(url="https://jsonplaceholder.typicode.com/users")
-async def get_all_users(resp):
-    users = resp.json()
-    return f"Found {len(users)} users"
-
-
-@app.get(url="https://jsonplaceholder.typicode.com/users/1")
-async def get_user(resp):
-    return resp.json()
-
-
-@app.get(url="https://jsonplaceholder.typicode.com/posts", params={"userId": 1})
-async def get_user_posts(resp):
+async def get_user(resp: Response):
     return resp.json()
 
 
@@ -271,38 +272,119 @@ if __name__ == "__main__":
     app.run()
 ```
 
-## Tags for Grouping Requests
-
-Tags allow you to organize routes and run only specific groups of requests.
+### Nested Models
 
 ```python
+from pydantic import BaseModel
+from typing import List
 from fasthttp import FastHTTP
 from fasthttp.response import Response
 
 app = FastHTTP()
 
 
-@app.get(url="https://jsonplaceholder.typicode.com/users", tags=["users", "v1"])
-async def get_users(resp: Response):
+class Geo(BaseModel):
+    lat: str
+    lng: str
+
+
+class Address(BaseModel):
+    street: str
+    suite: str
+    city: str
+    zipcode: str
+    geo: Geo
+
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+    address: Address
+
+
+@app.get(
+    url="https://jsonplaceholder.typicode.com/users/1",
+    response_model=User
+)
+async def get_user(resp: Response):
     return resp.json()
 
 
-@app.get(url="https://jsonplaceholder.typicode.com/posts", tags=["posts", "v1"])
-async def get_posts(resp: Response):
-    return resp.json()
-
-
-@app.get(url="https://jsonplaceholder.typicode.com/comments", tags=["comments", "v2"])
-async def get_comments(resp: Response):
-    return resp.json()
-
-
-# Run only users
-app.run(tags=["users"])
-
-# Run all v1 requests
-app.run(tags=["v1"])
-
-# Run multiple groups
-app.run(tags=["users", "posts"])
+if __name__ == "__main__":
+    app.run()
 ```
+
+## Error Handling
+
+### Status Handling
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP(debug=True)
+
+
+@app.get(url="https://httpbin.org/status/404")
+async def not_found(resp: Response):
+    return {"error": "Not found", "status": resp.status}
+
+
+@app.get(url="https://httpbin.org/status/500")
+async def server_error(resp: Response):
+    return {"error": "Server error", "status": resp.status}
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+## Configuration
+
+### Full Configuration
+
+```python
+import os
+from fasthttp import FastHTTP
+
+app = FastHTTP(
+    debug=os.getenv("DEBUG", "false").lower() == "true",
+    http2=False,
+    get_request={
+        "headers": {
+            "User-Agent": "MyApp/1.0",
+            "Accept": "application/json",
+        },
+        "timeout": 30.0,
+        "allow_redirects": True,
+    },
+    post_request={
+        "headers": {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        "timeout": 60.0,
+    },
+)
+
+
+@app.get(url="https://api.example.com/data")
+async def get_data(resp):
+    return resp.json()
+
+
+@app.post(url="https://api.example.com/data")
+async def post_data(resp):
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+## See Also
+
+- [Quick Start](quick-start.md) — basics
+- [CLI](cli.md) — command line
+- [Configuration](configuration.md) — settings
