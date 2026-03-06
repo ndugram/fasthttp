@@ -98,6 +98,9 @@ class HTTPClient:
         if self.middleware_manager:
             config = await self.middleware_manager.process_before_request(route, config)
 
+        for dep in route.dependencies:
+            config = await dep(route, config)
+
         self.logger.debug(
             "→ %s %s | headers=%s",
             route.method,
