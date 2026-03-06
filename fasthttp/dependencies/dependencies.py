@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from inspect import iscoroutinefunction
 from typing import Annotated, Any, Literal
 
 from annotated_doc import Doc
@@ -37,9 +38,12 @@ class Dependency:
         self.use_cache = use_cache
         self.scope = scope
         self.__name__ = func.__name__
+        self._is_async = iscoroutinefunction(func)
 
     async def __call__(self, route: Any, config: dict) -> dict:
-        return await self.func(route, config)
+        if self._is_async:
+            return await self.func(route, config)
+        return self.func(route, config)
 
 
 def Depends(  # noqa: N802

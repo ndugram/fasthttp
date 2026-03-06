@@ -94,3 +94,16 @@ class TestDependency:
         await dep(route, config)
         assert received_route == route
         assert received_config == config
+
+    @pytest.mark.asyncio
+    async def test_sync_dependency(self):
+        def sync_func(route, config):
+            config.setdefault("headers", {})["X-Sync"] = "value"
+            return config
+
+        dep = Dependency(sync_func)
+        route = MagicMock()
+        config = {}
+
+        result = await dep(route, config)
+        assert result["headers"]["X-Sync"] == "value"
