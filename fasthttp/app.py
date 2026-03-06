@@ -194,6 +194,7 @@ class FastHTTP:
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
+        dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
             self.routes.append(
@@ -206,6 +207,7 @@ class FastHTTP:
                     data=data,
                     response_model=response_model,
                     tags=tags,
+                    dependencies=dependencies,
                 )
             )
             self.logger.debug("Registered route: %s %s", method, url)
@@ -220,9 +222,10 @@ class FastHTTP:
         params: dict | None = None,
         response_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
+        dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="GET", url=url, params=params, response_model=response_model, tags=tags
+            method="GET", url=url, params=params, response_model=response_model, tags=tags, dependencies=dependencies
         )
 
     def post(
@@ -233,9 +236,10 @@ class FastHTTP:
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
+        dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="POST", url=url, json=json, data=data, response_model=response_model, tags=tags
+            method="POST", url=url, json=json, data=data, response_model=response_model, tags=tags, dependencies=dependencies
         )
 
     def put(
@@ -246,9 +250,10 @@ class FastHTTP:
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
+        dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="PUT", url=url, json=json, data=data, response_model=response_model, tags=tags
+            method="PUT", url=url, json=json, data=data, response_model=response_model, tags=tags, dependencies=dependencies
         )
 
     def patch(
@@ -259,9 +264,10 @@ class FastHTTP:
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
+        dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="PATCH", url=url, json=json, data=data, response_model=response_model, tags=tags
+            method="PATCH", url=url, json=json, data=data, response_model=response_model, tags=tags, dependencies=dependencies
         )
 
     def delete(
@@ -272,6 +278,7 @@ class FastHTTP:
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
+        dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="DELETE",
@@ -280,6 +287,7 @@ class FastHTTP:
             data=data,
             response_model=response_model,
             tags=tags,
+            dependencies=dependencies,
         )
 
     def _log_result(
