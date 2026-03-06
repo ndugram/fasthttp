@@ -122,6 +122,22 @@ class Route:
                 """
             ),
         ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc(
+                """
+                List of dependencies to execute before the request.
+
+                Dependencies are functions that modify the request
+                config (headers, params, etc.) before the request
+                is sent. Useful for adding auth tokens, logging,
+                or other request modifications.
+
+                Example:
+                    dependencies=[Depends(add_auth), Depends(add_trace_id)]
+                """
+            ),
+        ] = None,
     ) -> None:
         self.method = method
         self.url = url
@@ -131,3 +147,4 @@ class Route:
         self.data = data
         self.response_model = response_model
         self.tags = tags or []
+        self.dependencies = dependencies or []

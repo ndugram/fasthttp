@@ -1,12 +1,30 @@
 # FastHTTP
 
-Modern async HTTP client with beautiful logging.
+Asynchronous HTTP client for Python with a declarative approach, similar to FastAPI.
 
-## Install
+## Features
+
+- **Declarative style** — define requests as functions with decorators
+- **Asynchronous** — parallel request execution with asyncio
+- **Dependencies** — modify requests before sending
+- **Tags** — grouping and filtering requests
+- **Middleware** — global logic for all requests
+- **Pydantic** — response validation
+- **HTTP/2** — support for modern protocol
+- **CLI** — convenient command line
+
+## Installation
 
 ```bash
 pip install fasthttp-client
 ```
+
+For HTTP/2:
+
+```bash
+pip install fasthttp-client[http2]
+```
+
 
 ## Quick Example
 
@@ -16,7 +34,7 @@ from fasthttp import FastHTTP
 app = FastHTTP()
 
 
-@app.get(url="https://jsonplaceholder.typicode.com/users/1")
+@app.get(url="https://jsonplaceholder.typicode.com/posts/1")
 async def main(resp):
     return resp.json()
 
@@ -25,96 +43,72 @@ if __name__ == "__main__":
     app.run()
 ```
 
-Output:
-```
-✔ GET https://jsonplaceholder.typicode.com/users/1 [200] 234.56ms
-```
-
 ## Why FastHTTP?
 
-### Simple API
+### The Problem
 
-No boilerplate, no complex setup. Just decorate your async functions:
+Usually when working with HTTP requests in Python:
 
 ```python
+# Lots of boilerplate code
+import aiohttp
+
+async def main():
+    async with aiohttp.ClientSession() as session:
+        async with session.get("https://api.example.com/data") as resp:
+            data = await resp.json()
+            # ... handling
+```
+
+### Solution with FastHTTP
+
+```python
+# Clean and clear code
+from fasthttp import FastHTTP
+
+app = FastHTTP()
+
 @app.get(url="https://api.example.com/data")
-async def handler(resp):
+async def main(resp):
     return resp.json()
 ```
 
-### Beautiful Logging
+## Documentation
 
-See what happens with each request — status codes, timing, errors:
+### Basics
 
-```
-✔ GET https://api.example.com/users [200] 156.32ms
-✔ POST https://api.example.com/users [201] 89.12ms
-✗ GET https://api.example.com/missing [404]
-```
+- [Quick Start](quick-start.md) — start here
+- [Configuration](configuration.md) — application settings
+- [CLI](cli.md) — command line
 
-Enable debug mode for full request/response details:
+### Advanced Topics
 
-```python
-app = FastHTTP(debug=True)
-```
+- [Dependencies](dependencies.md) — request modification
+- [Middleware](middleware.md) — global logic
+- [Pydantic](pydantic-validation.md) — validation
+- [HTTP/2](http2-support.md) — HTTP/2 support
 
-### Type Safety
+### Additional
 
-Full type hints for IDE autocompletion and error prevention:
+- [Examples](examples.md) — more code examples
+- [API Reference](api-reference.md) — complete reference
+
+## Comparison with Other Libraries
+
+| Library | Style | Async | Dependencies |
+|---------|-------|-------|--------------|
+| **FastHTTP** | Declarative | ✅ Yes | ✅ Yes |
+| requests | Imperative | ❌ No | ❌ No |
+| aiohttp | Imperative | ✅ Yes | ❌ No |
+| httpx | Imperative | ✅ Yes | ❌ No |
+
+## Usage Examples
+
+### Multiple Parallel Requests
 
 ```python
 from fasthttp import FastHTTP
-from fasthttp.response import Response
 
-
-@app.get(url="https://api.example.com/users")
-async def get_users(resp: Response) -> dict:
-    return resp.json()
-```
-
-### All HTTP Methods
-
-```python
-@app.get(url="https://api.example.com/users")
-async def get_users(resp):
-    return resp.json()
-
-
-@app.post(url="https://api.example.com/users", json={"name": "John"})
-async def create_user(resp):
-    return resp.status
-
-
-@app.put(url="https://api.example.com/users/1", json={"name": "Jane"})
-async def update_user(resp):
-    return resp.status
-
-
-@app.patch(url="https://api.example.com/users/1", json={"age": 25})
-async def patch_user(resp):
-    return resp.status
-
-
-@app.delete(url="https://api.example.com/users/1")
-async def delete_user(resp):
-    return resp.status
-```
-
-### Query Parameters
-
-Pass query params easily:
-
-```python
-@app.get(url="https://api.example.com/search", params={"q": "fast", "page": 1})
-async def search(resp):
-    return resp.json()
-```
-
-### Concurrent Requests
-
-All registered requests run concurrently:
-
-```python
 app = FastHTTP()
 
 
@@ -133,31 +127,59 @@ async def get_comment(resp):
     return resp.json()
 
 
-app.run()  # All three requests run in parallel
+# All three requests execute in parallel!
+if __name__ == "__main__":
+    app.run()
 ```
 
-## Features
+### With Tags
 
-| Feature | Description |
-|---------|-------------|
-| **Async** | Built on httpx for high performance |
-| **Logging** | Beautiful colored output with timing |
-| **Type hints** | Full IDE autocompletion support |
-| **Middleware** | Intercept and modify requests/responses |
-| **Pydantic** | Validate responses with models |
-| **HTTP/2** | Optional HTTP/2 support |
+```python
+from fasthttp import FastHTTP
 
-## Use Cases
+app = FastHTTP()
 
-- **API Testing** — quickly test HTTP endpoints
-- **Web Scraping** — simple requests with logging
-- **Microservices** — lightweight HTTP client
-- **Prototyping** — fast development with pretty output
 
-## Next Steps
+@app.get(url="https://api.example.com/users", tags=["users"])
+async def get_users(resp):
+    return resp.json()
 
-- [Quick Start](quick-start.md) — get started in 2 minutes
-- [CLI](cli.md) — command-line usage
-- [API Reference](api-reference.md) — complete API
-- [Middleware](middleware.md) — request interception
-- [Configuration](configuration.md) — options
+
+@app.get(url="https://api.example.com/posts", tags=["posts"])
+async def get_posts(resp):
+    return resp.json()
+
+
+# Run only users
+app.run(tags=["users"])
+```
+
+### With Dependencies
+
+```python
+from fasthttp import FastHTTP, Depends
+
+app = FastHTTP()
+
+
+async def add_auth(route, config):
+    config.setdefault("headers", {})["Authorization"] = "Bearer token"
+    return config
+
+
+@app.get(
+    url="https://api.example.com/data",
+    dependencies=[Depends(add_auth)]
+)
+async def protected(resp):
+    return resp.json()
+```
+
+## Community
+
+- GitHub: https://github.com/your-repo/fasthttp
+- PyPI: https://pypi.org/project/fasthttp-client/
+
+## License
+
+MIT License

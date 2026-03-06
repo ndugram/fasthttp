@@ -7,7 +7,7 @@
 
 ## Reference
 
-- [CLI](cli.md) — command-line usage
-- [API Reference](api-reference.md) — complete API
+- [CLI](cli.md) — command line
+- [API](api-reference.md) — complete reference
 - [Middleware](middleware.md) — request interception
-- [Configuration](configuration.md) — options
+- [Configuration](configuration.md) — settings

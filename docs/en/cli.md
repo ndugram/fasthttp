@@ -1,120 +1,217 @@
-# CLI
+# Command Line Interface (CLI)
 
-Command-line tool for making HTTP requests directly from terminal.
+FastHTTP comes with a convenient CLI for running requests from the terminal.
 
-## Install
+## Installation
+
+The CLI is installed together with the package:
 
 ```bash
 pip install fasthttp-client
 ```
 
-## Usage
+## Basic Usage
 
 ```bash
-fasthttp [command] [url] [output]
+fasthttp get https://jsonplaceholder.typicode.com/posts/1
 ```
 
-## Commands
+## HTTP Methods
 
 ### GET
-
-Fetch data from server:
 
 ```bash
 fasthttp get https://api.example.com/data
 ```
 
-Output format options:
-- `status` — just status code (default)
-- `json` — pretty-printed JSON
-- `headers` — response headers
-- `text` — raw body
-- `all` — everything
+With parameters:
 
 ```bash
-fasthttp get https://api.example.com/data json
-```
-
-With custom headers:
-
-```bash
-fasthttp get https://api.example.com/data json -H "Authorization: Bearer token"
-```
-
-With timeout:
-
-```bash
-fasthttp get https://api.example.com/data -t 10
+fasthttp get "https://api.example.com/search?q=test&page=1"
 ```
 
 ### POST
 
-Send JSON data:
-
 ```bash
-fasthttp post https://api.example.com/users json -j '{"name": "John", "age": 30}'
+fasthttp post https://api.example.com/users json='{"name": "John"}'
 ```
 
-Send form data:
+### PUT
 
 ```bash
-fasthttp post https://api.example.com/users json -d "name=John&age=30"
+fasthttp put https://api.example.com/users/1 json='{"name": "Jane"}'
 ```
 
-### PUT / PATCH / DELETE
-
-Same options as POST:
+### PATCH
 
 ```bash
-fasthttp put https://api.example.com/users/1 json -j '{"name": "Jane"}'
-fasthttp patch https://api.example.com/users/1 json -j '{"age": 25}'
+fasthttp patch https://api.example.com/users/1 json='{"age": 25}'
+```
+
+### DELETE
+
+```bash
 fasthttp delete https://api.example.com/users/1
 ```
 
-### Version
+## Parameters
 
-Check installed version:
-
-```bash
-fasthttp version
-```
-
-## Output Formats
-
-| Format | Description | Example |
-|--------|-------------|---------|
-| `status` | Just status code | `200` |
-| `json` | Pretty JSON | `{"id": 1, "name": "John"}` |
-| `headers` | Headers as JSON | `{"Content-Type": "application/json"}` |
-| `text` | Raw text | `Hello World` |
-| `all` | Everything | Status + time + headers + body |
-
-## Headers
-
-Pass custom headers with `-H` or `--header`:
+### Headers
 
 ```bash
-fasthttp get https://api.example.com/data json -H "Authorization: Bearer token" -H "Accept: application/json"
+fasthttp get https://api.example.com/data \
+  --header "Authorization: Bearer token" \
+  --header "User-Agent: MyApp/1.0"
 ```
 
-## Timeout
-
-Set request timeout with `-t` or `--timeout`:
+Short form:
 
 ```bash
-fasthttp get https://slow-api.com/data -t 60
+fasthttp get https://api.example.com/data -H "Authorization: Bearer token"
 ```
 
-Default is 30 seconds.
+### Query Parameters
 
-## Errors
-
-Exit codes:
-- `0` — success
-- `1` — error (connection failed, timeout, HTTP 4xx/5xx)
-
-Error output:
+```bash
+fasthttp get https://api.example.com/search \
+  --param "q=fast" \
+  --param "page=1"
 ```
-✗ HTTP 404
-  body: {"error": "Not found"}
+
+Short form:
+
+```bash
+fasthttp get https://api.example.com/search -p "q=fast" -p "page=1"
 ```
+
+### Timeout
+
+```bash
+fasthttp get https://api.example.com/data --timeout 30
+```
+
+### JSON Body
+
+```bash
+fasthttp post https://api.example.com/users \
+  --json '{"name": "John", "email": "john@example.com"}'
+```
+
+## Options
+
+### Debug Mode
+
+```bash
+fasthttp get https://api.example.com/data --debug
+```
+
+### Output to File
+
+```bash
+fasthttp get https://api.example.com/data --output response.json
+```
+
+### Output Format
+
+```bash
+# JSON (default)
+fasthttp get https://api.example.com/data --format json
+
+# Status only
+fasthttp get https://api.example.com/data --format status
+
+# Body only
+fasthttp get https://api.example.com/data --format body
+```
+
+## Examples
+
+### Simple GET
+
+```bash
+$ fasthttp get https://jsonplaceholder.typicode.com/posts/1
+{
+  "userId": 1,
+  "id": 1,
+  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+  "body": "..."
+}
+```
+
+### POST with JSON
+
+```bash
+$ fasthttp post https://jsonplaceholder.typicode.com/posts \
+  --json '{"title": "foo", "body": "bar", "userId": 1}'
+{
+  "title": "foo",
+  "body": "bar",
+  "userId": 1,
+  "id": 101
+}
+```
+
+### With Headers
+
+```bash
+$ fasthttp get https://httpbin.org/headers \
+  -H "Authorization: Bearer test-token" \
+  -H "X-Custom-Header: value"
+{
+  "headers": {
+    "Authorization": "Bearer test-token",
+    "X-Custom-Header": "value",
+    "Host": "httpbin.org"
+  }
+}
+```
+
+### With Parameters
+
+```bash
+$ fasthttp get "https://jsonplaceholder.typicode.com/posts" \
+  -p "userId=1" -p "_limit=3"
+[
+  {
+    "userId": 1,
+    "id": 1,
+    "title": "...",
+    "body": "..."
+  },
+  ...
+]
+```
+
+## Help
+
+```bash
+fasthttp --help
+```
+
+Output:
+
+```
+usage: fasthttp [-h] [--debug] [--timeout TIMEOUT] [-H HEADER] [-p PARAM]
+                [--json JSON] [--output OUTPUT] [--format FORMAT]
+                method url
+
+positional arguments:
+  method                HTTP method (get, post, put, patch, delete)
+  url                   Request URL
+
+optional arguments:
+  -h, --help            Show help
+  --debug               Debug mode
+  --timeout TIMEOUT      Timeout in seconds
+  -H, --header HEADER   Header (can be multiple)
+  -p, --param PARAM     Query parameter (can be multiple)
+  --json JSON           JSON request body
+  --output OUTPUT       Save response to file
+  --format FORMAT       Output format (json, status, body)
+```
+
+## See Also
+
+- [Quick Start](quick-start.md) — basics
+- [Configuration](configuration.md) — settings
+- [Examples](examples.md) — more examples
