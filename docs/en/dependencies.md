@@ -67,19 +67,21 @@ When running, `add_auth_header` will execute before the request and add the toke
 
 ## Creating a Dependency
 
-A dependency is an async function with two parameters:
+A dependency is a function with two parameters (`route` and `config`). Both async and synchronous functions are supported:
 
 ```python
-async def my_dependency(route, config):
-    # route — route information
-    # config — request configuration
-    
-    # Modify config
+# Async function
+async def my_dependency_async(route, config):
     config.setdefault("headers", {})["X-Custom"] = "value"
-    
-    # Return modified config
+    return config
+
+# Synchronous function
+def my_dependency_sync(route, config):
+    config.setdefault("headers", {})["X-Custom"] = "value"
     return config
 ```
+
+Both functions work the same way — the system automatically detects the function type.
 
 ### Available route Parameters
 

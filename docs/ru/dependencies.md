@@ -67,19 +67,21 @@ async def get_users(resp: Response):
 
 ## Создание зависимости
 
-Зависимость — это async функция с двумя параметрами:
+Зависимость — это функция с двумя параметрами (`route` и `config`). Поддерживаются как async, так и синхронные функции:
 
 ```python
-async def my_dependency(route, config):
-    # route — информация о маршруте
-    # config — конфигурация запроса
-    
-    # Модифицируем config
+# Async функция
+async def my_dependency_async(route, config):
     config.setdefault("headers", {})["X-Custom"] = "value"
-    
-    # Возвращаем измененный config
+    return config
+
+# Синхронная функция
+def my_dependency_sync(route, config):
+    config.setdefault("headers", {})["X-Custom"] = "value"
     return config
 ```
+
+Обе функции работают одинаково — система автоматически определяет тип функции.
 
 ### Доступные параметры route
 
