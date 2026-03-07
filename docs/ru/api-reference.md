@@ -22,6 +22,7 @@ app = FastHTTP(
     patch_request: dict = {},
     delete_request: dict = {},
     middleware: list = [],
+    security: bool = True,
 )
 ```
 
@@ -37,6 +38,7 @@ app = FastHTTP(
 | `patch_request` | `dict` | `{}` | Настройки для PATCH |
 | `delete_request` | `dict` | `{}` | Настройки для DELETE |
 | `middleware` | `list` | `[]` | Список middleware |
+| `security` | `bool` | `True` | Включить встроенную защиту |
 
 ### Методы
 
@@ -266,6 +268,42 @@ config.get("headers", {})       # Заголовки
 config.get("timeout", 30.0)     # Таймаут
 config.get("allow_redirects", True)  # Редиректы
 ```
+
+## Безопасность
+
+В FastHTTP встроена система безопасности, которая работает автоматически.
+
+### Параметр security
+
+```python
+app = FastHTTP(security=True)   # Защита включена (по умолчанию)
+app = FastHTTP(security=False)  # Защита отключена
+```
+
+### Что включено
+
+- **SSRF защита** — блокировка запросов к localhost и приватным IP
+- **Маскирование secrets** — скрытие Authorization, Cookie в логах
+- **Circuit Breaker** — автоматическая блокировка падающих хостов
+- **Лимиты** — timeout, max response size, max concurrent requests
+- **Защита заголовков** — очистка от CRLF символов
+- **Защита редиректов** — блокировка file://, javascript:, internal IPs
+
+### Пример
+
+```python
+from fasthttp import FastHTTP
+
+app = FastHTTP()  # security=True по умолчанию
+
+@app.get(url="https://api.example.com/data")
+async def handler(resp):
+    return resp.json()
+
+app.run()  # Защита работает автоматически
+```
+
+Подробнее в [Безопасность](security.md).
 
 ## Смотрите также
 

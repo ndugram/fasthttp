@@ -22,6 +22,7 @@ app = FastHTTP(
     patch_request: dict = {},
     delete_request: dict = {},
     middleware: list = [],
+    security: bool = True,
 )
 ```
 
@@ -37,6 +38,7 @@ app = FastHTTP(
 | `patch_request` | `dict` | `{}` | PATCH settings |
 | `delete_request` | `dict` | `{}` | DELETE settings |
 | `middleware` | `list` | `[]` | Middleware list |
+| `security` | `bool` | `True` | Enable built-in security |
 
 ### Methods
 
@@ -266,6 +268,42 @@ config.get("headers", {})       # Headers
 config.get("timeout", 30.0)      # Timeout
 config.get("allow_redirects", True)  # Redirects
 ```
+
+## Security
+
+FastHTTP has built-in security system that works automatically.
+
+### security parameter
+
+```python
+app = FastHTTP(security=True)   # Security enabled (default)
+app = FastHTTP(security=False)  # Security disabled
+```
+
+### What's included
+
+- **SSRF protection** — blocks requests to localhost and private IPs
+- **Secrets masking** — hides Authorization, Cookie in logs
+- **Circuit Breaker** — auto-blocks failing hosts
+- **Limits** — timeout, max response size, max concurrent requests
+- **Header protection** — removes CRLF characters
+- **Redirect protection** — blocks file://, javascript:, internal IPs
+
+### Example
+
+```python
+from fasthttp import FastHTTP
+
+app = FastHTTP()  # security=True by default
+
+@app.get(url="https://api.example.com/data")
+async def handler(resp):
+    return resp.json()
+
+app.run()  # Security works automatically
+```
+
+See [Security](security.md) for details.
 
 ## See Also
 
