@@ -7,6 +7,7 @@ import httpx
 from annotated_doc import Doc
 
 from fasthttp.middleware import MiddlewareManager
+from fasthttp.security import Security, SecurityError, SSRFBlockedError, CircuitOpenError
 
 from .exceptions import (
     FastHTTPBadStatusError,
@@ -61,10 +62,20 @@ class HTTPClient:
                 """
             )
         ] = None,
+        security: Annotated[
+            Security | None,
+            Doc(
+                """
+                Optional Security instance for built-in security features.
+                If None, security is enabled by default with all protections.
+                """
+            )
+        ] = None,
     ) -> None:
         self.request_configs = request_configs
         self.logger = logger
         self.middleware_manager = middleware_manager
+        self.security = security
 
     async def send(
         self,
@@ -101,20 +112,49 @@ class HTTPClient:
         for dep in route.dependencies:
             config = await dep(route, config)
 
-        self.logger.debug(
-            "→ %s %s | headers=%s",
-            route.method,
-            route.url,
-            config.get("headers"),
-        )
+        if self.security:
+            try:
+                await self.security.pre_request(route.url, route.method)
+            except SSRFBlockedError as e:
+                self.logger.error("SSRF blocked: %s", e)
+                return None
+            except CircuitOpenError as e:
+                self.logger.error("Circuit breaker open: %s", e)
+                return None
+            except SecurityError as e:
+                self.logger.error("Security error: %s", e)
+                return None
+
+            await self.security.acquire_slot()
+
+            config["headers"] = self.security.sanitize_request_headers(config["headers"])
+            masked_headers = self.security.mask_headers_for_logging(config["headers"])
+            self.logger.debug(
+                "→ %s %s | headers=%s",
+                route.method,
+                route.url,
+                masked_headers,
+            )
+
+            timeout_config = (
+                httpx.Timeout(self.security.connect_timeout)
+                if self.security.connect_timeout
+                else httpx.Timeout(self.security.timeout)
+            )
+        else:
+            self.logger.debug(
+                "→ %s %s | headers=%s",
+                route.method,
+                route.url,
+                config.get("headers"),
+            )
+            timeout_config = (
+                httpx.Timeout(config.get("timeout", 30.0))
+                if config.get("timeout") is not None
+                else httpx.Timeout(30.0)
+            )
 
         start = time.perf_counter()
-
-        timeout_config = (
-            httpx.Timeout(config.get("timeout", 30.0))
-            if config.get("timeout") is not None
-            else httpx.Timeout(30.0)
-        )
 
         try:
             resp = await client.request(
@@ -125,7 +165,21 @@ class HTTPClient:
                 json=route.json,
                 content=route.data,
                 timeout=timeout_config,
+                follow_redirects=False,
             )
+
+            if self.security:
+                self.security.release_slot()
+                self.security.check_response_headers(dict(resp.headers))
+
+                content = resp.content
+                self.security.check_response(
+                    content=content,
+                    content_type=resp.headers.get("content-type"),
+                    status_code=resp.status_code,
+                )
+
+                await self.security.post_request(route.url, route.method, True)
 
             elapsed = (time.perf_counter() - start) * 1000
 
@@ -177,6 +231,10 @@ class HTTPClient:
             return response
 
         except httpx.ConnectError as e:
+            if self.security:
+                self.security.release_slot()
+                await self.security.post_request(route.url, route.method, False, e)
+
             error = FastHTTPConnectionError(
                 message=str(e) or "Connection failed",
                 url=route.url,
@@ -190,6 +248,10 @@ class HTTPClient:
             return None
 
         except httpx.TimeoutException as e:
+            if self.security:
+                self.security.release_slot()
+                await self.security.post_request(route.url, route.method, False, e)
+
             timeout = config.get("timeout", "default")
             error = FastHTTPTimeoutError(
                 message=str(e) or "Request timed out",
@@ -204,7 +266,18 @@ class HTTPClient:
 
             return None
 
+        except SecurityError as e:
+            if self.security:
+                self.security.release_slot()
+                await self.security.post_request(route.url, route.method, False, e)
+            self.logger.error("Security error: %s", e)
+            return None
+
         except Exception as e:
+            if self.security:
+                self.security.release_slot()
+                await self.security.post_request(route.url, route.method, False, e)
+
             error = FastHTTPRequestError(
                 message=str(e) or "Unknown error",
                 url=route.url,

@@ -14,6 +14,7 @@ from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
 from .response import Response
 from .routing import Route
+from .security import Security
 from .types import RequestsOptinal
 
 
@@ -158,6 +159,24 @@ class FastHTTP:
                 ),
             ]
         ) = None,
+        security: Annotated[
+            bool,
+            Doc(
+                """
+                Enable built-in security features.
+
+                When enabled (default), FastHTTP automatically protects against:
+                - SSRF attacks (blocking localhost and private IPs)
+                - Secret leakage in logs
+                - Circuit breaker for failed hosts
+                - Large response limits
+                - Dangerous redirects
+                - Request timeouts
+
+                Set to False to disable all security features.
+                """
+            ),
+        ] = True,
     ) -> None:
         self.logger = setup_logger(debug=debug)
         self.routes: list[Route] = []
@@ -180,8 +199,13 @@ class FastHTTP:
             "DELETE": delete_request or {},
         }
 
+        self.security_enabled = security
+        self.security = Security() if security else None
         self.client = HTTPClient(
-            self.request_configs, self.logger, self.middleware_manager
+            self.request_configs,
+            self.logger,
+            self.middleware_manager,
+            self.security
         )
 
     def _add_route(
