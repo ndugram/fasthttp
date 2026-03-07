@@ -87,6 +87,7 @@ async def main(resp):
 - [Middleware](middleware.md) — global logic
 - [Pydantic](pydantic-validation.md) — validation
 - [HTTP/2](http2-support.md) — HTTP/2 support
+- [Security](security.md) — built-in protection
 
 ### Additional
 
