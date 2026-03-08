@@ -10,10 +10,10 @@ repo_name: ndugram/fasthttp
 
 copyright: Copyright &copy; 2026 White NEFOR
 
-# Logo
+
 extra: {}
 
-# Navigation
+
 nav:
   - Home: index.md
   - English:
@@ -39,6 +39,9 @@ nav:
     - Pydantic: ru/pydantic-validation.md
     - HTTP/2: ru/http2-support.md
     - API: ru/api-reference.md
+  - Blog:
+    - English: blog/how-i-created-fasthttp.md
+    - Русский: blog/istoriya-sozdaniya-fasthttp.md
 
 theme:
   name: material
