@@ -4,6 +4,15 @@ description: The story of how an idea in September 2025 turned into a real proje
 date: 2025-09-01
 ---
 
+
+## About me
+
+My name is **NEFOR**. I am a web developer and for about **2 years I have been working with Python frameworks**, mainly **FastAPI** and **Django**.
+
+I have always been interested not only in writing code but also in **understanding how tools work under the hood**: how frameworks are structured, how HTTP requests are processed, and how library architectures are designed.
+
+Over time, this curiosity led me to start building my own open-source project.
+
 # How I Created fasthttp-client
 
 Back in September 2025, I stumbled upon FastAPI and just couldn't believe it. Like, really — check out this code:
