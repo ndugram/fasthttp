@@ -5,7 +5,7 @@ date: 2025-09-01
 ---
 
 
-## About me
+# About me
 
 My name is **NEFOR**. I am a web developer and for about **2 years I have been working with Python frameworks**, mainly **FastAPI** and **Django**.
 
