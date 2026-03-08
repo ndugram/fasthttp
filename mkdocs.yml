@@ -1,3 +1,4 @@
+
 site_name: FastHTTP
 site_description: Fast and simple HTTP client library with async support and beautiful logging
 site_author: White NEFOR
@@ -8,11 +9,14 @@ docs_dir: docs
 repo_url: https://github.com/ndugram/fasthttp
 repo_name: ndugram/fasthttp
 
-copyright: Copyright &copy; 2026 White NEFOR
+copyright: |
+  Copyright &copy; 2026 White NEFOR  
+  Built with Material for MkDocs
 
-
-extra: {}
-
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ndugram/fasthttp
 
 nav:
   - Home: index.md
@@ -48,27 +52,50 @@ theme:
   language: en
   logo: logo-repo.png
   favicon: logo-repo.png
+
+  palette:
+    - scheme: default
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+
+    - scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
   features:
     - navigation.instant
     - navigation.tracking
     - navigation.tabs
     - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
     - search.suggest
     - search.highlight
-    - navigation.top
-    - content.code.annotate
 
 markdown_extensions:
   - admonition
+  - tables
+  - attr_list
+  - toc:
+      permalink: true
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.emoji
   - pymdownx.tabbed:
       alternate_style: true
-  - tables
-  - attr_list
 
 plugins:
   - search
