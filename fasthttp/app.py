@@ -420,6 +420,14 @@ class FastHTTP:
 
         try:
             asyncio.run(self._run(routes_to_run))
+        except ImportError as e:
+            if "http2" in str(e).lower():
+                self.logger.error(
+                    "HTTP/2 support requires additional dependencies. "
+                    "Install with: pip install fasthttp-client[http2]"
+                )
+            else:
+                raise
         except httpx.ConnectError as e:
             self.logger.error("Connection error: %s", e)
         except KeyboardInterrupt:
