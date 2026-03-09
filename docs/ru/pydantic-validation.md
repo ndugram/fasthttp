@@ -1,9 +1,93 @@
 # Pydantic Валидация
 
-FastHTTP поддерживает валидацию ответов с помощью Pydantic.
+FastHTTP поддерживает валидацию запросов и ответов с помощью Pydantic.
 
 
-## Базовая валидация
+## Валидация запросов (request_model)
+
+Валидация запросов позволяет проверить данные перед отправкой на сервер. Это полезно, чтобы не отправлять невалидные данные.
+
+### Базовый пример
+
+```python
+from pydantic import BaseModel, Field
+from fasthttp import FastHTTP
+
+app = FastHTTP()
+
+class UserRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    email: str = Field(pattern=r"^[\w\.-]+@[\w\.-]+\.\w+$")
+    age: int = Field(ge=0, le=150)
+
+@app.post(
+    url="https://api.example.com/users",
+    json={"name": "John", "email": "john@example.com", "age": 25},
+    request_model=UserRequest
+)
+async def create_user(resp):
+    return resp.json()
+```
+
+Если данные не проходят валидацию, запрос не отправляется.
+
+### Валидация с ошибкой
+
+```python
+@app.post(
+    url="https://api.example.com/users",
+    json={"name": "", "email": "invalid", "age": 200},
+    request_model=UserRequest
+)
+async def create_user(resp):
+    return resp.json()
+
+# Запрос не пойдёт на сервер
+# В логах: ERROR | Request validation failed: ...
+```
+
+### Валидация form data
+
+```python
+class LoginForm(BaseModel):
+    username: str = Field(min_length=3)
+    password: str = Field(min_length=8)
+
+@app.post(
+    url="https://api.example.com/login",
+    data={"username": "john", "password": "secret123"},
+    request_model=LoginForm
+)
+async def login(resp):
+    return resp.json()
+```
+
+### Кастомные валидаторы
+
+```python
+from pydantic import BaseModel, field_validator
+
+class UserRequest(BaseModel):
+    name: str
+    email: str
+    
+    @field_validator('email')
+    @classmethod
+    def email_must_contain_at(cls, v):
+        if '@' not in v:
+            raise ValueError('Email must contain @')
+        return v.lower()
+
+@app.post(
+    url="https://api.example.com/users",
+    json={"name": "John", "email": "JOHN@EXAMPLE.COM"},
+    request_model=UserRequest
+)
+async def create_user(resp):
+    return resp.json()
+```
+
+## Валидация ответов (response_model)
 
 Определите Pydantic модель и укажите её в запросе:
 
