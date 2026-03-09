@@ -423,6 +423,124 @@ async def protected_request(resp: Response):
 
 Подробнее в разделе [Зависимости](dependencies.md).
 
+## Lifespan
+
+Lifespan позволяет выполнять код до и после всех запросов. Полезно для инициализации ресурсов (токенов, подключений) и очистки после выполнения.
+
+### Базовый пример
+
+```python
+from contextlib import asynccontextmanager
+from fasthttp import FastHTTP
+
+@asynccontextmanager
+async def lifespan(app: FastHTTP):
+    # Startup — выполняется до запросов
+    print("Starting up...")
+    app.auth_token = "my-secret-token"  # Можно добавлять атрибуты к app
+
+    yield  # Здесь выполняются запросы
+
+    # Shutdown — выполняется после запросов
+    print("Shutting down...")
+
+app = FastHTTP(lifespan=lifespan)
+
+@app.get(url="https://api.example.com/data")
+async def get_data(resp):
+    return resp.json()
+
+app.run()
+```
+
+Вывод:
+
+```
+Starting up...
+INFO    │ fasthttp    │ ✔ FastHTTP started
+INFO    │ fasthttp    │ ✔ Sending 1 requests
+INFO    │ fasthttp    │ ✔ ✔ GET https://api.example.com/data 200 150ms
+INFO    │ fasthttp    │ ✔ Done in 0.15s
+Shutting down...
+```
+
+### Примеры использования
+
+**Загрузка токена авторизации:**
+
+```python
+import os
+from contextlib import asynccontextmanager
+from fasthttp import FastHTTP
+
+@asynccontextmanager
+async def lifespan(app: FastHTTP):
+    # Загрузить токен из переменной окружения или файла
+    app.api_token = os.getenv("API_TOKEN") or await load_token_from_file()
+    yield
+
+app = FastHTTP(lifespan=lifespan)
+```
+
+**Подключение к внешним сервисам:**
+
+```python
+from contextlib import asynccontextmanager
+from fasthttp import FastHTTP
+import aioredis
+
+@asynccontextmanager
+async def lifespan(app: FastHTTP):
+    # Startup — подключиться к Redis
+    app.redis = await aioredis.from_url("redis://localhost")
+    print("Redis connected")
+
+    yield
+
+    # Shutdown — закрыть соединение
+    await app.redis.close()
+    print("Redis disconnected")
+
+app = FastHTTP(lifespan=lifespan)
+```
+
+**Сбор статистики:**
+
+```python
+from contextlib import asynccontextmanager
+from fasthttp import FastHTTP
+
+@asynccontextmanager
+async def lifespan(app: FastHTTP):
+    # Инициализация счётчиков
+    app.request_count = 0
+    app.total_time = 0.0
+
+    yield
+
+    # Вывести статистику после выполнения
+    print(f"Total requests: {app.request_count}")
+    print(f"Total time: {app.total_time:.2f}s")
+
+app = FastHTTP(lifespan=lifespan)
+```
+
+### Без lifespan
+
+Если `lifespan` не указан, приложение работает как раньше:
+
+```python
+from fasthttp import FastHTTP
+
+app = FastHTTP()  # Без lifespan
+
+@app.get(url="https://api.example.com/data")
+async def get_data(resp):
+    return resp.json()
+
+app.run()
+```
+
 ## Следующие шаги
 
 Теперь вы знаете основы. Дальше изучите:
