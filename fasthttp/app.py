@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from typing import Annotated, Literal, get_args, get_origin
 
 import httpx
@@ -177,10 +178,40 @@ class FastHTTP:
                 """
             ),
         ] = True,
+        lifespan: Annotated[
+            Callable[[FastHTTP], AsyncIterator[None]] | None,
+            Doc(
+                """
+                Lifespan context manager for startup and shutdown logic.
+
+                Allows running code before and after all requests.
+                Useful for initializing resources (tokens, connections)
+                and cleaning up after execution.
+
+                Example:
+                ```python
+                from contextlib import asynccontextmanager
+                from fasthttp import FastHTTP
+
+                @asynccontextmanager
+                async def lifespan(app: FastHTTP):
+                    # Startup
+                    print("Starting up...")
+                    app.auth_token = await load_token()
+                    yield
+                    # Shutdown
+                    print("Shutting down...")
+
+                app = FastHTTP(lifespan=lifespan)
+                ```
+                """
+            ),
+        ] = None,
     ) -> None:
         self.logger = setup_logger(debug=debug)
         self.routes: list[Route] = []
         self.http2_enabled = http2
+        self.lifespan = lifespan
 
         if middleware is None:
             normalized_middleware = []
@@ -384,6 +415,10 @@ class FastHTTP:
         total_time = time.perf_counter() - start_all
         self.logger.info("Done in %.2fs", total_time)
 
+    async def _run_with_lifespan(self, routes: list[Route]) -> None:
+        async with self.lifespan(self):  # type: ignore
+            await self._run(routes)
+
     async def _run_route(
         self, client: httpx.AsyncClient, route: Route
     ) -> tuple[Route, float, Response | None]:
@@ -419,7 +454,10 @@ class FastHTTP:
             return
 
         try:
-            asyncio.run(self._run(routes_to_run))
+            if self.lifespan:
+                asyncio.run(self._run_with_lifespan(routes_to_run))
+            else:
+                asyncio.run(self._run(routes_to_run))
         except ImportError as e:
             if "http2" in str(e).lower():
                 self.logger.error(
