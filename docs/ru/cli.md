@@ -24,7 +24,7 @@ fasthttp get https://jsonplaceholder.typicode.com/posts/1
 fasthttp get https://api.example.com/data
 ```
 
-С параметрами:
+С query параметрами в URL:
 
 ```bash
 fasthttp get "https://api.example.com/search?q=test&page=1"
@@ -33,19 +33,19 @@ fasthttp get "https://api.example.com/search?q=test&page=1"
 ### POST
 
 ```bash
-fasthttp post https://api.example.com/users json='{"name": "John"}'
+fasthttp post https://api.example.com/users --json '{"name": "John"}'
 ```
 
 ### PUT
 
 ```bash
-fasthttp put https://api.example.com/users/1 json='{"name": "Jane"}'
+fasthttp put https://api.example.com/users/1 --json '{"name": "Jane"}'
 ```
 
 ### PATCH
 
 ```bash
-fasthttp patch https://api.example.com/users/1 json='{"age": 25}'
+fasthttp patch https://api.example.com/users/1 --json '{"age": 25}'
 ```
 
 ### DELETE
@@ -54,74 +54,95 @@ fasthttp patch https://api.example.com/users/1 json='{"age": 25}'
 fasthttp delete https://api.example.com/users/1
 ```
 
-## Параметры
+## Опции
 
-### Заголовки
+### Заголовки (-H, --header)
 
 ```bash
 fasthttp get https://api.example.com/data \
-  --header "Authorization: Bearer token" \
-  --header "User-Agent: MyApp/1.0"
+  -H "Authorization: Bearer token" \
+  -H "User-Agent: MyApp/1.0"
 ```
 
-Сокращённая форма:
+Несколько заголовков через запятую:
 
 ```bash
-fasthttp get https://api.example.com/data -H "Authorization: Bearer token"
+fasthttp get https://api.example.com/data -H "Authorization: Bearer token,Content-Type: application/json"
 ```
 
-### Query параметры
-
-```bash
-fasthttp get https://api.example.com/search \
-  --param "q=fast" \
-  --param "page=1"
-```
-
-Сокращённая форма:
-
-```bash
-fasthttp get https://api.example.com/search -p "q=fast" -p "page=1"
-```
-
-### Таймаут
-
-```bash
-fasthttp get https://api.example.com/data --timeout 30
-```
-
-### JSON тело
+### JSON тело (-j, --json)
 
 ```bash
 fasthttp post https://api.example.com/users \
   --json '{"name": "John", "email": "john@example.com"}'
 ```
 
-## Опции
+### Form данные (-d, --data)
 
-### Режим отладки
+```bash
+fasthttp post https://api.example.com/login \
+  --data "username=john&password=secret"
+```
+
+### Таймаут (-t, --timeout)
+
+```bash
+fasthttp get https://api.example.com/data --timeout 60
+```
+
+По умолчанию 30 секунд.
+
+### Режим отладки (--debug)
 
 ```bash
 fasthttp get https://api.example.com/data --debug
 ```
 
-### Вывод в файл
+Показывает:
+- Заголовки запроса
+- JSON/data тело
+- Заголовки ответа
+
+## Формат вывода
+
+Второй аргумент после URL определяет что вывести:
+
+### status — только статус (по умолчанию)
 
 ```bash
-fasthttp get https://api.example.com/data --output response.json
+fasthttp get https://api.example.com/data status
+# 200
 ```
 
-### Формат вывода
+### json — JSON тело ответа
 
 ```bash
-# JSON (по умолчанию)
-fasthttp get https://api.example.com/data --format json
+fasthttp get https://api.example.com/data json
+# {"id": 1, "name": "John"}
+```
 
-# Только статус
-fasthttp get https://api.example.com/data --format status
+### text — текст ответа
 
-# Только тело
-fasthttp get https://api.example.com/data --format body
+```bash
+fasthttp get https://api.example.com/data text
+# <html>...</html>
+```
+
+### headers — заголовки ответа
+
+```bash
+fasthttp get https://api.example.com/data headers
+# {"Content-Type": "application/json", "Date": "..."}
+```
+
+### all — всё вместе
+
+```bash
+fasthttp get https://api.example.com/data all
+# Status: 200
+# Elapsed: 234.56ms
+# Headers: {...}
+# Body: {...}
 ```
 
 ## Примеры
@@ -129,11 +150,11 @@ fasthttp get https://api.example.com/data --format body
 ### Простой GET
 
 ```bash
-$ fasthttp get https://jsonplaceholder.typicode.com/posts/1
+$ fasthttp get https://jsonplaceholder.typicode.com/posts/1 json
 {
   "userId": 1,
   "id": 1,
-  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+  "title": "sunt aut facere repellat provident occaecati",
   "body": "..."
 }
 ```
@@ -142,7 +163,7 @@ $ fasthttp get https://jsonplaceholder.typicode.com/posts/1
 
 ```bash
 $ fasthttp post https://jsonplaceholder.typicode.com/posts \
-  --json '{"title": "foo", "body": "bar", "userId": 1}'
+  --json '{"title": "foo", "body": "bar", "userId": 1}' json
 {
   "title": "foo",
   "body": "bar",
@@ -155,59 +176,40 @@ $ fasthttp post https://jsonplaceholder.typicode.com/posts \
 
 ```bash
 $ fasthttp get https://httpbin.org/headers \
-  -H "Authorization: Bearer test-token" \
-  -H "X-Custom-Header: value"
+  -H "Authorization: Bearer test-token" json
 {
   "headers": {
     "Authorization": "Bearer test-token",
-    "X-Custom-Header": "value",
     "Host": "httpbin.org"
   }
 }
 ```
 
-### С параметрами
+### С отладкой
 
 ```bash
-$ fasthttp get "https://jsonplaceholder.typicode.com/posts" \
-  -p "userId=1" -p "_limit=3"
-[
-  {
-    "userId": 1,
-    "id": 1,
-    "title": "...",
-    "body": "..."
-  },
-  ...
-]
+$ fasthttp get https://httpbin.org/get --debug
+ℹ → GET https://httpbin.org/get
+✔ HTTP 200 in 234.56ms
+ℹ ← Response headers:
+ℹ   Content-Type: application/json
+ℹ   Date: Mon, 15 Jan 2025 10:30:00 GMT
+```
+
+### Проверить статус API
+
+```bash
+$ fasthttp get https://api.example.com/health
+✔ HTTP 200 in 45.23ms
+200
 ```
 
 ## Справка
 
 ```bash
 fasthttp --help
-```
-
-Вывод:
-
-```
-usage: fasthttp [-h] [--debug] [--timeout TIMEOUT] [-H HEADER] [-p PARAM]
-                [--json JSON] [--output OUTPUT] [--format FORMAT]
-                method url
-
-positional arguments:
-  method                HTTP метод (get, post, put, patch, delete)
-  url                   URL запроса
-
-optional arguments:
-  -h, --help            Показать справку
-  --debug               Режим отладки
-  --timeout TIMEOUT     Таймаут в секундах
-  -H, --header HEADER   Заголовок (может быть несколько)
-  -p, --param PARAM     Query параметр (может быть несколько)
-  --json JSON           JSON тело запроса
-  --output OUTPUT       Сохранить ответ в файл
-  --format FORMAT       Формат вывода (json, status, body)
+fasthttp get --help
+fasthttp post --help
 ```
 
 ## Смотрите также
