@@ -248,6 +248,7 @@ class FastHTTP:
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
+        request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
@@ -261,6 +262,7 @@ class FastHTTP:
                     json=json,
                     data=data,
                     response_model=response_model,
+                    request_model=request_model,
                     tags=tags,
                     dependencies=dependencies,
                 )
@@ -276,11 +278,12 @@ class FastHTTP:
         url: str,
         params: dict | None = None,
         response_model: type[BaseModel] | None = None,
+        request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="GET", url=url, params=params, response_model=response_model, tags=tags, dependencies=dependencies
+            method="GET", url=url, params=params, response_model=response_model, request_model=request_model, tags=tags, dependencies=dependencies
         )
 
     def post(
@@ -290,11 +293,12 @@ class FastHTTP:
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
+        request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="POST", url=url, json=json, data=data, response_model=response_model, tags=tags, dependencies=dependencies
+            method="POST", url=url, json=json, data=data, response_model=response_model, request_model=request_model, tags=tags, dependencies=dependencies
         )
 
     def put(
@@ -304,11 +308,12 @@ class FastHTTP:
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
+        request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="PUT", url=url, json=json, data=data, response_model=response_model, tags=tags, dependencies=dependencies
+            method="PUT", url=url, json=json, data=data, response_model=response_model, request_model=request_model, tags=tags, dependencies=dependencies
         )
 
     def patch(
@@ -318,11 +323,12 @@ class FastHTTP:
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
+        request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="PATCH", url=url, json=json, data=data, response_model=response_model, tags=tags, dependencies=dependencies
+            method="PATCH", url=url, json=json, data=data, response_model=response_model, request_model=request_model, tags=tags, dependencies=dependencies
         )
 
     def delete(
@@ -332,6 +338,7 @@ class FastHTTP:
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
+        request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
@@ -341,6 +348,7 @@ class FastHTTP:
             json=json,
             data=data,
             response_model=response_model,
+            request_model=request_model,
             tags=tags,
             dependencies=dependencies,
         )

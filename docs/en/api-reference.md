@@ -121,6 +121,7 @@ async def lifespan(app):
     tags: list = [],
     dependencies: list = [],
     response_model: type = None,
+    request_model: type = None,
     get_request: dict = None,
 )
 ```
@@ -136,6 +137,7 @@ async def lifespan(app):
     tags: list = [],
     dependencies: list = [],
     response_model: type = None,
+    request_model: type = None,
     post_request: dict = None,
 )
 ```
@@ -151,6 +153,7 @@ async def lifespan(app):
     tags: list = [],
     dependencies: list = [],
     response_model: type = None,
+    request_model: type = None,
     put_request: dict = None,
 )
 ```
@@ -166,6 +169,7 @@ async def lifespan(app):
     tags: list = [],
     dependencies: list = [],
     response_model: type = None,
+    request_model: type = None,
     patch_request: dict = None,
 )
 ```
@@ -179,9 +183,23 @@ async def lifespan(app):
     tags: list = [],
     dependencies: list = [],
     response_model: type = None,
+    request_model: type = None,
     delete_request: dict = None,
 )
 ```
+
+### Decorator Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `url` | `str` | Request URL |
+| `params` | `dict` | Query parameters |
+| `json` | `dict` | JSON request body |
+| `data` | `bytes` | Raw request data |
+| `tags` | `list` | Tags for grouping |
+| `dependencies` | `list` | Dependencies |
+| `response_model` | `type[BaseModel]` | Pydantic model for response validation |
+| `request_model` | `type[BaseModel]` | Pydantic model for request validation |
 
 ## Dependencies
 

@@ -107,6 +107,19 @@ class Route:
                 """
             ),
         ] = None,
+        request_model: Annotated[
+            type[BaseModel] | None,
+            Doc(
+                """
+                Optional Pydantic model for validating request data.
+
+                If provided, the request json/data will be validated
+                before sending the request.
+
+                If None, the request data is sent without validation.
+                """
+            ),
+        ] = None,
         tags: Annotated[
             list[str] | None,
             Doc(
@@ -146,5 +159,6 @@ class Route:
         self.json = json
         self.data = data
         self.response_model = response_model
+        self.request_model = request_model
         self.tags = tags or []
         self.dependencies = dependencies or []

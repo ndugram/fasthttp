@@ -1,13 +1,18 @@
-import asyncio
 import logging
 import time
 from typing import Annotated
 
 import httpx
 from annotated_doc import Doc
+from pydantic import ValidationError
 
 from fasthttp.middleware import MiddlewareManager
-from fasthttp.security import Security, SecurityError, SSRFBlockedError, CircuitOpenError
+from fasthttp.security import (
+    CircuitOpenError,
+    Security,
+    SecurityError,
+    SSRFBlockedError,
+)
 
 from .exceptions import (
     FastHTTPBadStatusError,
@@ -77,69 +82,69 @@ class HTTPClient:
         self.middleware_manager = middleware_manager
         self.security = security
 
-    async def send(
-        self,
-        client: httpx.AsyncClient,
-        route: Route
-    ) -> Response | None:
-        """
-        Send a single HTTP request based on a Route definition.
+    def _validate_request(self, route: Route) -> bool:
+        if not route.request_model:
+            return True
 
-        This method:
-        - Applies request configuration based on HTTP method
-        - Executes before_request middleware hooks
-        - Sends the request using an existing httpx AsyncClient
-        - Measures request execution time
-        - Logs request lifecycle events
-        - Executes after_response middleware hooks
-        - Executes on_error middleware hooks on errors
-        - Automatically handles and logs errors
-        - Executes the route handler with the Response object
+        try:
+            if route.json:
+                route.request_model.model_validate(route.json)
+            elif route.data and isinstance(route.data, dict):
+                route.request_model.model_validate(route.data)
+            return True
+        except ValidationError as e:
+            self.logger.error("Request validation failed: %s", e)
+            return False
 
-        Returns:
-        - Response instance if the request was successful
-        - Modified Response if the handler returned a string or Response
-        - None if a connection or timeout error occurred
-        """
-        config = self.request_configs.get(route.method, {})
-
+    async def _prepare_config(self, route: Route, config: dict) -> dict:
         headers = dict(config.get("headers") or {})
         headers.setdefault("User-Agent", "fasthttp/0.1.16")
         config["headers"] = headers
+
         if self.middleware_manager:
             config = await self.middleware_manager.process_before_request(route, config)
 
         for dep in route.dependencies:
             config = await dep(route, config)
 
+        return config
+
+    async def _apply_security_checks(self, route: Route) -> bool:
+        if not self.security:
+            return True
+
+        try:
+            await self.security.pre_request(route.url, route.method)
+            return True
+        except SSRFBlockedError as e:
+            self.logger.error("SSRF blocked: %s", e)
+            return False
+        except CircuitOpenError as e:
+            self.logger.error("Circuit breaker open: %s", e)
+            return False
+        except SecurityError as e:
+            self.logger.error("Security error: %s", e)
+            return False
+
+    def _get_timeout_config(self, config: dict) -> httpx.Timeout:
         if self.security:
-            try:
-                await self.security.pre_request(route.url, route.method)
-            except SSRFBlockedError as e:
-                self.logger.error("SSRF blocked: %s", e)
-                return None
-            except CircuitOpenError as e:
-                self.logger.error("Circuit breaker open: %s", e)
-                return None
-            except SecurityError as e:
-                self.logger.error("Security error: %s", e)
-                return None
+            if self.security.connect_timeout:
+                return httpx.Timeout(self.security.connect_timeout)
+            return httpx.Timeout(self.security.timeout)
 
-            await self.security.acquire_slot()
+        timeout = config.get("timeout", 30.0)
+        if timeout is not None:
+            return httpx.Timeout(timeout)
+        return httpx.Timeout(30.0)
 
-            config["headers"] = self.security.sanitize_request_headers(config["headers"])
+    def _log_request(self, route: Route, config: dict) -> None:
+        if self.security:
             masked_headers = self.security.mask_headers_for_logging(config["headers"])
             self.logger.debug(
                 "→ %s %s | headers=%s",
                 route.method,
                 route.url,
                 masked_headers,
-            )
-
-            timeout_config = (
-                httpx.Timeout(self.security.connect_timeout)
-                if self.security.connect_timeout
-                else httpx.Timeout(self.security.timeout)
             )
         else:
             self.logger.debug(
@@ -148,12 +153,101 @@ class HTTPClient:
                 route.url,
                 config.get("headers"),
             )
-            timeout_config = (
-                httpx.Timeout(config.get("timeout", 30.0))
-                if config.get("timeout") is not None
-                else httpx.Timeout(30.0)
-            )
 
+    async def _check_response_security(
+        self,
+        route: Route,
+        response: httpx.Response
+    ) -> None:
+        if not self.security:
+            return
+
+        self.security.release_slot()
+        self.security.check_response_headers(dict(response.headers))
+        self.security.check_response(
+            content=response.content,
+            content_type=response.headers.get("content-type"),
+            status_code=response.status_code,
+        )
+        await self.security.post_request(route.url, route.method, True)
+
+    async def _handle_bad_status(
+        self,
+        route: Route,
+        config: dict,
+        response: httpx.Response
+    ) -> None:
+        error = FastHTTPBadStatusError(
+            message=f"HTTP {response.status_code}",
+            url=route.url,
+            method=route.method,
+            status_code=response.status_code,
+            response_body=response.text,
+        )
+        error.log()
+
+        if self.middleware_manager:
+            await self.middleware_manager.process_on_error(error, route, config)
+
+    async def _handle_error(
+        self,
+        route: Route,
+        config: dict,
+        error: Exception,
+        error_class: type[FastHTTPRequestError],
+        **kwargs
+    ) -> None:
+        if self.security:
+            self.security.release_slot()
+            await self.security.post_request(route.url, route.method, False, error)
+
+        exc = error_class(
+            message=str(error) or "Request failed",
+            url=route.url,
+            method=route.method,
+            **kwargs
+        )
+        exc.log()
+
+        if self.middleware_manager:
+            await self.middleware_manager.process_on_error(exc, route, config)
+
+    def _build_response(
+        self,
+        route: Route,
+        config: dict,
+        response: httpx.Response
+    ) -> Response:
+        return Response(
+            status=response.status_code,
+            text=response.text,
+            headers=dict(response.headers),
+            method=route.method,
+            req_headers=config.get("headers"),
+            query=route.params,
+            req_json=route.json,
+            req_data=route.data,
+        )
+
+    async def _process_handler_result(
+        self,
+        response: Response,
+        handler_result: object
+    ) -> Response:
+        if isinstance(handler_result, Response):
+            return handler_result
+        if isinstance(handler_result, str):
+            response.text = handler_result
+        response._handler_result = handler_result
+        return response
+
+    async def _execute_request(
+        self,
+        client: httpx.AsyncClient,
+        route: Route,
+        config: dict,
+        timeout_config: httpx.Timeout
+    ) -> tuple[httpx.Response, float] | None:
         start = time.perf_counter()
 
         try:
@@ -167,125 +261,65 @@ class HTTPClient:
                 timeout=timeout_config,
                 follow_redirects=False,
             )
-
-            if self.security:
-                self.security.release_slot()
-                self.security.check_response_headers(dict(resp.headers))
-
-                content = resp.content
-                self.security.check_response(
-                    content=content,
-                    content_type=resp.headers.get("content-type"),
-                    status_code=resp.status_code,
-                )
-
-                await self.security.post_request(route.url, route.method, True)
-
             elapsed = (time.perf_counter() - start) * 1000
-
-            if resp.status_code >= 400:
-                text = resp.text
-                error = FastHTTPBadStatusError(
-                    message=f"HTTP {resp.status_code}",
-                    url=route.url,
-                    method=route.method,
-                    status_code=resp.status_code,
-                    response_body=text,
-                )
-                error.log()
-
-                if self.middleware_manager:
-                    await self.middleware_manager.process_on_error(
-                        error, route, config
-                    )
-
-                return None
-
-            text = resp.text
-
-            log_success(route.url, route.method, resp.status_code, elapsed)
-
-            response = Response(
-                status=resp.status_code,
-                text=text,
-                headers=dict(resp.headers),
-                method=route.method,
-                req_headers=config.get("headers"),
-                query=route.params,
-                req_json=route.json,
-                req_data=route.data,
-            )
-
-            if self.middleware_manager:
-                response = await self.middleware_manager.process_after_response(
-                    response, route, config
-                )
-
-            handler_result = await route.handler(response)
-            if isinstance(handler_result, Response):
-                return handler_result
-            if isinstance(handler_result, str):
-                response.text = handler_result
-
-            response._handler_result = handler_result
-            return response
-
+            return resp, elapsed
         except httpx.ConnectError as e:
-            if self.security:
-                self.security.release_slot()
-                await self.security.post_request(route.url, route.method, False, e)
-
-            error = FastHTTPConnectionError(
-                message=str(e) or "Connection failed",
-                url=route.url,
-                method=route.method,
-            )
-            error.log()
-
-            if self.middleware_manager:
-                await self.middleware_manager.process_on_error(error, route, config)
-
-            return None
-
+            await self._handle_error(route, config, e, FastHTTPConnectionError)
         except httpx.TimeoutException as e:
-            if self.security:
-                self.security.release_slot()
-                await self.security.post_request(route.url, route.method, False, e)
-
-            timeout = config.get("timeout", "default")
-            error = FastHTTPTimeoutError(
-                message=str(e) or "Request timed out",
-                url=route.url,
-                method=route.method,
-                timeout=timeout,
+            await self._handle_error(
+                route, config, e, FastHTTPTimeoutError,
+                timeout=config.get("timeout", "default")
             )
-            error.log()
-
-            if self.middleware_manager:
-                await self.middleware_manager.process_on_error(error, route, config)
-
-            return None
-
         except SecurityError as e:
             if self.security:
                 self.security.release_slot()
                 await self.security.post_request(route.url, route.method, False, e)
             self.logger.error("Security error: %s", e)
-            return None
-
         except Exception as e:
-            if self.security:
-                self.security.release_slot()
-                await self.security.post_request(route.url, route.method, False, e)
+            await self._handle_error(route, config, e, FastHTTPRequestError)
 
-            error = FastHTTPRequestError(
-                message=str(e) or "Unknown error",
-                url=route.url,
-                method=route.method,
-            )
-            error.log()
+        return None
 
-            if self.middleware_manager:
-                await self.middleware_manager.process_on_error(error, route, config)
-
+    async def send(
+        self,
+        client: httpx.AsyncClient,
+        route: Route
+    ) -> Response | None:
+        if not self._validate_request(route):
             return None
+
+        config = self.request_configs.get(route.method, {})
+        config = await self._prepare_config(route, config)
+
+        if not await self._apply_security_checks(route):
+            return None
+
+        if self.security:
+            await self.security.acquire_slot()
+            config["headers"] = self.security.sanitize_request_headers(config["headers"])
+
+        timeout_config = self._get_timeout_config(config)
+        self._log_request(route, config)
+
+        result = await self._execute_request(client, route, config, timeout_config)
+        if not result:
+            return None
+
+        resp, elapsed = result
+        await self._check_response_security(route, resp)
+
+        if resp.status_code >= 400:
+            await self._handle_bad_status(route, config, resp)
+            return None
+
+        log_success(route.url, route.method, resp.status_code, elapsed)
+
+        response = self._build_response(route, config, resp)
+
+        if self.middleware_manager:
+            response = await self.middleware_manager.process_after_response(
+                response, route, config
+            )
+
+        handler_result = await route.handler(response)
+        return await self._process_handler_result(response, handler_result)
