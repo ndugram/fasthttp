@@ -478,3 +478,4 @@ class FastHTTP:
             self.logger.error("Connection error: %s", e)
         except KeyboardInterrupt:
             self.logger.warning("Interrupted by user")
+
