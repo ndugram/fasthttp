@@ -179,7 +179,7 @@ class FastHTTP:
             ),
         ] = True,
         lifespan: Annotated[
-            Callable[[FastHTTP], AsyncIterator[None]] | None,
+            Callable[[FastHTTP], object] | None,
             Doc(
                 """
                 Lifespan context manager for startup and shutdown logic.
