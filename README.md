@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/logo-repo.png" style="background:white; padding:12px; border-radius:10px;">
+  <img src="https://fasthttp.readthedocs.io/ru/latest/logo-repo.png" style="background:white; padding:12px; border-radius:10px;">
 </p>
 
 <div align="center">
@@ -10,10 +10,6 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/ndugram/fasthttp?utm_source=badge)
-
-**Simple & Fast HTTP Client for Python**
-
-[Documentation](docs/en/index.md) • [Quick Start](docs/en/quick-start.md) • [Examples](docs/en/examples.md)
 
 </div>
 
@@ -130,18 +126,6 @@ async def get_data(resp):
 if __name__ == "__main__":
     app.run()
 ```
-
-##  Documentation
-
-- **[Documentation (EN)](docs/en/index.md)** - Complete guide (English)
-- **[Documentation (RU)](docs/ru/index.md)** - Полное руководство (Русский)
-- **[Quick Start](docs/en/quick-start.md)** - Get started in 2 minutes
-- **[API Reference](docs/en/api-reference.md)** - Full API documentation
-- **[Examples](docs/en/examples.md)** - Real-world examples
-- **[Configuration](docs/en/configuration.md)** - Advanced settings
-- **[Middleware](docs/en/middleware.md)** - Request/response interception
-- **[Pydantic Validation](docs/en/pydantic-validation.md)** - Type-safe validation
-- **[HTTP/2 Support](docs/en/http2-support.md)** - HTTP/2 protocol support
 
 
 ## License
