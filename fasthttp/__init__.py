@@ -5,7 +5,7 @@ from .middleware import BaseMiddleware, CacheMiddleware, MiddlewareManager
 __all__ = (
     "BaseMiddleware",
     "CacheMiddleware",
+    "Depends",
     "FastHTTP",
     "MiddlewareManager",
-    "Depends",
 )
