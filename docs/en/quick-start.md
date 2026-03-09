@@ -423,6 +423,124 @@ async def protected_request(resp: Response):
 
 More details in [Dependencies](dependencies.md).
 
+## Lifespan
+
+Lifespan allows running code before and after all requests. Useful for initializing resources (tokens, connections) and cleaning up after execution.
+
+### Basic Example
+
+```python
+from contextlib import asynccontextmanager
+from fasthttp import FastHTTP
+
+@asynccontextmanager
+async def lifespan(app: FastHTTP):
+    # Startup — runs before requests
+    print("Starting up...")
+    app.auth_token = "my-secret-token"  # Can add attributes to app
+
+    yield  # Requests execute here
+
+    # Shutdown — runs after requests
+    print("Shutting down...")
+
+app = FastHTTP(lifespan=lifespan)
+
+@app.get(url="https://api.example.com/data")
+async def get_data(resp):
+    return resp.json()
+
+app.run()
+```
+
+Output:
+
+```
+Starting up...
+INFO    │ fasthttp    │ ✔ FastHTTP started
+INFO    │ fasthttp    │ ✔ Sending 1 requests
+INFO    │ fasthttp    │ ✔ ✔ GET https://api.example.com/data 200 150ms
+INFO    │ fasthttp    │ ✔ Done in 0.15s
+Shutting down...
+```
+
+### Usage Examples
+
+**Loading authorization token:**
+
+```python
+import os
+from contextlib import asynccontextmanager
+from fasthttp import FastHTTP
+
+@asynccontextmanager
+async def lifespan(app: FastHTTP):
+    # Load token from environment variable or file
+    app.api_token = os.getenv("API_TOKEN") or await load_token_from_file()
+    yield
+
+app = FastHTTP(lifespan=lifespan)
+```
+
+**Connecting to external services:**
+
+```python
+from contextlib import asynccontextmanager
+from fasthttp import FastHTTP
+import aioredis
+
+@asynccontextmanager
+async def lifespan(app: FastHTTP):
+    # Startup — connect to Redis
+    app.redis = await aioredis.from_url("redis://localhost")
+    print("Redis connected")
+
+    yield
+
+    # Shutdown — close connection
+    await app.redis.close()
+    print("Redis disconnected")
+
+app = FastHTTP(lifespan=lifespan)
+```
+
+**Collecting statistics:**
+
+```python
+from contextlib import asynccontextmanager
+from fasthttp import FastHTTP
+
+@asynccontextmanager
+async def lifespan(app: FastHTTP):
+    # Initialize counters
+    app.request_count = 0
+    app.total_time = 0.0
+
+    yield
+
+    # Print statistics after execution
+    print(f"Total requests: {app.request_count}")
+    print(f"Total time: {app.total_time:.2f}s")
+
+app = FastHTTP(lifespan=lifespan)
+```
+
+### Without Lifespan
+
+If `lifespan` is not specified, the application works as before:
+
+```python
+from fasthttp import FastHTTP
+
+app = FastHTTP()  # Without lifespan
+
+@app.get(url="https://api.example.com/data")
+async def get_data(resp):
+    return resp.json()
+
+app.run()
+```
+
 ## Next Steps
 
 Now you know the basics. Continue learning:
