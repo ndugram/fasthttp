@@ -57,8 +57,9 @@ def get(
     output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
 ) -> None:
-    _execute_request("GET", url, output, headers, timeout=timeout)
+    _execute_request("GET", url, output, headers, timeout=timeout, debug=debug)
 
 
 @app.command()
@@ -69,6 +70,7 @@ def post(
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
 ) -> None:
     json_data: dict[str, Any] | None = None
     if json_body:
@@ -78,7 +80,7 @@ def post(
             formatter.error(f"Invalid JSON: {e}")
             raise typer.Exit(1)
 
-    _execute_request("POST", url, output, headers, json_data=json_data, data=data, timeout=timeout)
+    _execute_request("POST", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug)
 
 
 @app.command()
@@ -89,6 +91,7 @@ def put(
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
 ) -> None:
     json_data: dict[str, Any] | None = None
     if json_body:
@@ -98,7 +101,7 @@ def put(
             formatter.error(f"Invalid JSON: {e}")
             raise typer.Exit(1)
 
-    _execute_request("PUT", url, output, headers, json_data=json_data, data=data, timeout=timeout)
+    _execute_request("PUT", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug)
 
 
 @app.command()
@@ -109,6 +112,7 @@ def patch(
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
 ) -> None:
     json_data: dict[str, Any] | None = None
     if json_body:
@@ -118,7 +122,7 @@ def patch(
             formatter.error(f"Invalid JSON: {e}")
             raise typer.Exit(1)
 
-    _execute_request("PATCH", url, output, headers, json_data=json_data, data=data, timeout=timeout)
+    _execute_request("PATCH", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug)
 
 
 @app.command()
@@ -127,8 +131,9 @@ def delete(
     output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
 ) -> None:
-    _execute_request("DELETE", url, output, headers, timeout=timeout)
+    _execute_request("DELETE", url, output, headers, timeout=timeout, debug=debug)
 
 
 def _execute_request(
@@ -139,8 +144,18 @@ def _execute_request(
     json_data: dict | None = None,
     data: str | None = None,
     timeout: float = 30.0,
+    debug: bool = False,
 ) -> None:
     headers = parse_headers(headers_str)
+
+    if debug:
+        formatter.info(f"→ {method} {url}")
+        if headers:
+            formatter.info(f"  Headers: {json.dumps(headers, indent=2)}")
+        if json_data:
+            formatter.info(f"  JSON: {json.dumps(json_data, indent=2)}")
+        if data:
+            formatter.info(f"  Data: {data}")
 
     try:
         resp = run_request(
@@ -158,6 +173,12 @@ def _execute_request(
             raise typer.Exit(1)
 
         formatter.success(f"HTTP {resp.status} in {resp.elapsed_ms:.2f}ms")
+
+        if debug:
+            formatter.info(f"← Response headers:")
+            for key, value in resp.headers.items():
+                formatter.info(f"  {key}: {value}")
+
         result = get_output(resp, output)
         print(result)
 
