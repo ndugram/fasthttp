@@ -4,30 +4,17 @@ description: The story of how an idea in September 2025 turned into a real proje
 date: 2025-09-01
 ---
 
+# Who Am I
 
-# About me
+My name is **NEFOR**. I'm a web developer and have been working with **Python frameworks for about 2 years**, mainly with **FastAPI** and **Django**.
 
-My name is **NEFOR**. I am a web developer and for about **2 years I have been working with Python frameworks**, mainly **FastAPI** and **Django**.
+I've always been interested not just in writing code, but in **understanding how tools work under the hood**: how frameworks are built, how HTTP requests are processed, and how library architecture is designed.
 
-I have always been interested not only in writing code but also in **understanding how tools work under the hood**: how frameworks are structured, how HTTP requests are processed, and how library architectures are designed.
-
-Over time, this curiosity led me to start building my own open-source project.
+It was exactly this interest that eventually led to my own open-source project. By the way, about open-source — I was completely inspired by FastAPI. I saw how Sebastián Ramírez created a cool project that actually helps people, and I thought: why shouldn't I do something similar? Not on that scale of course, but still.
 
 # How I Created fasthttp-client
 
-Back in September 2025, I stumbled upon FastAPI and just couldn't believe it. Like, really — check out this code:
-
-```python
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/")
-async def root():
-    return {"message": "Hello!"}
-```
-
-And it just works. No bs, simple and clear. I was totally hooked — how can you make everything work through a decorator and everything happens automatically under the hood?
+Back in September 2025, I stumbled upon FastAPI and just couldn't believe it. Like, really — you write a decorator over a function and it's already a working endpoint. No bs, simple and clear. I was totally hooked — how can you make everything work through a decorator and everything happens automatically under the hood?
 
 Then in December, I started diving deep into how this framework works internally. How it generates OpenAPI docs, how it handles async requests, how Pydantic integrates right into the endpoints. The deeper I dug, the more I realized — there's massive architectural work behind this simplicity.
 
@@ -41,113 +28,71 @@ So the idea of creating a web framework just faded away.
 
 That same evening I'm watching YouTube, and I see a video — comparing speed of requests, aiohttp and httpx. They show benchmarks, graphs, numbers. And I'm like: yo, I can make my own HTTP client! Not just another wrapper around aiohttp, but something of my own with a proper API.
 
-Wanted to make a library that would:
-- Be simple like requests
-- Support async like aiohttp
-- Have beautiful logs, not through print()
-- And pydantic should work right away without any extra work
+Wanted to make a library that would be simple like requests, support async like aiohttp, have beautiful logs not through print(), and pydantic should work right away without any extra work.
 
 ## Started Coding at Night
 
-Sat down in the evening, started coding. First made a wrapper around aiohttp — just wanted to test if the idea works at all. Then switched to httpx because it's more stable and convenient. And then gradually added features:
+Sat down in the evening, started coding. First made a wrapper around aiohttp — just wanted to test if the idea works at all. But then I realized aiohttp wasn't for me.
 
-- Made beautiful logging
-- Hooked up Pydantic validation
-- Built Fluent API
-- Added middlewares
-- Connected HTTP/2 through hyper-h2
+First, aiohttp lets you run your own server, and I didn't need that. I wanted to add Swagger documentation to the project like in FastAPI — attempts were good but pathetic. Couldn't integrate it properly.
 
-And it works. Honestly, didn't expect it to turn out like this.
+Second, I decided to add HTTP/2 support. And turns out aiohttp doesn't support it. Had to completely switch to httpx.
+
+It was a tough decision — rewriting everything from scratch. But httpx turned out more stable and convenient, plus HTTP/2 out of the box through hyper-h2. So in the end — right choice.
+
+Then gradually added features: beautiful logging, Pydantic validation, Fluent API, middlewares, security. And it works. Honestly, didn't expect it to turn out like this.
+
+## Code Challenges
+
+One of the main problems was making the code readable. I wanted other developers to easily understand the project, get the architecture, and contribute. It's not as simple as it seems — writing code for yourself and writing code for others are different things.
+
+Had to constantly refactor, rewrite chunks, think about naming and structure. But now I can confidently say — there's clean code in the project. At least, that's what I aimed for.
 
 ## What the Library Can Do
 
-As I was coding, I kept adding feature after feature. Initially just wanted to make a convenient wrapper, but then realized — I can do much more. Here's what came out:
+As I was coding, I kept adding feature after feature. Initially just wanted to make a convenient wrapper, but then realized — I can do much more.
 
-**Declarative style** — no bs with creating sessions and manual context management. Just a decorator and the request is ready:
+**Declarative style** — no bs with creating sessions and manual context management. Just a decorator and the request is ready.
 
-```python
-from fasthttp import FastHTTP
+**Async and parallel** — everything runs on httpx and asyncio. If you have 10 requests, they run in parallel, not one by one. This really saves time, especially when working with a bunch of APIs.
 
-app = FastHTTP()
+**Dependencies** — you can modify any request before sending. Add auth token, headers, logging — everything through Depends. Exactly like in FastAPI.
 
-@app.get(url="https://api.github.com/users/ndugram")
-async def get_user(resp):
-    return resp.json()
-```
+**Middleware** — global logic for all requests. Caching, logging, retries — anything you want. There's even a ready-made CacheMiddleware that caches responses.
 
-**Async and parallel** — everything runs on [httpx](https://www.python-httpx.org/) and asyncio. If you have 10 requests, they run in parallel, not one by one. This really saves time, especially when working with a bunch of APIs.
+**Pydantic validation** — responses are automatically validated through Pydantic models. No manual checks needed.
 
-**Dependencies** — you can modify any request before sending. Add auth token, headers, logging — everything through Depends. Exactly like in FastAPI:
+**Security out of the box** — this is a whole separate thing. The library includes SSRF protection, circuit breaker, secret masking in logs, response size limits, dangerous redirect protection, and timeouts. All of this is enabled with one line.
 
-```python
-from fasthttp import FastHTTP, Depends
-
-app = FastHTTP()
-
-async def add_auth(route, config):
-    config.setdefault("headers", {})["Authorization"] = "Bearer token"
-    return config
-
-@app.get(url="https://api.example.com/data", dependencies=[Depends(add_auth)])
-async def protected(resp):
-    return resp.json()
-```
-
-**Middleware** — global logic for all requests. Caching, logging, retries — anything you want. There's even a ready-made [CacheMiddleware](https://fasthttp.readthedocs.io/en/middleware.html#cache) that caches responses.
-
-**Pydantic validation** — responses are automatically validated through Pydantic models. No manual checks needed:
-
-```python
-from pydantic import BaseModel
-from fasthttp import FastHTTP
-
-app = FastHTTP()
-
-class User(BaseModel):
-    login: str
-    id: int
-    html_url: str
-
-@app.get(url="https://api.github.com/users/ndugram", response_model=User)
-async def get_user(resp):
-    return resp.json()
-```
-
-**Security out of the box** — this is a whole separate thing. The library includes:
-- SSRF protection (blocking localhost and private IPs)
-- Circuit breaker — if a server is down, requests don't fly into the void
-- Secret masking in logs (tokens, passwords — everything hidden)
-- Response size limits
-- Dangerous redirect protection
-- Timeouts
-
-All of this is enabled with one line `security=True` (enabled by default).
-
-**HTTP/2** — modern protocol support via [hyper-h2](https://hyper-h2.readthedocs.io/). Enabled like this: `app = FastHTTP(http2=True)`.
+**HTTP/2** — modern protocol support via hyper-h2.
 
 **CLI** — you can run requests right from the terminal without writing Python code. Convenient for API testing.
 
-**Beautiful logging** — instead of boring `print("GET", url)` you get nice colored logs with execution time, status code and more:
-
-```
-FastHTTP started
-Sending 3 requests
-→ GET https://api.github.com/users/ndugram | headers={...}
-✔️ GET    https://api.github.com/users/ndugram  200  145.23ms
-Done in 0.23s
-```
+**Beautiful logging** — instead of boring print() you get nice colored logs with execution time, status code and more.
 
 I built all of this because I really needed it myself. At work I was constantly hitting different APIs, writing the same thing over and over. And I thought — why isn't there a normal tool for this?
 
+## What People Say
+
+There are people who've already tried the library. And you know what? They say it looks really really cool. No one's seen this before — an HTTP client with a declarative approach like in FastAPI.
+
+Some even write that I'm a genius. Of course, that's an exaggeration, but it's nice to hear. When people appreciate your work — it motivates you to continue.
+
 ## About the Team
 
-I want to say separately — I'm not doing this alone. There are people who actively contribute to the project, help with code, fix bugs, write documentation. Without them, the library would be much worse. Special thanks to:
+I want to say separately — I'm not doing this alone. There are people who actively contribute to the project, help with code, fix bugs, write documentation. Without them, the library would be much worse.
 
-- Those who open Issues with bugs — this really helps
-- Those who make Pull Requests — you guys are the best
-- Those who just drop stars and give feedback
+But not everything is smooth. There are conflicts. Some people propose very dumb ideas that I don't want to add to the project. Have to explain why it won't work, argue, stand my ground. It's normal for open-source — everyone has their own opinion.
+
+But overall I'm grateful to everyone who works on the project behind the scenes — proposes ideas, helps with code, writes documentation. Special thanks to those who open Issues with bugs, make Pull Requests, drop stars and give feedback.
 
 You motivate me to keep developing the project. It's not just "my project" — it's our project.
+
+## What's Next
+
+Honestly, I can't say what specific plans I have for the future. Many ideas come at the most inconvenient moment — when you're showering, riding the subway, or trying to fall asleep. So it's hard to predict what will be added in advance.
+
+But one thing I can say for sure — the project will continue to develop. I'll be adding new features, improving existing ones, listening to user feedback. So stay tuned for updates.
 
 ## Proud of the Project
 

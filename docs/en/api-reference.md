@@ -23,6 +23,7 @@ app = FastHTTP(
     delete_request: dict = {},
     middleware: list = [],
     security: bool = True,
+    lifespan: Callable = None,
 )
 ```
 
@@ -39,6 +40,7 @@ app = FastHTTP(
 | `delete_request` | `dict` | `{}` | DELETE settings |
 | `middleware` | `list` | `[]` | Middleware list |
 | `security` | `bool` | `True` | Enable built-in security |
+| `lifespan` | `Callable` | `None` | Context manager for startup/shutdown |
 
 ### Methods
 
@@ -60,6 +62,52 @@ app.run(
 ```python
 app.run()  # Run all
 app.run(tags=["users"])  # Only with tag users
+```
+
+### Lifespan
+
+Context manager for running code before and after requests.
+
+```python
+from contextlib import asynccontextmanager
+from fasthttp import FastHTTP
+
+@asynccontextmanager
+async def lifespan(app: FastHTTP):
+    # Startup
+    app.token = await load_token()
+    yield
+    # Shutdown
+    await cleanup()
+
+app = FastHTTP(lifespan=lifespan)
+```
+
+**Parameters:**
+- `app` — FastHTTP instance, can add attributes
+
+**Usage examples:**
+
+```python
+# Load configuration
+@asynccontextmanager
+async def lifespan(app):
+    app.config = load_config()
+    yield
+
+# Connect to Redis
+@asynccontextmanager
+async def lifespan(app):
+    app.redis = await aioredis.from_url("redis://localhost")
+    yield
+    await app.redis.close()
+
+# Collect statistics
+@asynccontextmanager
+async def lifespan(app):
+    app.stats = {"requests": 0}
+    yield
+    print(f"Total: {app.stats['requests']} requests")
 ```
 
 ## HTTP Method Decorators
