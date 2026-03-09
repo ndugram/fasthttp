@@ -423,6 +423,67 @@ async def protected_request(resp: Response):
 
 More details in [Dependencies](dependencies.md).
 
+## Request Validation
+
+FastHTTP supports validating request data before sending through Pydantic models. This ensures data is correct before the request goes to the server.
+
+### Basic Example
+
+```python
+from fasthttp import FastHTTP
+from pydantic import BaseModel, Field
+
+app = FastHTTP()
+
+class UserRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    email: str = Field(pattern=r"^[\w\.-]+@[\w\.-]+\.\w+$")
+    age: int = Field(ge=0, le=150)
+
+@app.post(
+    url="https://api.example.com/users",
+    json={"name": "John", "email": "john@example.com", "age": 25},
+    request_model=UserRequest
+)
+async def create_user(resp):
+    return resp.json()
+```
+
+If data fails validation, the request is not sent and an error appears in logs.
+
+### Validation with Error
+
+```python
+@app.post(
+    url="https://api.example.com/users",
+    json={"name": "", "email": "invalid-email", "age": 200},
+    request_model=UserRequest
+)
+async def create_user(resp):
+    return resp.json()
+
+# Request won't be sent, in logs:
+# ERROR | Request validation failed: ...
+```
+
+### Validation with data
+
+```python
+class FormData(BaseModel):
+    username: str
+    password: str = Field(min_length=8)
+
+@app.post(
+    url="https://api.example.com/login",
+    data={"username": "john", "password": "secret123"},
+    request_model=FormData
+)
+async def login(resp):
+    return resp.json()
+```
+
+More details in [Pydantic Validation](pydantic-validation.md).
+
 ## Lifespan
 
 Lifespan allows running code before and after all requests. Useful for initializing resources (tokens, connections) and cleaning up after execution.
