@@ -36,7 +36,7 @@ app = FastHTTP(middleware=[LoggingMiddleware(), HeaderMiddleware()])
 
 
 @app.get(url="https://httpbin.org/get")
-async def get_data(resp: Response):
+async def get_data(resp: Response) -> dict:
     return resp.json()
 
 

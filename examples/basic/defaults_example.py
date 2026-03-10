@@ -15,12 +15,12 @@ app = FastHTTP(
 
 
 @app.get(url="https://httpbin.org/get")
-async def get_request(resp: Response):
+async def get_request(resp: Response) -> dict:
     return resp.json()
 
 
 @app.post(url="https://httpbin.org/post", json={"message": "hello"})
-async def post_request(resp: Response):
+async def post_request(resp: Response) -> dict:
     return resp.json()
 
 

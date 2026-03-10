@@ -30,18 +30,23 @@ pip install fasthttp-client[http2]
 
 ```python
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 app = FastHTTP()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1")
-async def main(resp):
+async def main(resp: Response) -> dict:
     return resp.json()
 
 
 if __name__ == "__main__":
     app.run()
 ```
+
+:::tip Important
+Handler functions must have a return type annotation (`-> dict`, `-> str`, `-> int`, etc.).
+:::
 
 ## Why FastHTTP?
 
@@ -65,11 +70,12 @@ async def main():
 ```python
 # Clean and clear code
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 app = FastHTTP()
 
 @app.get(url="https://api.example.com/data")
-async def main(resp):
+async def main(resp: Response) -> dict:
     return resp.json()
 ```
 
@@ -109,22 +115,23 @@ async def main(resp):
 
 ```python
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 app = FastHTTP()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1")
-async def get_post(resp):
+async def get_post(resp: Response) -> dict:
     return resp.json()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/users/1")
-async def get_user(resp):
+async def get_user(resp: Response) -> dict:
     return resp.json()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/comments/1")
-async def get_comment(resp):
+async def get_comment(resp: Response) -> dict:
     return resp.json()
 
 
@@ -137,17 +144,18 @@ if __name__ == "__main__":
 
 ```python
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 app = FastHTTP()
 
 
 @app.get(url="https://api.example.com/users", tags=["users"])
-async def get_users(resp):
+async def get_users(resp: Response) -> dict:
     return resp.json()
 
 
 @app.get(url="https://api.example.com/posts", tags=["posts"])
-async def get_posts(resp):
+async def get_posts(resp: Response) -> dict:
     return resp.json()
 
 
@@ -159,6 +167,7 @@ app.run(tags=["users"])
 
 ```python
 from fasthttp import FastHTTP, Depends
+from fasthttp.response import Response
 
 app = FastHTTP()
 
@@ -172,7 +181,7 @@ async def add_auth(route, config):
     url="https://api.example.com/data",
     dependencies=[Depends(add_auth)]
 )
-async def protected(resp):
+async def protected(resp: Response) -> dict:
     return resp.json()
 ```
 

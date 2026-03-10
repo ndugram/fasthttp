@@ -34,12 +34,12 @@ app = FastHTTP(middleware=[ResponseTransformerMiddleware()])
 
 
 @app.get(url="https://httpbin.org/get")
-async def get_data(resp: Response):
+async def get_data(resp: Response) -> dict:
     return resp.json()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1")
-async def get_post(resp: Response):
+async def get_post(resp: Response) -> dict:
     return resp.json()
 
 

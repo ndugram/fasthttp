@@ -5,7 +5,7 @@ app = FastHTTP(debug=True)
 
 
 @app.get(url="https://httpbin.org/status/404")
-async def error_handling(resp: Response):
+async def error_handling(resp: Response) -> dict:
     if resp.status >= 400:
         return {"error": f"HTTP {resp.status}", "message": "Request failed"}
     return resp.json()

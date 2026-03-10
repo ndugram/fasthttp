@@ -5,12 +5,12 @@ app = FastHTTP(debug=True)
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts")
-async def get_posts(resp: Response):
+async def get_posts(resp: Response) -> dict:
     return resp.json()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/comments", params={"postId": "1"})
-async def get_comments(resp: Response):
+async def get_comments(resp: Response) -> dict:
     return resp.json()
 
 

@@ -15,7 +15,7 @@ app = FastHTTP(debug=True)
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts", response_model=list[Post])
-async def get_all_posts(resp: Response) -> Post:
+async def get_all_posts(resp: Response) -> list[Post]:
     return resp.json()
 
 

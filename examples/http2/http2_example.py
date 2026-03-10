@@ -9,7 +9,7 @@ app = FastHTTP(
 
 
 @app.get(url="https://www.google.com/")
-async def get_google(resp: Response):
+async def get_google(resp: Response) -> int:
     print("\nGoogle Request:")
     print(f"  Status: {resp.status}")
     print("Protocol: HTTP/2 (if supported by server)")
@@ -17,7 +17,7 @@ async def get_google(resp: Response):
 
 
 @app.get(url="https://github.com/")
-async def get_github(resp: Response):
+async def get_github(resp: Response) -> int:
     print("\nGitHub Request:")
     print(f"Status: {resp.status}")
     print("Protocol: HTTP/2 (if supported by server)")
@@ -25,7 +25,7 @@ async def get_github(resp: Response):
 
 
 @app.get(url="https://httpbin.org/get")
-async def get_httpbin(resp: Response):
+async def get_httpbin(resp: Response) -> dict:
     print("\nHTTPBin Request:")
     print(f"  Status: {resp.status}")
     print("Protocol: HTTP/1.1 (httpbin doesn't support HTTP/2)")

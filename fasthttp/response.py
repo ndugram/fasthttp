@@ -1,9 +1,7 @@
 import json
-from typing import Annotated
+from typing import Annotated, Any
 
 from annotated_doc import Doc
-
-from .types import JSONResponse
 
 
 class Response:
@@ -200,7 +198,7 @@ class Response:
     ]:
         return {}
 
-    def json(self) -> JSONResponse.Value:
+    def json(self) -> dict[str, Any]:
         """
         Parse the response body as JSON.
 

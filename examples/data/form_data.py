@@ -8,7 +8,7 @@ app = FastHTTP(debug=True)
     url="https://httpbin.org/post",
     data={"username": "testuser", "password": "testpass"},
 )
-async def form_data(resp: Response):
+async def form_data(resp: Response) -> dict:
     return resp.json()
 
 

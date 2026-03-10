@@ -1,10 +1,11 @@
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 app = FastHTTP(debug=True)
 
 
 @app.get(url="https://httpbin.org/delay/10")
-async def timeout_request(resp):
+async def timeout_request(resp: Response) -> dict:
     print("This won't be printed due to timeout")
     return resp.json()
 

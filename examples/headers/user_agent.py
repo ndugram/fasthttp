@@ -5,7 +5,7 @@ app = FastHTTP(debug=True)
 
 
 @app.get(url="https://httpbin.org/user-agent")
-async def user_agent(resp: Response):
+async def user_agent(resp: Response) -> dict:
     return resp.json()
 
 

@@ -5,7 +5,7 @@ app = FastHTTP(debug=True)
 
 
 @app.get(url="https://httpbin.org/delay/3")
-async def delay_response(resp: Response):
+async def delay_response(resp: Response) -> dict:
     return resp.json()
 
 

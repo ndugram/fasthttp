@@ -16,7 +16,7 @@ async def expensive_operation(route, config):
         Depends(expensive_operation, use_cache=True, scope="function")
         ],
 )
-async def with_cache_and_scope(resp: Response):
+async def with_cache_and_scope(resp: Response) -> dict:
     return resp.json()
 
 

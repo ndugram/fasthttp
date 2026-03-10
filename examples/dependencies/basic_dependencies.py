@@ -24,7 +24,7 @@ async def add_custom_header(route, config):
     url="https://httpbin.org/headers",
     dependencies=[Depends(add_bearer_token), Depends(add_trace_id)],
 )
-async def with_auth_and_trace(resp: Response):
+async def with_auth_and_trace(resp: Response) -> dict:
     return resp.json()
 
 
@@ -32,14 +32,14 @@ async def with_auth_and_trace(resp: Response):
     url="https://httpbin.org/headers",
     dependencies=[Depends(add_bearer_token), Depends(add_custom_header)],
 )
-async def with_custom_header(resp: Response):
+async def with_custom_header(resp: Response) -> dict:
     return resp.json()
 
 
 @app.get(
     url="https://httpbin.org/headers",
 )
-async def without_dependencies(resp: Response):
+async def without_dependencies(resp: Response) -> dict:
     return resp.json()
 
 

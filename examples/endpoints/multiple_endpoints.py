@@ -5,17 +5,17 @@ app = FastHTTP(debug=True)
 
 
 @app.get(url="https://httpbin.org/get")
-async def get_all(resp: Response):
+async def get_all(resp: Response) -> dict:
     return resp.json()
 
 
 @app.post(url="https://httpbin.org/post")
-async def post_all(resp: Response):
+async def post_all(resp: Response) -> dict:
     return resp.json()
 
 
 @app.put(url="https://httpbin.org/put")
-async def put_all(resp: Response):
+async def put_all(resp: Response) -> dict:
     return resp.json()
 
 

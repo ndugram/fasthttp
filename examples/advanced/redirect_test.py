@@ -5,7 +5,7 @@ app = FastHTTP(debug=True)
 
 
 @app.get(url="https://httpbin.org/redirect/3")
-async def redirect_test(resp: Response):
+async def redirect_test(resp: Response) -> dict:
     return {"status": resp.status, "history": getattr(resp, "history", [])}
 
 

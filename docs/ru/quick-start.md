@@ -22,12 +22,13 @@ pip install fasthttp-client[http2]
 
 ```python
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 app = FastHTTP()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1")
-async def main(resp):
+async def main(resp: Response) -> dict:
     """Получает пост и возвращает JSON."""
     return resp.json()
 
@@ -35,6 +36,10 @@ async def main(resp):
 if __name__ == "__main__":
     app.run()
 ```
+
+:::tip Важно
+Функции-обработчики должны иметь аннотацию возвращаемого типа (`-> dict`, `-> str`, `-> int` и т.д.). Это требование для корректной работы библиотеки.
+:::
 
 Запустите:
 
@@ -67,6 +72,7 @@ FastHTTP — это асинхронный HTTP-клиент, похожий н�
 
 ```python
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 # Создаём приложение
 app = FastHTTP(debug=True)  # debug=True включает подробное логирование
@@ -74,7 +80,7 @@ app = FastHTTP(debug=True)  # debug=True включает подробное л�
 
 # Определяем запрос с помощью декоратора
 @app.get(url="https://api.example.com/data")
-async def my_request(resp):
+async def my_request(resp: Response) -> dict:
     # resp — объект ответа
     return resp.json()
 
@@ -373,22 +379,23 @@ async def return_response(resp: Response):
 
 ```python
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 app = FastHTTP()
 
 
 @app.get(url="https://api.example.com/users", tags=["users"])
-async def get_users(resp):
+async def get_users(resp: Response) -> dict:
     return resp.json()
 
 
 @app.post(url="https://api.example.com/users", tags=["users"])
-async def create_user(resp):
+async def create_user(resp: Response) -> dict:
     return resp.json()
 
 
 @app.get(url="https://api.example.com/posts", tags=["posts"])
-async def get_posts(resp):
+async def get_posts(resp: Response) -> dict:
     return resp.json()
 
 
@@ -431,6 +438,7 @@ FastHTTP поддерживает валидацию данных запроса
 
 ```python
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 from pydantic import BaseModel, Field
 
 app = FastHTTP()
@@ -445,7 +453,7 @@ class UserRequest(BaseModel):
     json={"name": "John", "email": "john@example.com", "age": 25},
     request_model=UserRequest
 )
-async def create_user(resp):
+async def create_user(resp: Response) -> dict:
     return resp.json()
 ```
 
@@ -459,7 +467,7 @@ async def create_user(resp):
     json={"name": "", "email": "invalid-email", "age": 200},
     request_model=UserRequest
 )
-async def create_user(resp):
+async def create_user(resp: Response) -> dict:
     return resp.json()
 
 # Запрос не пойдёт, в логах:
@@ -478,7 +486,7 @@ class FormData(BaseModel):
     data={"username": "john", "password": "secret123"},
     request_model=FormData
 )
-async def login(resp):
+async def login(resp: Response) -> dict:
     return resp.json()
 ```
 
@@ -508,7 +516,7 @@ async def lifespan(app: FastHTTP):
 app = FastHTTP(lifespan=lifespan)
 
 @app.get(url="https://api.example.com/data")
-async def get_data(resp):
+async def get_data(resp: Response) -> dict:
     return resp.json()
 
 app.run()
@@ -592,11 +600,12 @@ app = FastHTTP(lifespan=lifespan)
 
 ```python
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 app = FastHTTP()  # Без lifespan
 
 @app.get(url="https://api.example.com/data")
-async def get_data(resp):
+async def get_data(resp: Response) -> dict:
     return resp.json()
 
 app.run()

@@ -5,7 +5,7 @@ app = FastHTTP(debug=True)
 
 
 @app.get(url="https:///niwqGFDQUBCIBciwbecibecc.cloud")
-async def test_site(r: Response):
+async def test_site(r: Response) -> int:
     return r.status
 
 
