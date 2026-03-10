@@ -1,22 +1,26 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import time
-from collections.abc import AsyncIterator, Callable
-from contextlib import asynccontextmanager
-from typing import Annotated, Literal, get_args, get_origin
+from typing import TYPE_CHECKING, Annotated, Literal, get_args, get_origin
 
 import httpx
 from annotated_doc import Doc
-from pydantic import BaseModel
 
 from .client import HTTPClient
 from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
-from .response import Response
 from .routing import Route
 from .security import Security
-from .types import RequestsOptinal
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from pydantic import BaseModel
+
+    from .response import Response
+    from .types import RequestsOptinal
 
 
 class FastHTTP:
@@ -75,7 +79,7 @@ class FastHTTP:
                 """
                 Middleware to apply to all requests.
 
-                Can be a single middleware instance or a list of middleware instances.
+                Can be a single middleware instance or a list of middleware.
                 Middleware will be executed in the order they are provided.
                 """
             ),
@@ -166,7 +170,7 @@ class FastHTTP:
                 """
                 Enable built-in security features.
 
-                When enabled (default), FastHTTP automatically protects against:
+                When enabled (default), FastHTTP automatically against:
                 - SSRF attacks (blocking localhost and private IPs)
                 - Secret leakage in logs
                 - Circuit breaker for failed hosts
@@ -239,6 +243,14 @@ class FastHTTP:
             self.security
         )
 
+    def _check_annotated_func(self, func: Callable) -> None:
+        sig = inspect.signature(func)
+
+        if sig.return_annotation is inspect.Signature.empty:
+            raise TypeError(
+                f"Function '{func.__name__}' must explicitly define return type annotation"
+            )
+
     def _add_route(
         self,
         *,
@@ -253,6 +265,7 @@ class FastHTTP:
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
+            self._check_annotated_func(func)
             self.routes.append(
                 Route(
                     method=method,
@@ -283,7 +296,13 @@ class FastHTTP:
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="GET", url=url, params=params, response_model=response_model, request_model=request_model, tags=tags, dependencies=dependencies
+            method="GET",
+            url=url,
+            params=params,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies
         )
 
     def post(
@@ -298,7 +317,14 @@ class FastHTTP:
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="POST", url=url, json=json, data=data, response_model=response_model, request_model=request_model, tags=tags, dependencies=dependencies
+            method="POST",
+            url=url,
+            json=json,
+            data=data,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies
         )
 
     def put(
@@ -313,7 +339,14 @@ class FastHTTP:
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="PUT", url=url, json=json, data=data, response_model=response_model, request_model=request_model, tags=tags, dependencies=dependencies
+            method="PUT",
+            url=url,
+            json=json,
+            data=data,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies
         )
 
     def patch(
@@ -328,7 +361,14 @@ class FastHTTP:
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
-            method="PATCH", url=url, json=json, data=data, response_model=response_model, request_model=request_model, tags=tags, dependencies=dependencies
+            method="PATCH",
+            url=url,
+            json=json,
+            data=data,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies
         )
 
     def delete(
@@ -455,7 +495,10 @@ class FastHTTP:
                 route for route in self.routes
                 if any(tag in route.tags for tag in tags)
             ]
-            self.logger.info("Running %d routes with tags: %s", len(routes_to_run), tags)
+            self.logger.info(
+                "Running %d routes with tags: %s",
+                len(routes_to_run), tags
+            )
 
         if not routes_to_run:
             self.logger.warning("No routes to run")
@@ -478,4 +521,3 @@ class FastHTTP:
             self.logger.error("Connection error: %s", e)
         except KeyboardInterrupt:
             self.logger.warning("Interrupted by user")
-
