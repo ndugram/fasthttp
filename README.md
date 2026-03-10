@@ -111,16 +111,21 @@ Add custom logic to requests and responses:
 ```python
 from fasthttp import FastHTTP
 from fasthttp.middleware import BaseMiddleware
+from fasthttp.response import Response
+from fasthttp.routing import Route
+from fasthttp.types import RequestsOptinal
 
 class LoggingMiddleware(BaseMiddleware):
-    async def before_request(self, route, config):
+    async def before_request(
+        self, route: Route, config: RequestsOptinal
+    ) -> RequestsOptinal:
         print(f"Sending {route.method} to {route.url}")
         return config
 
 app = FastHTTP(middleware=[LoggingMiddleware()])
 
 @app.get(url="https://api.example.com/data")
-async def get_data(resp):
+async def get_data(resp: Response) -> dict:
     return resp.json()
 
 if __name__ == "__main__":
