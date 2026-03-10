@@ -8,7 +8,7 @@ app = FastHTTP(debug=True)
     url="https://httpbin.org/post",
     data="plain text data",
 )
-async def post_with_data(resp: Response):
+async def post_with_data(resp: Response) -> str:
     return resp.method
 
 

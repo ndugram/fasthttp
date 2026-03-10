@@ -5,7 +5,7 @@ app = FastHTTP()
 
 
 @app.put(url="https://httpbin.org/put")
-async def test_put(resp: Response):
+async def test_put(resp: Response) -> int:
     return resp.status
 
 

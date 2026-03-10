@@ -35,17 +35,17 @@ app = FastHTTP(middleware=[ErrorTrackingMiddleware(), RequestCounterMiddleware()
 
 
 @app.get(url="https://httpbin.org/status/200")
-async def success_request(resp: Response):
+async def success_request(resp: Response) -> str:
     return resp.text
 
 
 @app.get(url="https://httpbin.org/status/404")
-async def not_found_request(resp: Response):
+async def not_found_request(resp: Response) -> str:
     return resp.text
 
 
 @app.get(url="https://httpbin.org/status/500")
-async def server_error_request(resp: Response):
+async def server_error_request(resp: Response) -> str:
     return resp.text
 
 

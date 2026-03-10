@@ -5,7 +5,7 @@ app = FastHTTP(debug=True)
 
 
 @app.get(url="https://httpbin.org/headers")
-async def headers(resp: Response):
+async def headers(resp: Response) -> dict:
     return resp.json()
 
 

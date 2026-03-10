@@ -5,7 +5,7 @@ app = FastHTTP(debug=True)
 
 
 @app.get(url="https://httpbin.org/ip")
-async def get_ip(resp: Response):
+async def get_ip(resp: Response) -> dict:
     return resp.json()
 
 

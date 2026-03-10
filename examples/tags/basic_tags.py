@@ -8,7 +8,7 @@ app = FastHTTP()
     url="https://jsonplaceholder.typicode.com/users",
     tags=["users", "v1"]
 )
-async def get_users(resp: Response):
+async def get_users(resp: Response) -> dict:
     return resp.json()
 
 
@@ -16,7 +16,7 @@ async def get_users(resp: Response):
     url="https://jsonplaceholder.typicode.com/users/1",
     tags=["users", "v1"],
 )
-async def get_user_by_id(resp: Response):
+async def get_user_by_id(resp: Response) -> dict:
     return resp.json()
 
 
@@ -24,7 +24,7 @@ async def get_user_by_id(resp: Response):
     url="https://jsonplaceholder.typicode.com/posts",
     tags=["posts", "v1"],
 )
-async def get_posts(resp: Response):
+async def get_posts(resp: Response) -> dict:
     return resp.json()
 
 
@@ -32,7 +32,7 @@ async def get_posts(resp: Response):
     url="https://jsonplaceholder.typicode.com/comments",
     tags=["comments", "v2"],
 )
-async def get_comments(resp: Response):
+async def get_comments(resp: Response) -> dict:
     return resp.json()
 
 

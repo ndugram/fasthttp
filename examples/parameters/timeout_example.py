@@ -9,12 +9,12 @@ app = FastHTTP(
 
 
 @app.get(url="https://httpbin.org/delay/2")
-async def delayed_request(resp: Response):
+async def delayed_request(resp: Response) -> dict:
     return resp.json()
 
 
 @app.get(url="https://httpbin.org/delay/10")
-async def long_delay(resp: Response):
+async def long_delay(resp: Response) -> dict:
     return resp.json()
 
 
