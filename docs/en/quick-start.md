@@ -22,12 +22,13 @@ Create a file `example.py`:
 
 ```python
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 app = FastHTTP()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1")
-async def main(resp):
+async def main(resp: Response) -> dict:
     """Gets post and returns JSON."""
     return resp.json()
 
@@ -35,6 +36,10 @@ async def main(resp):
 if __name__ == "__main__":
     app.run()
 ```
+
+:::tip Important
+Handler functions must have a return type annotation (`-> dict`, `-> str`, `-> int`, etc.). This is required for the library to work correctly.
+:::
 
 Run it:
 
