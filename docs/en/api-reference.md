@@ -201,6 +201,52 @@ async def lifespan(app):
 | `response_model` | `type[BaseModel]` | Pydantic model for response validation |
 | `request_model` | `type[BaseModel]` | Pydantic model for request validation |
 
+### Type Annotation Requirements
+
+FastHTTP requires all handler functions to have explicit type annotations:
+
+1. **Parameter annotations** — each parameter must have a type
+2. **Return type annotation** — function must return a specific type
+
+**Correct function example:**
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+@app.get(url="https://api.example.com/data")
+async def get_data(resp: Response) -> dict:  # ✅ Annotations present
+    return resp.json()
+```
+
+**Error examples:**
+
+```python
+# ❌ Missing parameter annotation
+@app.get(url="https://api.example.com/data")
+async def get_data(resp) -> dict:
+    return resp.json()
+
+# ❌ Missing return type annotation
+@app.get(url="https://api.example.com/data")
+async def get_data(resp: Response):
+    return resp.json()
+
+# ❌ Both annotations missing
+@app.get(url="https://api.example.com/data")
+async def get_data(resp):
+    return resp.json()
+```
+
+**Errors when annotations are missing:**
+
+```
+TypeError: Parameter 'resp' in function 'get_data' must have a type annotation
+TypeError: Function 'get_data' must explicitly define return type annotation
+```
+
 ## Dependencies
 
 ### Depends()
