@@ -243,12 +243,91 @@ class FastHTTP:
             self.security
         )
 
-    def _check_annotated_func(self, func: Callable) -> None:
+    def _check_annotated_parameters(
+        self,
+        *,
+        func: Annotated[
+            Callable,
+            Doc(
+                """
+                Validate that all function parameters have type annotations.
+
+                This method checks if all parameters of the provided function
+                have explicit type annotations. Type annotations are required
+                for proper type checking and documentation generation.
+
+                If any parameter is missing a type annotation, a TypeError
+                is raised with a descriptive message.
+
+                Args:
+                    func: The function to validate.
+
+                Raises:
+                    TypeError: If any parameter lacks a type annotation.
+
+                Example:
+                    ```python
+                    @app.get(url="https://api.example.com/data")
+                    async def get_data(resp: Response) -> dict:
+                        return resp.json()
+                    ```
+                """
+            ),
+        ]
+    ) -> None:
+        sig = inspect.signature(func)
+
+        for name, param in sig.parameters.items():
+            if param.annotation is inspect.Parameter.empty:
+                msg = (
+                    f"Parameter '{name}' in function '{func.__name__}'"
+                    "must have a type annotation"
+                )
+                raise TypeError(
+                    msg
+                )
+
+    def _check_annotated_func(
+        self,
+        *,
+        func: Annotated[
+            Callable,
+            Doc(
+                """
+                Validate that the function has a return type annotation.
+
+                This method checks if the provided function has an explicit
+                return type annotation. Return type annotations are required
+                for proper type checking and documentation generation.
+
+                If the return type annotation is missing, a TypeError
+                is raised with a descriptive message.
+
+                Args:
+                    func: The function to validate.
+
+                Raises:
+                    TypeError: If the return type is not annotated.
+
+                Example:
+                    ```python
+                    @app.get(url="https://api.example.com/data")
+                    async def get_data(resp: Response) -> dict:
+                        return resp.json()
+                    ```
+                """
+            ),
+        ]
+    ) -> None:
         sig = inspect.signature(func)
 
         if sig.return_annotation is inspect.Signature.empty:
+            msg = (
+                f"Function '{func.__name__}' must explicitly"
+                "define return type annotation"
+            )
             raise TypeError(
-                f"Function '{func.__name__}' must explicitly define return type annotation"
+                msg
             )
 
     def _add_route(
@@ -265,7 +344,8 @@ class FastHTTP:
         dependencies: list | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
-            self._check_annotated_func(func)
+            self._check_annotated_parameters(func=func)
+            self._check_annotated_func(func=func)
             self.routes.append(
                 Route(
                     method=method,
