@@ -98,7 +98,7 @@ class HTTPClient:
 
     async def _prepare_config(self, route: Route, config: dict) -> dict:
         headers = dict(config.get("headers") or {})
-        headers.setdefault("User-Agent", "fasthttp/0.1.18")
+        headers.setdefault("User-Agent", "fasthttp/0.1.2")
         config["headers"] = headers
 
         if self.middleware_manager:
