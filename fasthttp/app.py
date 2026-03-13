@@ -9,6 +9,7 @@ import httpx
 from annotated_doc import Doc
 
 from .client import HTTPClient
+from .graphql.client import create_graphql_client
 from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
 from .routing import Route
@@ -472,6 +473,135 @@ class FastHTTP:
             tags=tags,
             dependencies=dependencies,
         )
+
+    def graphql(
+        self,
+        *,
+        url: Annotated[
+            str,
+            Doc(
+                """
+                GraphQL endpoint URL.
+
+                The URL of the GraphQL server to send queries to.
+                """
+            ),
+        ],
+        operation_type: Annotated[
+            Literal["query", "mutation"],
+            Doc(
+                """
+                Type of GraphQL operation.
+
+                Use "query" for read operations and
+                "mutation" for write operations.
+                """
+            ),
+        ] = "query",
+        headers: Annotated[
+            dict[str, str] | None,
+            Doc(
+                """
+                Additional headers for GraphQL requests.
+
+                Common headers include Authorization tokens.
+                """
+            ),
+        ] = None,
+        timeout: Annotated[
+            float | None,
+            Doc(
+                """
+                Request timeout in seconds.
+                """
+            ),
+        ] = 30.0,
+        tags: Annotated[
+            list[str] | None,
+            Doc(
+                """
+                Tags for grouping and filtering requests.
+                """
+            ),
+        ] = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """
+        Decorator for GraphQL queries and mutations.
+
+        Allows defining GraphQL operations using the same
+        decorator-based API as other HTTP methods.
+
+        Example:
+        ```python
+            from fasthttp import FastHTTP
+            from fasthttp.response import Response
+
+            app = FastHTTP()
+
+            @app.graphql(url="https://api.example.com/graphql")
+            async def get_user(resp: Response) -> dict:
+                return {"query": "{ user(id: 1) { name } }"}
+        ```
+        """
+        def decorator(func: Callable[..., object]) -> Callable[..., object]:
+            self._check_annotated_parameters(func=func)
+            self._check_annotated_func(func=func)
+
+            async def graphql_handler(response: Response) -> object:
+                from inspect import iscoroutinefunction
+
+                if iscoroutinefunction(func):
+                    handler_result = await func(response)
+                else:
+                    handler_result = func(response)
+
+                if isinstance(handler_result, dict):
+                    query = handler_result.get("query")
+                    variables = handler_result.get("variables")
+                    operation_name = handler_result.get("operation_name")
+                else:
+                    query = handler_result
+                    variables = None
+                    operation_name = None
+
+                client = create_graphql_client(
+                    url=url,
+                    headers=headers,
+                    timeout=timeout,
+                )
+
+                if operation_type == "mutation":
+                    result = await client.mutation(
+                        mutation=query,
+                        variables=variables,
+                        operation_name=operation_name,
+                    )
+                else:
+                    result = await client.query(
+                        query=query,
+                        variables=variables,
+                        operation_name=operation_name,
+                    )
+
+                return result.data
+
+            self.routes.append(
+                Route(
+                    method="POST",
+                    url=url,
+                    handler=graphql_handler,
+                    tags=tags,
+                    skip_request=True,
+                )
+            )
+            self.logger.debug(
+                "Registered GraphQL %s: %s",
+                operation_type,
+                url
+            )
+            return func
+
+        return decorator
 
     def _log_result(
         self,
