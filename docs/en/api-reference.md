@@ -417,9 +417,91 @@ app.run()  # Security works automatically
 
 See [Security](security.md) for details.
 
+## GraphQL
+
+### @app.graphql()
+
+Decorator for executing GraphQL queries and mutations.
+
+```python
+@app.graphql(
+    url: str,
+    operation_type: str = "query",
+    headers: dict = None,
+    timeout: float = 30.0,
+    tags: list = [],
+)
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `url` | `str` | — | GraphQL endpoint (required) |
+| `operation_type` | `str` | `"query"` | `"query"` or `"mutation"` |
+| `headers` | `dict` | `None` | Additional headers |
+| `timeout` | `float` | `30.0` | Request timeout in seconds |
+| `tags` | `list` | `None` | Tags for grouping |
+
+**Query Example:**
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+
+@app.graphql(url="https://api.example.com/graphql")
+async def get_user(resp: Response) -> dict:
+    return {"query": "{ user(id: 1) { name email } }"}
+```
+
+**Mutation Example:**
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+
+@app.graphql(url="https://api.example.com/graphql", operation_type="mutation")
+async def create_user(resp: Response) -> dict:
+    return {
+        "query": "mutation { createUser(name: $name) { id } }",
+        "variables": {"name": "John"}
+    }
+```
+
+### GraphQLResponse
+
+Represents response from GraphQL server.
+
+```python
+from fasthttp.graphql import GraphQLResponse
+
+response = GraphQLResponse(
+    data: dict = None,
+    errors: list = None,
+    extensions: dict = None,
+)
+```
+
+**Properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `data` | `dict \| None` | Response data |
+| `errors` | `list \| None` | List of errors |
+| `extensions` | `dict \| None` | Additional data |
+| `ok` | `bool` | `True` if no errors |
+| `has_errors` | `bool` | `True` if has errors |
+
 ## See Also
 
 - [Quick Start](quick-start.md) — basics
 - [Configuration](configuration.md) — settings
 - [Dependencies](dependencies.md) — request modification
 - [Middleware](middleware.md) — global logic
+- [GraphQL](graphql.md) — detailed documentation

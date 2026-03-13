@@ -151,6 +151,19 @@ class Route:
                 """
             ),
         ] = None,
+        skip_request: Annotated[
+            bool,
+            Doc(
+                """
+                Skip HTTP request execution.
+
+                When True, the HTTP client will not send a real request.
+                The handler is responsible for executing the request
+                and returning the result. Used for GraphQL and custom
+                protocols.
+                """
+            ),
+        ] = False,
     ) -> None:
         self.method = method
         self.url = url
@@ -162,3 +175,4 @@ class Route:
         self.request_model = request_model
         self.tags = tags or []
         self.dependencies = dependencies or []
+        self.skip_request = skip_request

@@ -136,6 +136,73 @@ def delete(
     _execute_request("DELETE", url, output, headers, timeout=timeout, debug=debug)
 
 
+@app.command()
+def graphql(
+    url: str,
+    query: str = typer.Option(..., "-q", "--query", help="GraphQL query (required)"),
+    variables: str | None = typer.Option(None, "-v", "--variables", help="GraphQL variables as JSON"),
+    operation_type: str = typer.Option("query", "-o", "--operation", help="Operation type: query or mutation"),
+    output: str = typer.Argument("json", help="Output: status, headers, json, text, all"),
+    headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
+    timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+) -> None:
+    """
+    Execute a GraphQL query or mutation.
+    """
+    headers = parse_headers(headers_str=headers)
+
+    json_data: dict[str, Any] = {"query": query}
+    if variables:
+        try:
+            json_data["variables"] = json.loads(variables)
+        except json.JSONDecodeError as e:
+            formatter.error(f"Invalid JSON in variables: {e}")
+            raise typer.Exit(1)
+
+    if debug:
+        formatter.info(f"→ GraphQL {operation_type} {url}")
+        if headers:
+            formatter.info(f"  Headers: {json.dumps(headers, indent=2)}")
+        formatter.info(f"  Query: {query}")
+        if variables:
+            formatter.info(f"  Variables: {variables}")
+
+    try:
+        resp = run_request(
+            method="POST",
+            url=url,
+            headers=headers,
+            json_data=json_data,
+            timeout=timeout,
+        )
+
+        if resp.status >= 400:
+            formatter.error(f"HTTP {resp.status}")
+            formatter.result("body", resp.text[:200])
+            raise typer.Exit(1)
+
+        formatter.success(f"HTTP {resp.status} in {resp.elapsed_ms:.2f}ms")
+
+        if debug:
+            formatter.info(f"← Response headers:")
+            for key, value in resp.headers.items():
+                formatter.info(f"  {key}: {value}")
+
+        result = get_output(resp, output)
+        print(result)
+
+    except httpx.ConnectError as e:
+        formatter.error(f"Connection failed: {e}")
+        raise typer.Exit(1)
+    except httpx.TimeoutException as e:
+        formatter.error(f"Request timed out: {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        formatter.error(f"Error: {e}")
+        raise typer.Exit(1)
+
+
 def _execute_request(
     method: str,
     url: str,
