@@ -91,6 +91,7 @@ async def main(resp: Response) -> dict:
 
 - [Dependencies](dependencies.md) — request modification
 - [Middleware](middleware.md) — global logic
+- [GraphQL](graphql.md) — GraphQL support
 - [Pydantic](pydantic-validation.md) — validation
 - [HTTP/2](http2-support.md) — HTTP/2 support
 - [Security](security.md) — built-in protection
