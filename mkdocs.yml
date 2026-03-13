@@ -29,6 +29,7 @@ nav:
     - Middleware: en/middleware.md
     - Pydantic: en/pydantic-validation.md
     - HTTP/2: en/http2-support.md
+    - GraphQL: en/graphql.md
     - API Reference: en/api-reference.md
   - Русский:
     - Главная: ru/index.md
@@ -41,6 +42,7 @@ nav:
     - Мидлвар: ru/middleware.md
     - Pydantic: ru/pydantic-validation.md
     - HTTP/2: ru/http2-support.md
+    - GraphQL: ru/graphql.md
     - API: ru/api-reference.md
   - Blog:
     - English: blog/how-i-created-fasthttp.md
