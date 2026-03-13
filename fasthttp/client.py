@@ -248,6 +248,9 @@ class HTTPClient:
         config: dict,
         timeout_config: httpx.Timeout
     ) -> tuple[httpx.Response, float] | None:
+        if route.skip_request:
+            return None
+
         start = time.perf_counter()
 
         try:
@@ -302,6 +305,20 @@ class HTTPClient:
         self._log_request(route, config)
 
         result = await self._execute_request(client, route, config, timeout_config)
+
+        if route.skip_request:
+            empty_response = Response(
+                status=200,
+                text="",
+                headers={},
+                method=route.method,
+            )
+            handler_result = await route.handler(empty_response)
+            return await self._process_handler_result(
+                empty_response,
+                handler_result
+            )
+
         if not result:
             return None
 
