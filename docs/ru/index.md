@@ -91,6 +91,7 @@ async def main(resp: Response) -> dict:
 
 - [Зависимости](dependencies.md) — модификация запросов
 - [Middleware](middleware.md) — глобальная логика
+- [GraphQL](graphql.md) — поддержка GraphQL
 - [Pydantic](pydantic-validation.md) — валидация
 - [HTTP/2](http2-support.md) — поддержка HTTP/2
 - [Безопасность](security.md) — встроенная защита
