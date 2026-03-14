@@ -2,6 +2,42 @@
 
 Installation and your first request in less than 2 minutes.
 
+## How FastHTTP Works
+
+Understanding the architecture helps you use FastHTTP more effectively.
+
+### The Flow
+
+When you call `app.run()`, FastHTTP follows this sequence:
+
+```
+1. Collect all registered routes (functions with @app.get, @app.post, etc.)
+         ↓
+2. Validate each handler has type annotations (required!)
+         ↓
+3. Create async tasks for all requests
+         ↓
+4. Execute requests in parallel using asyncio
+         ↓
+5. For each request:
+   a. Apply dependencies (modify config)
+   b. Run middleware.before_request()
+   c. Check security (SSRF, etc.)
+   d. Send HTTP request via httpx
+   e. Run middleware.after_response()
+   f. Call your handler function with Response
+         ↓
+6. Log results and finish
+```
+
+### Key Concepts
+
+- **Route**: A function decorated with `@app.get()`, `@app.post()`, etc. Defines an HTTP request.
+- **Handler**: The function that processes the response. Must have type annotations.
+- **Response**: Object containing server's response (status, body, headers).
+- **Dependency**: Function that modifies request config before sending.
+- **Middleware**: Plugin that can modify requests and responses.
+
 ## Installation
 
 Install FastHTTP with pip:
@@ -291,7 +327,19 @@ async def handle_response(resp: Response):
 
 ## Parallel Execution
 
-All requests are executed in parallel using asyncio:
+FastHTTP automatically executes all registered requests in parallel using Python's `asyncio` library. This means if you have multiple requests, they will all run simultaneously instead of one after another, significantly reducing total execution time.
+
+### How It Works
+
+When you call `app.run()`, FastHTTP:
+
+1. Collects all registered routes
+2. Creates an async task for each route
+3. Executes all tasks concurrently using `asyncio.gather()`
+4. Waits for all requests to complete
+5. Logs the results
+
+### Example
 
 ```python
 from fasthttp import FastHTTP
@@ -320,6 +368,24 @@ if __name__ == "__main__":
     app.run()
 ```
 
+### Sequential vs Parallel
+
+**Sequential execution** (if requests ran one after another):
+```
+Request 1: 150ms
+Request 2: 120ms  → starts after request 1
+Request 3: 110ms  → starts after request 2
+Total: ~380ms
+```
+
+**Parallel execution** (FastHTTP default):
+```
+Request 1: 150ms ─┐
+Request 2: 120ms ─┼─ All running at the same time
+Request 3: 110ms ─┘
+Total: ~150ms (longest request)
+```
+
 Output:
 
 ```
@@ -329,6 +395,22 @@ INFO    │ fasthttp    │ ✔ ✔ GET https://jsonplaceholder.typicode.com/pos
 INFO    │ fasthttp    │ ✔ ✔ GET https://jsonplaceholder.typicode.com/users/1 200 120ms
 INFO    │ fasthttp    │ ✔ ✔ GET https://jsonplaceholder.typicode.com/comments/1 200 110ms
 INFO    │ fasthttp    │ ✔ Done in 0.15s  # All requests in parallel!
+```
+
+### Single Request
+
+If you have only one request, it executes normally:
+
+```python
+app = FastHTTP()
+
+
+@app.get(url="https://api.example.com/data")
+async def single_request(resp: Response):
+    return resp.json()
+
+
+app.run()  # Executes the single request
 ```
 
 ## Return Values

@@ -320,17 +320,127 @@ app = FastHTTP(
 
 ## Response
 
-The response object.
+The Response object represents the HTTP response from the server. It contains all information about the response including status code, body, and headers.
+
+### Response Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `status` | `int` | HTTP status code (e.g., 200, 404, 500) |
+| `text` | `str` | Raw response body as string |
+| `headers` | `dict` | Response headers as key-value pairs |
+| `method` | `str` | HTTP method used for the request |
+
+### Response Methods
+
+The Response class provides several methods to work with the response data:
+
+#### json()
+
+Parses the response body as JSON and returns a Python dictionary or list.
 
 ```python
 @app.get(url="https://api.example.com/data")
 async def handler(resp: Response):
-    # Available attributes
-    status = resp.status       # Status code (int)
-    text = resp.text           # Response text (str)
-    json_data = resp.json()    # JSON data (dict/list)
-    headers = resp.headers     # Response headers (dict)
-    content = resp.content     # Raw bytes (bytes)
+    data = resp.json()  # Returns dict or list
+    return data
+```
+
+Raises `ValueError` if the response body is not valid JSON.
+
+#### req_json()
+
+Returns the JSON data that was sent with the request (if any).
+
+```python
+@app.post(url="https://api.example.com/data", json={"name": "John"})
+async def handler(resp: Response):
+    sent_data = resp.req_json()  # Returns {"name": "John"}
+    return sent_data
+```
+
+#### req_text()
+
+Returns the request body as a string.
+
+```python
+@app.post(url="https://api.example.com/data", data=b"raw data")
+async def handler(resp: Response):
+    sent_data = resp.req_text()  # Returns "raw data"
+    return sent_data
+```
+
+### Complete Example
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP(debug=True)
+
+
+@app.get(url="https://api.example.com/data")
+async def handler(resp: Response) -> dict:
+    # Access status code
+    status = resp.status  # e.g., 200
+
+    # Get response body as text
+    body_text = resp.text  # Raw string
+
+    # Parse JSON response
+    json_data = resp.json()  # dict or list
+
+    # Access response headers
+    headers = resp.headers  # {"Content-Type": "application/json", ...}
+
+    # Access request details
+    req_headers = resp.req_headers  # Headers sent with request
+    query_params = resp.query       # Query parameters used
+    req_json = resp.req_json()      # JSON sent with request (if any)
+
+    return {
+        "status": status,
+        "data": json_data,
+        "headers": headers,
+    }
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+### Response Properties
+
+Additional properties available on Response:
+
+```python
+# HTTP method of the request (GET, POST, etc.)
+resp.method
+
+# Query parameters that were used
+resp.query  # {"page": 1, "limit": 10}
+
+# Request headers that were sent
+resp.req_headers  # {"Authorization": "Bearer ..."}
+
+# Request JSON body (if any)
+resp.req_json()  # {"name": "John"}
+
+# Request data as text
+resp.req_text()  # "raw string"
+```
+
+### Empty Response Handling
+
+When a request fails (e.g., 4xx or 5xx status), FastHTTP returns `None`. Always handle this case:
+
+```python
+@app.get(url="https://api.example.com/data")
+async def handler(resp: Response) -> dict | None:
+    if resp is None:
+        return {"error": "Request failed"}
+
+    return {"status": resp.status, "data": resp.json()}
 ```
 
 ## CLI
@@ -359,26 +469,134 @@ fasthttp <method> <url> [options]
 
 ### Route
 
-Object with route information:
+The Route object represents a registered HTTP request. It contains all information about the request that FastHTTP will execute. This object is passed to middleware and dependencies so they can inspect and modify the request.
+
+#### Route Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `method` | `str` | HTTP method (GET, POST, PUT, PATCH, DELETE) |
+| `url` | `str` | Full URL of the request |
+| `params` | `dict` | Query parameters |
+| `json` | `dict` | JSON body sent with request |
+| `data` | `bytes` | Raw data sent with request |
+| `tags` | `list` | Tags for grouping requests |
+| `dependencies` | `list` | List of dependencies |
+| `response_model` | `type` | Pydantic model for response validation |
+| `request_model` | `type` | Pydantic model for request validation |
+| `handler` | `Callable` | The handler function |
+| `skip_request` | `bool` | If True, skip actual HTTP request (for GraphQL) |
+
+#### Example: Using Route in Middleware
 
 ```python
-route.method          # HTTP method
-route.url             # URL
-route.params          # Query parameters
-route.json            # JSON body
-route.data            # Raw data
-route.tags            # Tags
-route.dependencies   # Dependencies
+from fasthttp import FastHTTP
+from fasthttp.middleware import BaseMiddleware
+
+class DebugMiddleware(BaseMiddleware):
+    async def before_request(self, route, config):
+        # Inspect the route
+        print(f"Method: {route.method}")
+        print(f"URL: {route.url}")
+        print(f"Tags: {route.tags}")
+        print(f"Has JSON: {route.json is not None}")
+
+        # Can modify params
+        if route.params:
+            route.params["debug"] = "true"
+
+        return config
+
+
+app = FastHTTP(middleware=[DebugMiddleware()])
+
+
+@app.get(url="https://api.example.com/data", params={"page": 1})
+async def handler(resp):
+    return resp.json()
 ```
 
 ### Config
 
-Dictionary with request configuration:
+The Config dictionary contains request configuration that can be modified by middleware and dependencies. It controls how the HTTP request is sent.
+
+#### Config Keys
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `headers` | `dict` | `{}` | HTTP headers to send |
+| `timeout` | `float` | `30.0` | Request timeout in seconds |
+| `allow_redirects` | `bool` | `True` | Whether to follow redirects |
+
+#### Example: Modifying Config in Dependency
 
 ```python
-config.get("headers", {})       # Headers
-config.get("timeout", 30.0)      # Timeout
-config.get("allow_redirects", True)  # Redirects
+from fasthttp import FastHTTP, Depends
+
+app = FastHTTP()
+
+
+async def add_auth_token(route, config):
+    """Add authentication header to all requests."""
+    # Get existing headers or empty dict
+    headers = config.get("headers", {})
+
+    # Add authorization
+    headers["Authorization"] = "Bearer my-secret-token"
+
+    # Update config
+    config["headers"] = headers
+
+    # Can also modify timeout
+    config["timeout"] = 60.0
+
+    return config
+
+
+async def add_debug_header(route, config):
+    """Add debug header for specific URLs."""
+    if "api.example.com" in route.url:
+        config.setdefault("headers", {})["X-Debug"] = "true"
+
+    return config
+
+
+@app.get(
+    url="https://api.example.com/data",
+    dependencies=[Depends(add_auth_token), Depends(add_debug_header)]
+)
+async def handler(resp):
+    return resp.json()
+```
+
+#### Accessing Config in Middleware
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.middleware import BaseMiddleware
+
+class MetricsMiddleware(BaseMiddleware):
+    async def before_request(self, route, config):
+        # Store start time in config for later use
+        import time
+        config["_start_time"] = time.time()
+
+        # Check if custom timeout is set
+        timeout = config.get("timeout", 30.0)
+        print(f"Request timeout: {timeout}s")
+
+        return config
+
+    async def after_response(self, response, route, config):
+        # Calculate duration
+        import time
+        duration = time.time() - config.get("_start_time", time.time())
+
+        print(f"Request to {route.url} took {duration:.2f}s")
+        return response
+
+
+app = FastHTTP(middleware=[MetricsMiddleware()])
 ```
 
 ## Security

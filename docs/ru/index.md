@@ -1,17 +1,32 @@
-# FastHTTP
+<p align="center">
+  <img src="logo-repo.png" alt="FastHTTP" width="600">
+</p>
 
-Асинхронный HTTP-клиент для Python с декларативным подходом, похожий на FastAPI.
+# FastHTTP Client
+
+Быстрый и простой HTTP-клиент с поддержкой async и красивым логированием.
+
+[![PyPI Version](https://img.shields.io/pypi/v/fasthttp-client?style=flat&label=PyPI)](https://pypi.org/project/fasthttp-client/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/fasthttp-client?style=flat)](https://pypi.org/project/fasthttp-client/)
+[![License](https://img.shields.io/pypi/l/fasthttp-client?style=flat)](https://github.com/ndugram/fasthttp)
+[![Downloads](https://img.shields.io/pypi/dm/fasthttp-client?style=flat)](https://pypi.org/project/fasthttp-client/)
+
+---
 
 ## Особенности
 
-- **Декларативный стиль** — определяйте запросы как функции с декораторами
-- **Асинхронность** — параллельное выполнение запросов с asyncio
-- **Зависимости** — модификация запросов перед отправкой
-- **Теги** — группировка и фильтрация запросов
-- **Middleware** — глобальная логика для всех запросов
-- **Pydantic** — валидация ответов
-- **HTTP/2** — поддержка современного протокола
-- **CLI** — удобная командная строка
+| | |
+|:---|:---|
+| **Декларативный стиль** | Определяйте запросы как функции с декораторами |
+| **Асинхронность** | Параллельное выполнение запросов с asyncio |
+| **Зависимости** | Модификация запросов перед отправкой |
+| **Теги** | Группировка и фильтрация запросов |
+| **Middleware** | Глобальная логика для всех запросов |
+| **Pydantic** | Валидация ответов |
+| **HTTP/2** | Поддержка современного протокола |
+| **CLI** | Удобная командная строка |
+
+---
 
 ## Установка
 
@@ -25,6 +40,7 @@ pip install fasthttp-client
 pip install fasthttp-client[http2]
 ```
 
+---
 
 ## Быстрый пример
 
@@ -44,15 +60,38 @@ if __name__ == "__main__":
     app.run()
 ```
 
-:::tip Важно
-Функции-обработчики должны иметь аннотацию возвращаемого типа (`-> dict`, `-> str`, `-> int` и т.д.).
-:::
+!!! tip "Важно"
+    Функции-обработчики должны иметь аннотацию возвращаемого типа (`-> dict`, `-> str`, `-> int` и т.д.)
+
+---
+
+## Документация
+
+### Основы
+
+- [Быстрый старт](ru/quick-start.md) - Начните здесь
+- [Конфигурация](ru/configuration.md) - Настройки приложения
+- [CLI](ru/cli.md) - Командная строка
+
+### Продвинутые темы
+
+- [Зависимости](ru/dependencies.md) - Модификация запросов
+- [Middleware](ru/middleware.md) - Глобальная логика
+- [GraphQL](ru/graphql.md) - Поддержка GraphQL
+- [Pydantic](ru/pydantic-validation.md) - Валидация
+- [HTTP/2](ru/http2-support.md) - Поддержка HTTP/2
+- [Безопасность](ru/security.md) - Встроенная защита
+
+### Дополнительно
+
+- [Примеры](ru/examples.md) - Больше примеров кода
+- [API Reference](ru/api-reference.md) - Полная документация
+
+---
 
 ## Зачем нужен FastHTTP?
 
 ### Проблема
-
-Обычно при работе с HTTP запросами в Python:
 
 ```python
 # Много boilerplate кода
@@ -74,122 +113,35 @@ from fasthttp.response import Response
 
 app = FastHTTP()
 
+
 @app.get(url="https://api.example.com/data")
 async def main(resp: Response) -> dict:
     return resp.json()
 ```
 
-## Документация
+---
 
-### Основы
+## Сравнение
 
-- [Быстрый старт](quick-start.md) — начните здесь
-- [Конфигурация](configuration.md) — настройки приложения
-- [CLI](cli.md) — командная строка
+| Функция | FastHTTP | requests | aiohttp | httpx |
+|:---|:---:|:---:|:---:|:---:|
+| Декларативный | Да | Нет | Нет | Нет |
+| Async | Да | Нет | Да | Да |
+| Зависимости | Да | Нет | Нет | Нет |
+| Теги | Да | Нет | Нет | Нет |
+| Middleware | Да | Нет | Нет | Нет |
+| Pydantic | Да | Нет | Нет | Нет |
+| HTTP/2 | Да | Нет | Нет | Да |
+| CLI | Да | Нет | Нет | Нет |
 
-### Продвинутые темы
+---
 
-- [Зависимости](dependencies.md) — модификация запросов
-- [Middleware](middleware.md) — глобальная логика
-- [GraphQL](graphql.md) — поддержка GraphQL
-- [Pydantic](pydantic-validation.md) — валидация
-- [HTTP/2](http2-support.md) — поддержка HTTP/2
-- [Безопасность](security.md) — встроенная защита
+## Язык
 
-### Дополнительно
+- [English Documentation](en/index.md)
+- [Русская документация](ru/index.md)
 
-- [Примеры](examples.md) — больше примеров кода
-- [API Reference](api-reference.md) — полная документация
-
-## Сравнение с другими библиотеками
-
-| Библиотека | Стиль | Async | Зависимости |
-|------------|-------|-------|-------------|
-| **FastHTTP** | Декларативный | ✅ Да | ✅ Да |
-| requests | Императивный | ❌ Нет | ❌ Нет |
-| aiohttp | Императивный | ✅ Да | ❌ Нет |
-| httpx | Императивный | ✅ Да | ❌ Нет |
-
-## Примеры использования
-
-### Несколько запросов параллельно
-
-```python
-from fasthttp import FastHTTP
-from fasthttp.response import Response
-
-app = FastHTTP()
-
-
-@app.get(url="https://jsonplaceholder.typicode.com/posts/1")
-async def get_post(resp: Response) -> dict:
-    return resp.json()
-
-
-@app.get(url="https://jsonplaceholder.typicode.com/users/1")
-async def get_user(resp: Response) -> dict:
-    return resp.json()
-
-
-@app.get(url="https://jsonplaceholder.typicode.com/comments/1")
-async def get_comment(resp: Response) -> dict:
-    return resp.json()
-
-
-# Все три запроса выполнятся параллельно!
-if __name__ == "__main__":
-    app.run()
-```
-
-### С тегами
-
-```python
-from fasthttp import FastHTTP
-from fasthttp.response import Response
-
-app = FastHTTP()
-
-
-@app.get(url="https://api.example.com/users", tags=["users"])
-async def get_users(resp: Response) -> dict:
-    return resp.json()
-
-
-@app.get(url="https://api.example.com/posts", tags=["posts"])
-async def get_posts(resp: Response) -> dict:
-    return resp.json()
-
-
-# Запустить только пользователей
-app.run(tags=["users"])
-```
-
-### С зависимостями
-
-```python
-from fasthttp import FastHTTP, Depends
-from fasthttp.response import Response
-
-app = FastHTTP()
-
-
-async def add_auth(route, config):
-    config.setdefault("headers", {})["Authorization"] = "Bearer token"
-    return config
-
-
-@app.get(
-    url="https://api.example.com/data",
-    dependencies=[Depends(add_auth)]
-)
-async def protected(resp: Response) -> dict:
-    return resp.json()
-```
-
-## Сообщество
-
-- GitHub: https://github.com/your-repo/fasthttp
-- PyPI: https://pypi.org/project/fasthttp-client/
+---
 
 ## Лицензия
 
