@@ -48,6 +48,8 @@ async def create_user(resp: Response) -> dict:
 | `headers` | `dict` | `None` | Additional headers |
 | `timeout` | `float` | `30.0` | Request timeout in seconds |
 | `tags` | `list` | `None` | Tags for grouping requests |
+| `response_model` | `type[BaseModel]` | `None` | Pydantic model for response validation |
+| `dependencies` | `list` | `None` | List of dependencies |
 
 ## Return Dictionary Parameters
 
@@ -194,6 +196,101 @@ app.run()
 
 # Run only GraphQL
 app.run(tags=["graphql"])
+```
+
+### With Pydantic Validation
+
+```python
+from pydantic import BaseModel
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+
+
+@app.graphql(
+    url="https://api.example.com/graphql",
+    response_model=User
+)
+async def get_user(resp: Response) -> dict:
+    return {"query": "{ user(id: 1) { id name email } }"}
+
+
+# For list of objects
+@app.graphql(
+    url="https://api.example.com/graphql",
+    response_model=list[User]
+)
+async def get_users(resp: Response) -> dict:
+    return {"query": "{ users { id name email } }"}
+```
+
+### With Dependencies
+
+```python
+from fasthttp import FastHTTP, Depends
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+
+async def add_auth(route, config):
+    config.setdefault("headers", {})["Authorization"] = "Bearer my-token"
+    return config
+
+
+async def add_trace_id(route, config):
+    import uuid
+    config.setdefault("headers", {})["X-Trace-ID"] = str(uuid.uuid4())
+    return config
+
+
+@app.graphql(
+    url="https://api.example.com/graphql",
+    operation_type="mutation",
+    dependencies=[Depends(add_auth), Depends(add_trace_id)]
+)
+async def create_user(resp: Response) -> dict:
+    return {
+        "query": "mutation { createUser(name: $name) { id } }",
+        "variables": {"name": "John"}
+    }
+```
+
+### With Both response_model and Dependencies
+
+```python
+from pydantic import BaseModel
+from fasthttp import FastHTTP, Depends
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+
+
+async def add_auth(route, config):
+    config.setdefault("headers", {})["Authorization"] = "Bearer my-token"
+    return config
+
+
+@app.graphql(
+    url="https://api.example.com/graphql",
+    response_model=User,
+    dependencies=[Depends(add_auth)]
+)
+async def get_user(resp: Response) -> dict:
+    return {"query": "{ user(id: 1) { id name email } }"}
 ```
 
 ## See also
