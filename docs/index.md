@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo-repo.png" alt="FastHTTP" width="600">
+  <img src="logo.png" alt="FastHTTP" width="250">
 </p>
 
 # FastHTTP Client
