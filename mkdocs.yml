@@ -56,8 +56,8 @@ nav:
 theme:
   name: material
   language: en
-  logo: logo-repo.png
-  favicon: logo-repo.png
+  logo: logo.png
+  favicon: logo.png
 
   icon:
     repo: fontawesome/brands/github

@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="logo-repo.png" alt="FastHTTP" width="600">
-</p>
-
 # FastHTTP Client
 
 Быстрый и простой HTTP-клиент с поддержкой async и красивым логированием.
@@ -69,23 +65,23 @@ if __name__ == "__main__":
 
 ### Основы
 
-- [Быстрый старт](ru/quick-start.md) - Начните здесь
-- [Конфигурация](ru/configuration.md) - Настройки приложения
-- [CLI](ru/cli.md) - Командная строка
+- [Быстрый старт](quick-start.md) - Начните здесь
+- [Конфигурация](configuration.md) - Настройки приложения
+- [CLI](cli.md) - Командная строка
 
 ### Продвинутые темы
 
-- [Зависимости](ru/dependencies.md) - Модификация запросов
-- [Middleware](ru/middleware.md) - Глобальная логика
-- [GraphQL](ru/graphql.md) - Поддержка GraphQL
-- [Pydantic](ru/pydantic-validation.md) - Валидация
-- [HTTP/2](ru/http2-support.md) - Поддержка HTTP/2
-- [Безопасность](ru/security.md) - Встроенная защита
+- [Зависимости](dependencies.md) - Модификация запросов
+- [Middleware](middleware.md) - Глобальная логика
+- [GraphQL](graphql.md) - Поддержка GraphQL
+- [Pydantic](pydantic-validation.md) - Валидация
+- [HTTP/2](http2-support.md) - Поддержка HTTP/2
+- [Безопасность](security.md) - Встроенная защита
 
 ### Дополнительно
 
-- [Примеры](ru/examples.md) - Больше примеров кода
-- [API Reference](ru/api-reference.md) - Полная документация
+- [Примеры](examples.md) - Больше примеров кода
+- [API Reference](api-reference.md) - Полная документация
 
 ---
 
@@ -138,8 +134,8 @@ async def main(resp: Response) -> dict:
 
 ## Язык
 
-- [English Documentation](en/index.md)
-- [Русская документация](ru/index.md)
+- [English Documentation](../en/index.md)
+- [Русская документация](index.md)
 
 ---
 
