@@ -9,13 +9,18 @@ repo_url: https://github.com/ndugram/fasthttp
 repo_name: ndugram/fasthttp
 
 copyright: |
-  Copyright &copy; 2026 White NEFOR  
-  Built with Material for MkDocs
+  Copyright &copy; 2026 White NEFOR
 
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/ndugram/fasthttp
+
+  alternate:
+    - link: /
+      name: English
+    - link: /ru/
+      name: Russian
 
 nav:
   - Home: index.md
@@ -31,22 +36,22 @@ nav:
     - Pydantic: en/pydantic-validation.md
     - HTTP/2: en/http2-support.md
     - API Reference: en/api-reference.md
-  - Русский:
-    - Главная: ru/index.md
-    - Быстрый старт: ru/quick-start.md
+  - Russian:
+    - Main: ru/index.md
+    - Quick Start: ru/quick-start.md
     - CLI: ru/cli.md
-    - Конфигурация: ru/configuration.md
-    - Примеры: ru/examples.md
-    - Зависимости: ru/dependencies.md
-    - Безопасность: ru/security.md
-    - Мидлвар: ru/middleware.md
+    - Configuration: ru/configuration.md
+    - Examples: ru/examples.md
+    - Dependencies: ru/dependencies.md
+    - Security: ru/security.md
+    - Middleware: ru/middleware.md
     - GraphQL: ru/graphql.md
     - Pydantic: ru/pydantic-validation.md
     - HTTP/2: ru/http2-support.md
-    - API: ru/api-reference.md
+    - API Reference: ru/api-reference.md
   - Blog:
     - English: blog/how-i-created-fasthttp.md
-    - Русский: blog/istoriya-sozdaniya-fasthttp.md
+    - Russian: blog/istoriya-sozdaniya-fasthttp.md
 
 theme:
   name: material
@@ -54,17 +59,20 @@ theme:
   logo: logo-repo.png
   favicon: logo-repo.png
 
+  icon:
+    repo: fontawesome/brands/github
+
   palette:
     - scheme: default
-      primary: black
-      accent: deep orange
+      primary: deep orange
+      accent: orange
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
 
     - scheme: slate
-      primary: black
-      accent: deep orange
+      primary: deep orange
+      accent: orange
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
@@ -74,6 +82,7 @@ theme:
     - navigation.tracking
     - navigation.tabs
     - navigation.tabs.sticky
+    - navigation.tabs.hover
     - navigation.sections
     - navigation.expand
     - navigation.top
@@ -94,7 +103,6 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.superfences
   - pymdownx.details
-  - pymdownx.emoji
   - pymdownx.tabbed:
       alternate_style: true
 
