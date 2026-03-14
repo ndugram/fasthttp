@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://fasthttp.readthedocs.io/ru/latest/logo-repo.png" style="background:white; padding:12px; border-radius:10px;">
+  <img src="https://fasthttp.readthedocs.io/ru/latest/logo.png" style="background:white; padding:12px; border-radius:10px; width:350">
 </p>
 
 <div align="center">
