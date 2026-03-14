@@ -524,6 +524,28 @@ class FastHTTP:
                 """
             ),
         ] = None,
+        response_model: Annotated[
+            type[BaseModel] | None,
+            Doc(
+                """
+                Optional Pydantic model for validating response data.
+
+                If provided, the GraphQL response data will be
+                validated before being returned.
+                """
+            ),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc(
+                """
+                List of dependencies to execute before the request.
+
+                Dependencies are functions that modify the request
+                config before the request is sent.
+                """
+            ),
+        ] = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """
         Decorator for GraphQL queries and mutations.
@@ -592,6 +614,8 @@ class FastHTTP:
                     handler=graphql_handler,
                     tags=tags,
                     skip_request=True,
+                    response_model=response_model,
+                    dependencies=dependencies,
                 )
             )
             self.logger.debug(
