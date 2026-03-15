@@ -106,7 +106,7 @@ class TestHTTPClient:
         call_kwargs = mock_httpx_client.request.call_args.kwargs
         headers = call_kwargs.get("headers", {})
         assert "User-Agent" in headers
-        assert headers["User-Agent"] == "fasthttp/1.0.4"
+        assert headers["User-Agent"] == "fasthttp/1.0.5"
 
     @pytest.mark.asyncio
     async def test_send_request_handles_4xx_status(self, http_client, mock_httpx_client) -> None:
