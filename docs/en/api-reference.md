@@ -122,6 +122,7 @@ async def lifespan(app):
     dependencies: list = [],
     response_model: type = None,
     request_model: type = None,
+    responses: dict = None,
     get_request: dict = None,
 )
 ```
@@ -138,6 +139,7 @@ async def lifespan(app):
     dependencies: list = [],
     response_model: type = None,
     request_model: type = None,
+    responses: dict = None,
     post_request: dict = None,
 )
 ```
@@ -154,6 +156,7 @@ async def lifespan(app):
     dependencies: list = [],
     response_model: type = None,
     request_model: type = None,
+    responses: dict = None,
     put_request: dict = None,
 )
 ```
@@ -170,6 +173,7 @@ async def lifespan(app):
     dependencies: list = [],
     response_model: type = None,
     request_model: type = None,
+    responses: dict = None,
     patch_request: dict = None,
 )
 ```
@@ -184,6 +188,7 @@ async def lifespan(app):
     dependencies: list = [],
     response_model: type = None,
     request_model: type = None,
+    responses: dict = None,
     delete_request: dict = None,
 )
 ```
@@ -200,6 +205,7 @@ async def lifespan(app):
 | `dependencies` | `list` | Dependencies |
 | `response_model` | `type[BaseModel]` | Pydantic model for response validation |
 | `request_model` | `type[BaseModel]` | Pydantic model for request validation |
+| `responses` | `dict[int, dict[Literal["model"], type[BaseModel]]]` | Pydantic models for API error validation |
 
 ### Type Annotation Requirements
 
