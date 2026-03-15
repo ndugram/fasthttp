@@ -285,6 +285,161 @@ async def get_user(resp: Response):
         return {"error": "Invalid response format"}
 ```
 
+## API Error Validation (responses)
+
+The `responses` parameter allows defining Pydantic models for handling errors with different HTTP status codes.
+
+### Basic Example
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+from pydantic import BaseModel
+
+app = FastHTTP(debug=True, security=False)
+
+
+class Error404(BaseModel):
+    message: str
+    documentation_url: str
+    status: str
+
+
+@app.get(
+    url="https://api.github.com/gist",
+    responses={
+        404: {"model": Error404}
+    }
+)
+async def handle_404(resp: Response) -> dict:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+When the server returns an error (4xx, 5xx):
+1. FastHTTP looks for a model for this status in `responses`
+2. If model is found, JSON response is validated via Pydantic
+3. Validated object is available via `resp.json()` or `resp._handler_result`
+4. Handler is called with validated data
+
+### Multiple Status Codes
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+from pydantic import BaseModel
+
+app = FastHTTP(debug=True, security=False)
+
+
+class Error404(BaseModel):
+    message: str
+
+
+class Error500(BaseModel):
+    error: str
+    details: str
+
+
+@app.get(
+    url="https://api.example.com/data",
+    responses={
+        404: {"model": Error404},
+        500: {"model": Error500}
+    }
+)
+async def handle_errors(resp: Response) -> dict:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+### Working with Success and Error Responses
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+from pydantic import BaseModel
+
+app = FastHTTP(debug=True, security=False)
+
+
+class SuccessResponse(BaseModel):
+    id: int
+    name: str
+
+
+class Error404(BaseModel):
+    message: str
+
+
+@app.get(
+    url="https://api.example.com/users/1",
+    response_model=SuccessResponse,
+    responses={
+        404: {"model": Error404}
+    }
+)
+async def get_user(resp: Response) -> dict:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+### Using with Different HTTP Methods
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+from pydantic import BaseModel
+
+app = FastHTTP(debug=True, security=False)
+
+
+class Error403(BaseModel):
+    message: str
+
+
+@app.post(
+    url="https://api.example.com/users",
+    json={"name": "John"},
+    responses={
+        403: {"model": Error403}
+    }
+)
+async def create_user(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.delete(
+    url="https://api.example.com/users/1",
+    responses={
+        403: {"model": Error403},
+        404: {"model": Error403}
+    }
+)
+async def delete_user(resp: Response) -> dict:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+### Important Notes
+
+- `responses` only works for APIs that return JSON with errors
+- If API returns an error without JSON, validation fails and standard error handling is triggered
+- The model must match the JSON response structure from the API
+- The key in the dictionary is always an integer (HTTP status code)
+
 ## Pydantic Data Types
 
 FastHTTP supports all Pydantic types:

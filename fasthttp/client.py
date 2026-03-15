@@ -326,6 +326,20 @@ class HTTPClient:
         await self._check_response_security(route, resp)
 
         if resp.status_code >= 400:
+            error_model = route.responses.get(resp.status_code)
+            if error_model:
+                if isinstance(error_model, dict):
+                    error_model = error_model.get("model")
+                if error_model:
+                    response = self._build_response(route, config, resp)
+                    try:
+                        error_data = response.json()
+                        validated = error_model.model_validate(error_data)
+                        response._handler_result = validated
+                        handler_result = await route.handler(response)
+                        return await self._process_handler_result(response, handler_result)
+                    except Exception:
+                        pass
             await self._handle_bad_status(route, config, resp)
             return None
 

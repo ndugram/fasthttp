@@ -164,6 +164,27 @@ class Route:
                 """
             ),
         ] = False,
+        responses: Annotated[
+            dict[int, dict[Literal["model"], type[BaseModel]]] | None,
+            Doc(
+                """
+                Response models for different status codes.
+
+                A dictionary mapping HTTP status codes to Pydantic models
+                that will be used to validate error responses.
+
+                Example:
+                    responses={
+                        404: {"model": Error404},
+                        500: {"model": Error500}
+                    }
+
+                When the server returns an error status code (4xx, 5xx),
+                the response body will be validated against the
+                corresponding model.
+                """
+            ),
+        ] = None,
     ) -> None:
         self.method = method
         self.url = url
@@ -176,3 +197,4 @@ class Route:
         self.tags = tags or []
         self.dependencies = dependencies or []
         self.skip_request = skip_request
+        self.responses = responses or {}
