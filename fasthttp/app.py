@@ -343,6 +343,7 @@ class FastHTTP:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
             self._check_annotated_parameters(func=func)
@@ -359,6 +360,7 @@ class FastHTTP:
                     request_model=request_model,
                     tags=tags,
                     dependencies=dependencies,
+                    responses=responses,
                 )
             )
             self.logger.debug("Registered route: %s %s", method, url)
@@ -375,6 +377,7 @@ class FastHTTP:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="GET",
@@ -383,7 +386,8 @@ class FastHTTP:
             response_model=response_model,
             request_model=request_model,
             tags=tags,
-            dependencies=dependencies
+            dependencies=dependencies,
+            responses=responses,
         )
 
     def post(
@@ -396,6 +400,7 @@ class FastHTTP:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="POST",
@@ -405,7 +410,8 @@ class FastHTTP:
             response_model=response_model,
             request_model=request_model,
             tags=tags,
-            dependencies=dependencies
+            dependencies=dependencies,
+            responses=responses,
         )
 
     def put(
@@ -418,6 +424,7 @@ class FastHTTP:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="PUT",
@@ -427,7 +434,8 @@ class FastHTTP:
             response_model=response_model,
             request_model=request_model,
             tags=tags,
-            dependencies=dependencies
+            dependencies=dependencies,
+            responses=responses,
         )
 
     def patch(
@@ -440,6 +448,7 @@ class FastHTTP:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="PATCH",
@@ -449,7 +458,8 @@ class FastHTTP:
             response_model=response_model,
             request_model=request_model,
             tags=tags,
-            dependencies=dependencies
+            dependencies=dependencies,
+            responses=responses,
         )
 
     def delete(
@@ -462,6 +472,7 @@ class FastHTTP:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="DELETE",
@@ -472,6 +483,7 @@ class FastHTTP:
             request_model=request_model,
             tags=tags,
             dependencies=dependencies,
+            responses=responses,
         )
 
     def graphql(
