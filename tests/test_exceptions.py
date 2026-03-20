@@ -107,7 +107,7 @@ class TestExceptions:
             status_code=400,
         )
 
-        with caplog.at_level(logging.DEBUG):
+        with caplog.at_level(logging.ERROR, logger="fasthttp.exceptions"):
             error.log()
 
         assert len(caplog.records) > 0
@@ -118,15 +118,15 @@ class TestLogSuccess:
 
     def test_log_success_calls_logger(self, caplog) -> None:
         """Test that log_success logs successful requests."""
-        with caplog.at_level(logging.DEBUG):
+        with caplog.at_level(logging.INFO, logger="fasthttp.exceptions"):
             log_success("http://example.com", "GET", 200, 50.5)
 
         assert len(caplog.records) > 0
 
     def test_log_success_includes_timing(self, caplog) -> None:
         """Test that log_success includes elapsed time."""
-        with caplog.at_level(logging.DEBUG):
+        with caplog.at_level(logging.INFO, logger="fasthttp.exceptions"):
             log_success("http://example.com", "GET", 200, 100.0)
 
         log_text = caplog.text
-        assert "100.0ms" in log_text or "100" in log_text
+        assert "100" in log_text
