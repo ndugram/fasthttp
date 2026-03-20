@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import json
 import time
-from typing import TYPE_CHECKING, Annotated, Literal, get_args, get_origin
+from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args, get_origin
 
 import httpx
 from annotated_doc import Doc
@@ -12,8 +13,11 @@ from .client import HTTPClient
 from .graphql.client import create_graphql_client
 from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
+from .openapi.generator import generate_openapi_schema
+from .openapi.swagger import get_swagger_html, get_not_found_html
 from .routing import Route
 from .security import Security
+
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -767,3 +771,238 @@ class FastHTTP:
             self.logger.error("Connection error: %s", e)
         except KeyboardInterrupt:
             self.logger.warning("Interrupted by user")
+
+    def web_run(
+        self,
+        *,
+        host: Annotated[
+            str,
+            Doc(
+                """
+                Host to bind the ASGI server to.
+
+                Default is "127.0.0.1".
+                """
+            ),
+        ] = "127.0.0.1",
+        port: Annotated[
+            int,
+            Doc(
+                """
+                Port to bind the ASGI server to.
+
+                Default is 8000.
+                """,
+            ),
+        ] = 8000,
+    ) -> None:
+        """
+        Run the FastHTTP application as an ASGI server with Swagger UI.
+
+        This method starts a local HTTP server that serves:
+        - /docs - Swagger UI interface
+        - /openapi.json - OpenAPI schema
+        - /request - Execute HTTP requests from Swagger UI
+
+        The server allows you to test and execute HTTP requests
+        through the Swagger UI interface.
+
+        Example:
+            ```python
+            from fasthttp import FastHTTP
+
+            app = FastHTTP()
+
+            @app.get("https://google.com")
+            async def index(resp):
+                return resp.status
+
+            app.web_run()
+            ```
+
+        Args:
+            host: Host to bind to. Default is "127.0.0.1".
+            port: Port to bind to. Default is 8000.
+        """
+        self.logger.info("FastHTTP started")
+
+        app = ASGIApp(self)
+
+        base_url = f"http://{host}:{port}"
+
+        print(f"\n\033[92mfasthttp\033[0m running on \033[94m{base_url}\033[0m")
+        print(f"\033[93mdocs\033[0m: \033[94m{base_url}/docs\033[0m\n")
+
+        try:
+            import uvicorn
+
+            uvicorn.run(app, host=host, port=port, log_level="info")
+        except ImportError:
+            self.logger.warning(
+                "uvicorn not found. Using built-in ASGI server. "
+                "Install uvicorn for better performance: pip install uvicorn"
+            )
+            asyncio.run(self._run_asgi_server(app, host, port))
+
+    async def _run_asgi_server(
+        self,
+        app: "ASGIApp",
+        host: str,
+        port: int,
+    ) -> None:
+        server = await asyncio.start_server(
+            app.handle_request,
+            host,
+            port,
+        )
+
+        async with server:
+            await server.serve_forever()
+
+
+class ASGIApp:
+    """
+    ASGI application for FastHTTP.
+
+    This class provides ASGI compatibility for FastHTTP,
+    enabling it to serve Swagger UI and handle HTTP requests.
+    """
+
+    def __init__(
+        self,
+        app: Annotated[
+            FastHTTP,
+            Doc("FastHTTP application instance"),
+        ],
+    ) -> None:
+        self.fasthttp = app
+
+    async def __call__(
+        self,
+        scope: dict,
+        receive: Callable[..., Any],
+        send: Callable[..., Any],
+    ) -> None:
+        await self.handle_request(scope, receive, send)
+
+    async def handle_request(
+        self,
+        scope: dict,
+        receive: Callable[..., Any],
+        send: Callable[..., Any],
+    ) -> None:
+        path = scope.get("path", "/")
+        method = scope.get("method", "GET")
+
+        body = b""
+        if method in ("POST", "PUT", "PATCH"):
+            while True:
+                message = await receive()
+                if message["type"] == "http.request":
+                    body += message.get("body", b"")
+                    if not message.get("more_body"):
+                        break
+
+        if path == "/docs" or path.startswith("/docs"):
+            await self._send_html(send, get_swagger_html())
+        elif path == "/openapi.json":
+            schema = generate_openapi_schema(self.fasthttp)
+            await self._send_json(send, schema)
+        elif path == "/request":
+            await self._handle_proxy(send, method, body)
+        else:
+            await self._send_404(send, path)
+
+    async def _send_html(self, send: Callable[..., Any], html: str) -> None:
+        await send({
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"text/html; charset=utf-8"]],
+        })
+        await send({
+            "type": "http.response.body",
+            "body": html.encode("utf-8"),
+        })
+
+    async def _send_json(self, send: Callable[..., Any], data: dict) -> None:
+        json_str = json.dumps(data, indent=2, ensure_ascii=False)
+        await send({
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"application/json; charset=utf-8"]],
+        })
+        await send({
+            "type": "http.response.body",
+            "body": json_str.encode("utf-8"),
+        })
+
+    async def _send_404(self, send: Callable[..., Any], path: str = "/") -> None:
+        html = get_not_found_html()
+        await send({
+            "type": "http.response.start",
+            "status": 404,
+            "headers": [[b"content-type", b"text/html; charset=utf-8"]],
+        })
+        await send({
+            "type": "http.response.body",
+            "body": html.encode("utf-8"),
+        })
+
+    async def _handle_proxy(
+        self,
+        send: Callable[..., Any],
+        method: str,
+        body: bytes,
+    ) -> None:
+        try:
+            request_data = {}
+            if body:
+                try:
+                    request_data = json.loads(body)
+                except json.JSONDecodeError:
+                    await self._send_json(send, {"error": "Invalid JSON"})
+                    return
+
+            real_method = request_data.get("method", "GET")
+            url = request_data.get("url", "")
+            headers = request_data.get("headers", {})
+            req_body = request_data.get("body")
+
+            if not url:
+                await self._send_json(send, {"error": "URL is required"})
+                return
+
+            async with httpx.AsyncClient() as client:
+                kwargs: dict[str, Any] = {
+                    "method": real_method,
+                    "url": url,
+                    "headers": headers,
+                }
+
+                if req_body and real_method in ("POST", "PUT", "PATCH"):
+                    if isinstance(req_body, dict):
+                        kwargs["json"] = req_body
+                    else:
+                        kwargs["content"] = str(req_body)
+
+                response = await client.request(**kwargs)
+
+                result = {
+                    "status": response.status_code,
+                    "headers": dict(response.headers),
+                    "body": response.text,
+                }
+
+                try:
+                    result["json"] = response.json()
+                except Exception:
+                    pass
+
+                await self._send_json(send, result)
+
+        except httpx.ConnectError as e:
+            await self._send_json(send, {"error": f"Connection error: {str(e)}"})
+        except httpx.TimeoutException as e:
+            await self._send_json(send, {"error": f"Timeout: {str(e)}"})
+        except Exception as e:
+            await self._send_json(send, {"error": f"Request failed: {str(e)}"})

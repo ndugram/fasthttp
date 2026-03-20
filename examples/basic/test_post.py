@@ -4,7 +4,7 @@ from fasthttp.response import Response
 app = FastHTTP()
 
 
-@app.post(url="https://httpbin.org/post")
+@app.post(url="https://httpbin.org/post/1")
 async def test_post(resp: Response) -> int:
     return resp.status
 
