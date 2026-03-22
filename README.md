@@ -81,29 +81,6 @@ if __name__ == "__main__":
 
 Control request rate with multiple strategies:
 
-```python
-from fasthttp import FastHTTP, RateLimitConfig
-from fasthttp.response import Response
-
-app = FastHTTP(
-    rate_limit={
-        "enabled": True,
-        "strategy": "token_bucket",
-        "requests_per_second": 10,
-        "burst": 20,
-    }
-)
-
-@app.get(url="https://api.example.com/data")
-async def get_data(resp: Response):
-    return resp.json()
-
-if __name__ == "__main__":
-    app.run()
-```
-
-Available strategies: `token_bucket`, `leaky_bucket`, `fixed_window`, `sliding_window`.
-
 ### Middleware
 
 Add custom logic to requests and responses:
