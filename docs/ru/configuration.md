@@ -33,6 +33,7 @@ app = FastHTTP(
 |----------|-----|--------------|----------|
 | `debug` | `bool` | `False` | Включить подробное логирование |
 | `http2` | `bool` | `False` | Использовать HTTP/2 |
+| `proxy` | `str` | `None` | Прокси-сервер для запросов |
 | `get_request` | `dict` | `{}` | Настройки по умолчанию для GET |
 | `post_request` | `dict` | `{}` | Настройки по умолчанию для POST |
 | `put_request` | `dict` | `{}` | Настройки по умолчанию для PUT |
@@ -250,6 +251,76 @@ pip install fasthttp-client[http2]
 ```
 
 Подробнее в разделе [HTTP/2](http2-support.md).
+
+## Прокси
+
+Вы можете использовать прокси-сервер для всех запросов:
+
+```python
+from fasthttp import FastHTTP
+
+app = FastHTTP(proxy="http://proxy.example.com:8080")
+```
+
+### Типы прокси
+
+```python
+# HTTP прокси
+app = FastHTTP(proxy="http://proxy.example.com:8080")
+
+# HTTPS прокси
+app = FastHTTP(proxy="https://proxy.example.com:8080")
+
+# Прокси с авторизацией
+app = FastHTTP(proxy="http://user:password@proxy.example.com:8080")
+
+# SOCKS5 прокси
+app = FastHTTP(proxy="socks5://proxy.example.com:1080")
+```
+
+### Пример использования
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP(
+    proxy="http://proxy.example.com:8080",
+    get_request={
+        "timeout": 30.0,
+    },
+)
+
+
+@app.get(url="https://httpbin.org/get")
+async def test_proxy(resp: Response) -> dict:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+### Переменные окружения
+
+Прокси также можно настроить через переменные окружения:
+
+```python
+import os
+from fasthttp import FastHTTP
+
+app = FastHTTP(
+    proxy=os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY"),
+)
+```
+
+### Пример .env файла
+
+```bash
+# .env
+HTTP_PROXY=http://proxy.example.com:8080
+HTTPS_PROXY=http://proxy.example.com:8080
+```
 
 ## Конфигурация по методу HTTP
 

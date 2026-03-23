@@ -216,11 +216,30 @@ class FastHTTP:
                 """
             ),
         ] = None,
+        proxy: Annotated[
+            str | None,
+            Doc(
+                """
+                Proxy server to use for requests.
+
+                Supports:
+                - HTTP proxy: "http://proxy.example.com:8080"
+                - HTTPS proxy: "https://proxy.example.com:8080"
+                - With authentication: "http://user:pass@proxy.example.com:8080"
+
+                Example:
+                    ```python
+                    app = FastHTTP(proxy="http://proxy.example.com:8080")
+                    ```
+                """
+            ),
+        ] = None,
     ) -> None:
         self.logger = setup_logger(debug=debug)
         self.routes: list[Route] = []
         self.http2_enabled = http2
         self.lifespan = lifespan
+        self.proxy = proxy
 
         if middleware is None:
             normalized_middleware = []
@@ -691,10 +710,15 @@ class FastHTTP:
         self.logger.info("Sending %d requests", total)
         if self.http2_enabled:
             self.logger.info("HTTP/2 enabled")
+        if self.proxy:
+            self.logger.info("Proxy enabled: %s", self.proxy)
 
         start_all = time.perf_counter()
 
-        async with httpx.AsyncClient(http2=self.http2_enabled) as client:
+        async with httpx.AsyncClient(
+            http2=self.http2_enabled,
+            proxy=self.proxy,
+        ) as client:
             if total > 1:
                 tasks = [
                     self._run_route(client, route)
@@ -972,7 +996,9 @@ class ASGIApp:
                 await self._send_json(send, {"error": "URL is required"})
                 return
 
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(
+                proxy=self.fasthttp.proxy,
+            ) as client:
                 kwargs: dict[str, Any] = {
                     "method": real_method,
                     "url": url,
