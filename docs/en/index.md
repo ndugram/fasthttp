@@ -188,8 +188,9 @@ async def protected(resp: Response) -> dict:
 
 ## Community
 
-- GitHub: https://github.com/your-repo/fasthttp
+- GitHub: https://github.com/ndugram/fasthttp
 - PyPI: https://pypi.org/project/fasthttp-client/
+- Documentation: https://fasthttp.ndugram.dev
 
 ## License
 

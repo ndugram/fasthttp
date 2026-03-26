@@ -1,98 +1,58 @@
 site_name: FastHTTP
-site_description: Fast and simple HTTP client library with async support and beautiful logging
-site_author: White NEFOR
-site_url: https://fasthttp.readthedocs.io/
+site_description: FastHTTP framework, high performance async HTTP client, easy to learn, fast to code, ready for production
+site_url: https://fasthttp.ndugram.dev
 
 docs_dir: docs
-
-repo_url: https://github.com/ndugram/fasthttp
-repo_name: ndugram/fasthttp
-
-copyright: |
-  Copyright &copy; 2026 White NEFOR
-
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/ndugram/fasthttp
-
-  alternate:
-    - link: /
-      name: English
-    - link: /ru/
-      name: Russian
-
-nav:
-  - Home: index.md
-  - English:
-    - Quick Start: en/quick-start.md
-    - CLI: en/cli.md
-    - Configuration: en/configuration.md
-    - Examples: en/examples.md
-    - Dependencies: en/dependencies.md
-    - Security: en/security.md
-    - Middleware: en/middleware.md
-    - GraphQL: en/graphql.md
-    - Pydantic: en/pydantic-validation.md
-    - HTTP/2: en/http2-support.md
-    - OpenAPI: en/openapi.md
-    - API Reference: en/api-reference.md
-  - Russian:
-    - Main: ru/index.md
-    - Quick Start: ru/quick-start.md
-    - CLI: ru/cli.md
-    - Configuration: ru/configuration.md
-    - Examples: ru/examples.md
-    - Dependencies: ru/dependencies.md
-    - Security: ru/security.md
-    - Middleware: ru/middleware.md
-    - GraphQL: ru/graphql.md
-    - Pydantic: ru/pydantic-validation.md
-    - HTTP/2: ru/http2-support.md
-    - OpenAPI: ru/openapi.md
-    - API Reference: ru/api-reference.md
-  - Blog:
-    - English: blog/how-i-created-fasthttp.md
-    - Russian: blog/istoriya-sozdaniya-fasthttp.md
-
 theme:
   name: material
-  language: en
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/lightbulb-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: orange
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: orange
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to system preference
+  features:
+    - content.code.annotate
+    - content.code.copy
+    - content.footnote.tooltips
+    - content.tabs.link
+    - content.tooltips
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
   logo: logo.png
   favicon: logo.png
 
-  icon:
-    repo: fontawesome/brands/github
-
-  palette:
-    - scheme: default
-      primary: deep orange
-      accent: orange
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-
-    - scheme: slate
-      primary: deep orange
-      accent: orange
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
-
-  features:
-    - navigation.instant
-    - navigation.tracking
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.tabs.hover
-    - navigation.sections
-    - navigation.expand
-    - navigation.top
-    - content.code.copy
-    - content.code.annotate
-    - search.suggest
-    - search.highlight
-
+repo_name: ndugram/fasthttp
+repo_url: https://github.com/ndugram/fasthttp
+plugins:
+  - search
 markdown_extensions:
   - admonition
   - tables
@@ -107,6 +67,131 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.tabbed:
       alternate_style: true
+nav:
+  - FastHTTP: index.md
+  - English:
+    - Learn:
+      - en/learn/index.md
+      - en/learn/python-types.md
+    - Tutorial - User Guide:
+      - Tutorial:
+        - en/tutorial/index.md
+        - en/tutorial/first-steps.md
+        - en/tutorial/http-methods.md
+        - en/tutorial/request-parameters.md
+        - en/tutorial/response-handling.md
+        - en/tutorial/parallel-execution.md
+        - en/tutorial/tags.md
+        - en/tutorial/dependencies.md
+        - en/tutorial/lifespan.md
+      - Validation:
+        - en/tutorial/validation/index.md
+        - en/tutorial/validation/pydantic-validation.md
+        - en/tutorial/validation/request-validation.md
+        - en/tutorial/validation/error-validation.md
+      - Configuration:
+        - en/tutorial/configuration/index.md
+        - en/tutorial/configuration/settings.md
+        - en/tutorial/configuration/headers.md
+        - en/tutorial/configuration/timeouts.md
+        - en/tutorial/configuration/logging.md
+        - en/tutorial/configuration/environment.md
+        - en/tutorial/configuration/http2.md
+        - en/tutorial/configuration/proxy.md
+      - Middleware:
+        - en/tutorial/middleware/index.md
+        - en/tutorial/middleware/creating.md
+        - en/tutorial/middleware/examples.md
+      - Security:
+        - en/tutorial/security/index.md
+        - en/tutorial/security/ssrf-protection.md
+        - en/tutorial/security/circuit-breaker.md
+        - en/tutorial/security/secrets-masking.md
+      - GraphQL:
+        - en/tutorial/graphql/index.md
+        - en/tutorial/graphql/queries.md
+        - en/tutorial/graphql/mutations.md
+      - OpenAPI:
+        - en/tutorial/openapi/index.md
+        - en/tutorial/openapi/swagger-ui.md
+    - CLI:
+      - en/cli/index.md
+      - en/cli/commands.md
+      - en/cli/options.md
+    - Reference:
+      - en/reference/index.md
+      - en/reference/fasthttp.md
+      - en/reference/response.md
+      - en/reference/middleware.md
+      - en/reference/dependencies.md
+      - en/reference/cli.md
+    - About:
+      - en/about/index.md
+  - Russian:
+    - Learn:
+      - ru/learn/index.md
+      - ru/learn/python-types.md
+    - Tutorial - User Guide:
+      - Tutorial:
+        - ru/tutorial/index.md
+        - ru/tutorial/first-steps.md
+        - ru/tutorial/http-methods.md
+        - ru/tutorial/request-parameters.md
+        - ru/tutorial/response-handling.md
+        - ru/tutorial/parallel-execution.md
+        - ru/tutorial/tags.md
+        - ru/tutorial/dependencies.md
+        - ru/tutorial/lifespan.md
+      - Validation:
+        - ru/tutorial/validation/index.md
+        - ru/tutorial/validation/pydantic-validation.md
+        - ru/tutorial/validation/request-validation.md
+        - ru/tutorial/validation/error-validation.md
+      - Configuration:
+        - ru/tutorial/configuration/index.md
+        - ru/tutorial/configuration/settings.md
+        - ru/tutorial/configuration/headers.md
+        - ru/tutorial/configuration/timeouts.md
+        - ru/tutorial/configuration/logging.md
+        - ru/tutorial/configuration/environment.md
+        - ru/tutorial/configuration/http2.md
+        - ru/tutorial/configuration/proxy.md
+      - Middleware:
+        - ru/tutorial/middleware/index.md
+        - ru/tutorial/middleware/creating.md
+        - ru/tutorial/middleware/examples.md
+      - Security:
+        - ru/tutorial/security/index.md
+        - ru/tutorial/security/ssrf-protection.md
+        - ru/tutorial/security/circuit-breaker.md
+        - ru/tutorial/security/secrets-masking.md
+      - GraphQL:
+        - ru/tutorial/graphql/index.md
+        - ru/tutorial/graphql/queries.md
+        - ru/tutorial/graphql/mutations.md
+      - OpenAPI:
+        - ru/tutorial/openapi/index.md
+        - ru/tutorial/openapi/swagger-ui.md
+    - CLI:
+      - ru/cli/index.md
+      - ru/cli/commands.md
+      - ru/cli/options.md
+    - Reference:
+      - ru/reference/index.md
+      - ru/reference/fasthttp.md
+      - ru/reference/response.md
+      - ru/reference/middleware.md
+      - ru/reference/dependencies.md
+      - ru/reference/cli.md
+    - About:
+      - ru/about/index.md
 
-plugins:
-  - search
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ndugram/fasthttp
+  alternate:
+    - link: /
+      name: en - English
+    - link: /ru/
+      name: ru - Russian

@@ -1,32 +1,18 @@
-<p align="center">
-  <img src="logo.png" alt="FastHTTP" width="250">
-</p>
+# FastHTTP
 
-# FastHTTP Client
-
-Fast and simple HTTP client library with async support and beautiful logging.
-
-[![PyPI Version](https://img.shields.io/pypi/v/fasthttp-client?style=flat&label=PyPI)](https://pypi.org/project/fasthttp-client/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/fasthttp-client?style=flat)](https://pypi.org/project/fasthttp-client/)
-[![License](https://img.shields.io/pypi/l/fasthttp-client?style=flat)](https://github.com/ndugram/fasthttp)
-[![Downloads](https://img.shields.io/pypi/dm/fasthttp-client?style=flat)](https://pypi.org/project/fasthttp-client/)
-
----
+FastHTTP is a lightweight asynchronous HTTP client built on top of httpx. It provides a clean declarative API for defining HTTP requests and handling responses.
 
 ## Features
 
-| | |
-|:---|:---|
-| **Declarative Style** | Define requests as functions with decorators |
-| **Async Support** | Parallel request execution with asyncio |
-| **Dependencies** | Modify requests before sending |
-| **Tags** | Group and filter requests |
-| **Middleware** | Global logic for all requests |
-| **Pydantic** | Response validation |
-| **HTTP/2** | Modern protocol support |
-| **CLI** | Convenient command line |
-
----
+- **Declarative Style** - Define requests as functions with decorators
+- **Async Support** - Parallel request execution with asyncio
+- **Dependencies** - Modify requests before sending
+- **Tags** - Group and filter requests
+- **Middleware** - Global logic for all requests
+- **Pydantic** - Response validation
+- **HTTP/2** - Support for modern protocol
+- **CLI** - Convenient command line interface
+- **Built-in Security** - SSRF protection, circuit breaker
 
 ## Installation
 
@@ -34,13 +20,11 @@ Fast and simple HTTP client library with async support and beautiful logging.
 pip install fasthttp-client
 ```
 
-For HTTP/2:
+For HTTP/2 support:
 
 ```bash
 pip install fasthttp-client[http2]
 ```
-
----
 
 ## Quick Example
 
@@ -60,89 +44,54 @@ if __name__ == "__main__":
     app.run()
 ```
 
-!!! tip "Important"
-    Handler functions must have a return type annotation (`-> dict`, `-> str`, `-> int`, etc.)
+Output:
 
----
-
-## Documentation
-
-### Getting Started
-
-- [Quick Start](en/quick-start.md) - Start here
-- [Configuration](en/configuration.md) - App settings
-- [CLI](en/cli.md) - Command line
-
-### Advanced Topics
-
-- [Dependencies](en/dependencies.md) - Request modification
-- [Middleware](en/middleware.md) - Global logic
-- [GraphQL](en/graphql.md) - GraphQL support
-- [Pydantic](en/pydantic-validation.md) - Validation
-- [HTTP/2](en/http2-support.md) - HTTP/2 support
-- [Security](en/security.md) - Built-in protection
-
-### Additional
-
-- [Examples](en/examples.md) - More code examples
-- [API Reference](en/api-reference.md) - Complete reference
-
----
+```
+INFO    | fasthttp    | FastHTTP started
+INFO    | fasthttp    | Sending 1 requests
+INFO    | fasthttp    | GET https://jsonplaceholder.typicode.com/posts/1 200 234.56ms
+INFO    | fasthttp    | Done in 0.24s
+```
 
 ## Why FastHTTP?
 
-### The Problem
+Traditional HTTP clients require verbose code:
 
 ```python
-# Too much boilerplate code
+# Lots of boilerplate code
 import aiohttp
 
 async def main():
     async with aiohttp.ClientSession() as session:
         async with session.get("https://api.example.com/data") as resp:
             data = await resp.json()
-            # ... processing
 ```
 
-### FastHTTP Solution
+FastHTTP simplifies this:
 
 ```python
-# Clean and simple code
+# Clean and simple
 from fasthttp import FastHTTP
-from fasthttp.response import Response
 
 app = FastHTTP()
 
-
 @app.get(url="https://api.example.com/data")
-async def main(resp: Response) -> dict:
+async def main(resp):
     return resp.json()
 ```
 
----
+## Documentation
 
-## Comparison
+- [Learn](en/learn/index.md) - Fundamental concepts
+- [Tutorial](en/tutorial/index.md) - User guide
+- [CLI](en/cli/index.md) - Command line interface
+- [Reference](en/reference/index.md) - API reference
+- [About](en/about/index.md) - About the project
 
-| Feature | FastHTTP | requests | aiohttp | httpx |
-|:---|:---:|:---:|:---:|:---:|
-| Declarative | Yes | No | No | No |
-| Async | Yes | No | Yes | Yes |
-| Dependencies | Yes | No | No | No |
-| Tags | Yes | No | No | No |
-| Middleware | Yes | No | No | No |
-| Pydantic | Yes | No | No | No |
-| HTTP/2 | Yes | No | No | Yes |
-| CLI | Yes | No | No | No |
+## GitHub
 
----
+https://github.com/ndugram/fasthttp
 
-## Language
+## Documentation Site
 
-- [English Documentation](en/index.md)
-- [Russian Documentation](ru/index.md)
-
----
-
-## License
-
-MIT License
+https://fasthttp.ndugram.dev

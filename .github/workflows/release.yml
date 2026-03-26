@@ -95,7 +95,7 @@ jobs:
             👤 *Author:* ${{ github.actor }}
             🕐 *Time:* ${{ github.event.head_commit.timestamp }}"
 
-          KEYBOARD='{"inline_keyboard":[[{"text":"📦 PyPI","url":"https://pypi.org/project/fasthttp-client/"},{"text":"📖 Docs","url":"https://fasthttp.ndugram.space"},{"text":"💻 GitHub","url":"https://github.com/'${GITHUB_REPOSITORY}'/releases/tag/'${TAG}'"}]]}'
+          KEYBOARD='{"inline_keyboard":[[{"text":"📦 PyPI","url":"https://pypi.org/project/fasthttp-client/"},{"text":"📖 Docs","url":"https://fasthttp.ndugram.dev"},{"text":"💻 GitHub","url":"https://github.com/'${GITHUB_REPOSITORY}'/releases/tag/'${TAG}'"}]]}'
 
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
