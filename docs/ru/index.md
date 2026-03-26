@@ -132,6 +132,14 @@ async def main(resp: Response) -> dict:
 
 ---
 
+## Ссылки
+
+- [Документация](https://fasthttp.ndugram.dev) - Английская версия
+- [GitHub](https://github.com/ndugram/fasthttp) - Репозиторий
+- [PyPI](https://pypi.org/project/fasthttp-client/) - Скачать библиотеку
+
+---
+
 ## Язык
 
 - [English Documentation](../en/index.md)
