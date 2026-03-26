@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://fasthttp.readthedocs.io/ru/latest/logo.png" style="background:white; padding:12px; border-radius:10px; width:350">
+  <img src="https://fasthttp.ndugram.dev/logo.png" style="background:white; padding:12px; border-radius:10px; width:350">
 </p>
 
 <div align="center">
@@ -77,9 +77,6 @@ if __name__ == "__main__":
 
 **Note:** Install with `pip install fasthttp-client[http2]` for HTTP/2 support. HTTP/2 works with servers like Google, GitHub, YouTube, and many others. Servers that don't support HTTP/2 will automatically fall back to HTTP/1.1.
 
-### Rate Limiting
-
-Control request rate with multiple strategies:
 
 ### Middleware
 
