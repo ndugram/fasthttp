@@ -50,7 +50,7 @@ jobs:
           python -m pytest tests/ --cov=fasthttp --cov-report=term-missing --cov-fail-under=50
       
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           file: ./coverage.xml
           flags: unittests
