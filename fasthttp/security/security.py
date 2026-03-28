@@ -8,6 +8,7 @@ from .headers import HeaderProtection
 from .response import ResponseProtection, ResponseProtectionConfig
 from .limits import Limits, LimitsConfig
 from .redirect import RedirectProtection, RedirectConfig
+from .signer import RequestSigner
 
 logger = logging.getLogger("fasthttp.security")
 
@@ -19,7 +20,8 @@ class Security:
         response_config: ResponseProtectionConfig | None = None,
         redirect_config: RedirectConfig | None = None,
         circuit_breaker_config: CircuitBreakerConfig | None = None,
-    ):
+        secret_key: bytes | None = None,
+    ) -> None:
         self._ssrf = SSRFProtection()
         self._secrets = SecretsMasking()
         self._circuit_breaker = CircuitBreaker(circuit_breaker_config)
@@ -27,6 +29,28 @@ class Security:
         self._response = ResponseProtection(response_config)
         self._limits = Limits(limits_config)
         self._redirect = RedirectProtection(redirect_config)
+        self._signer = RequestSigner(secret_key)
+        self._sign_requests = True
+
+    def sign_request(
+        self,
+        method: str,
+        url: str,
+        body: dict | list | str | bytes | None,
+        headers: dict[str, str]
+    ) -> dict[str, str]:
+        if not self._sign_requests:
+            return headers
+        signature_headers = self._signer.sign(method, url, body)
+        headers.update(signature_headers)
+        return headers
+
+    def enable_signing(self, enabled: bool) -> None:
+        self._sign_requests = enabled
+
+    @property
+    def secret_key(self) -> bytes:
+        return self._signer._secret_key
 
     async def pre_request(self, url: str, method: str) -> None:
         self._ssrf.validate_request(url)
