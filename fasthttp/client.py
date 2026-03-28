@@ -14,6 +14,7 @@ from fasthttp.security import (
     SSRFBlockedError,
 )
 
+from .__meta__ import __version__
 from .exceptions import (
     FastHTTPBadStatusError,
     FastHTTPConnectionError,
@@ -98,8 +99,14 @@ class HTTPClient:
 
     async def _prepare_config(self, route: Route, config: dict) -> dict:
         headers = dict(config.get("headers") or {})
-        headers.setdefault("User-Agent", "fasthttp/1.1.2")
+        headers.setdefault("User-Agent", f"fasthttp/{__version__}")
         config["headers"] = headers
+
+        if self.security:
+            body = route.json or route.data
+            config["headers"] = self.security.sign_request(
+                route.method, route.url, body, config["headers"]
+            )
 
         if self.middleware_manager:
             config = await self.middleware_manager.process_before_request(route, config)
