@@ -93,4 +93,4 @@ async def handler(resp: Response) -> dict:  # Обязательно!
 
 - [HTTP методы](http-methods.md) - Все поддерживаемые методы
 - [Параметры запроса](request-parameters.md) - Query, JSON, заголовки
-- [Конфигурация](../en/configuration.md) - Дополнительные настройки
+- [Конфигурация](../configuration.md) - Дополнительные настройки
