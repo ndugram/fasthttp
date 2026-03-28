@@ -36,15 +36,23 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       
-      - name: Create tag and release
+      - name: Get current commit SHA
+        if: steps.tag_check.outputs.skip == 'false'
+        id: commit
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Create tag via GitHub API
         if: steps.tag_check.outputs.skip == 'false'
         run: |
           TAG="v${{ env.version }}"
-          
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "$TAG"
-          git push origin "$TAG"
+          curl -s -X POST "https://api.github.com/repos/${{ github.repository }}/git/refs" \
+            -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -d '{
+              "ref": "refs/tags/'"$TAG"'",
+              "sha": "${{ steps.commit.outputs.sha }}"
+            }'
 
       - name: Create GitHub Release
         if: steps.tag_check.outputs.skip == 'false'
