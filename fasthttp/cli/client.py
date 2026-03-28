@@ -17,9 +17,11 @@ class CLIResponse:
 class CLIClient:
     def __init__(
         self,
-        timeout: float = 30.0
+        timeout: float = 30.0,
+        proxy: str | None = None,
     ) -> None:
         self.timeout = timeout
+        self.proxy = proxy
 
     async def request(
         self,
@@ -29,26 +31,13 @@ class CLIClient:
         json: dict[str, Any] | None = None,
         data: str | None = None,
     ) -> CLIResponse:
-        """
-        Send an HTTP request and return parsed response.
-
-        Args:
-            method: HTTP method (GET, POST, PUT, PATCH, DELETE)
-            url: Target URL
-            headers: Optional request headers
-            json: Optional JSON body
-            data: Optional form data
-
-        Returns:
-            CLIResponse with parsed response data
-        """
         import time
 
         start = time.perf_counter()
 
         timeout = httpx.Timeout(self.timeout)
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(proxy=self.proxy) as client:
             resp = await client.request(
                 method=method,
                 url=url,
@@ -80,8 +69,9 @@ def run_request(
     json_data: dict[str, Any] | None = None,
     data: str | None = None,
     timeout: float = 30.0,
+    proxy: str | None = None,
 ) -> CLIResponse:
-    client = CLIClient(timeout=timeout)
+    client = CLIClient(timeout=timeout, proxy=proxy)
     return asyncio.run(
         client.request(
             method=method,
