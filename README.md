@@ -110,5 +110,5 @@ if __name__ == "__main__":
     app.run()
 ```
 
-![Recent Activity](https://images.repography.com/0/ndugram/fasthttp/recent-activity.svg)
+![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=ndugram&theme=github-compact)
 
