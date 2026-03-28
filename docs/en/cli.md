@@ -103,6 +103,22 @@ Shows:
 - JSON/data body
 - Response headers
 
+### Proxy (-p, --proxy)
+
+```bash
+# HTTP proxy
+fasthttp get https://api.example.com/data -p "http://proxy.example.com:8080"
+
+# HTTPS proxy
+fasthttp get https://api.example.com/data -p "https://proxy.example.com:8080"
+
+# SOCKS5 proxy
+fasthttp get https://api.example.com/data -p "socks5://proxy.example.com:1080"
+
+# Proxy with authentication
+fasthttp get https://api.example.com/data -p "http://user:password@proxy.example.com:8080"
+```
+
 ## Output Format
 
 Second argument after URL determines what to output:
@@ -210,6 +226,45 @@ $ fasthttp get https://api.example.com/health
 fasthttp --help
 fasthttp get --help
 fasthttp post --help
+```
+
+## Interactive REPL
+
+Start interactive mode:
+
+```bash
+fasthttp repl
+```
+
+With proxy:
+
+```bash
+fasthttp repl -p "http://proxy:8080"
+```
+
+### REPL Commands
+
+```bash
+# Make requests
+get https://api.example.com/data
+post https://api.example.com/users -j '{"name": "John"}'
+g https://api.example.com/data          # shortcut for GET
+p https://api.example.com/users         # shortcut for POST
+
+# Options
+-H "Key:Value"    # headers
+-j '{"json": 1}'  # JSON body
+-d "data"         # form data
+-t 30             # timeout
+-o json           # output format
+-p "proxy"        # proxy URL
+
+# Special commands
+help              # show help
+history           # show command history
+last              # show last response
+clear             # clear screen
+exit              # exit REPL
 ```
 
 ## See Also

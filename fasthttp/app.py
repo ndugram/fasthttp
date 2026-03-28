@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
+import secrets
 import time
 from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args, get_origin
 
@@ -234,6 +235,17 @@ class FastHTTP:
                 """
             ),
         ] = None,
+        secret_key: Annotated[
+            bytes | None,
+            Doc(
+                """
+                Secret key for request signing.
+
+                If not provided, a key will be automatically generated.
+                The key is used for HMAC-SHA256 signing of outgoing requests.
+                """
+            ),
+        ] = None,
     ) -> None:
         self.logger = setup_logger(debug=debug)
         self.routes: list[Route] = []
@@ -259,7 +271,8 @@ class FastHTTP:
         }
 
         self.security_enabled = security
-        self.security = Security() if security else None
+        self.secret_key = secret_key or secrets.token_bytes(32)
+        self.security = Security(secret_key=self.secret_key) if security else None
         self.client = HTTPClient(
             self.request_configs,
             self.logger,
@@ -354,6 +367,38 @@ class FastHTTP:
                 msg
             )
 
+    def _check_https_url(
+        self,
+        *,
+        url: str
+    ) -> str:
+        """
+        Ensure URL has a valid scheme (http:// or https://).
+
+        If no scheme is provided, https:// is added by default.
+        This prevents errors when users forget to include the protocol.
+
+        Args:
+            url: The URL to check and normalize.
+
+        Returns:
+            URL with a valid scheme (https:// if not specified).
+
+        Example:
+            >>> _check_https_url("api.example.com")
+            'https://api.example.com'
+            >>> _check_https_url("http://api.example.com")
+            'http://api.example.com'
+            >>> _check_https_url("https://api.example.com")
+            'https://api.example.com'
+        """
+        url = url.strip()
+
+        if url.startswith(("https://", "http://")):
+            return url
+
+        return f"https://{url}"
+
     def _add_route(
         self,
         *,
@@ -371,10 +416,11 @@ class FastHTTP:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
             self._check_annotated_parameters(func=func)
             self._check_annotated_func(func=func)
+
             self.routes.append(
                 Route(
                     method=method,
-                    url=url,
+                    url=self._check_https_url(url=url),
                     handler=func,
                     params=params,
                     json=json,
@@ -393,8 +439,8 @@ class FastHTTP:
 
     def get(
         self,
-        *,
         url: str,
+        *,
         params: dict | None = None,
         response_model: type[BaseModel] | None = None,
         request_model: type[BaseModel] | None = None,
@@ -415,8 +461,8 @@ class FastHTTP:
 
     def post(
         self,
-        *,
         url: str,
+        *,
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
@@ -439,8 +485,8 @@ class FastHTTP:
 
     def put(
         self,
-        *,
         url: str,
+        *,
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
@@ -463,8 +509,8 @@ class FastHTTP:
 
     def patch(
         self,
-        *,
         url: str,
+        *,
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
@@ -487,8 +533,8 @@ class FastHTTP:
 
     def delete(
         self,
-        *,
         url: str,
+        *,
         json: dict | None = None,
         data: object | None = None,
         response_model: type[BaseModel] | None = None,
@@ -511,7 +557,6 @@ class FastHTTP:
 
     def graphql(
         self,
-        *,
         url: Annotated[
             str,
             Doc(
@@ -522,6 +567,7 @@ class FastHTTP:
                 """
             ),
         ],
+        *,
         operation_type: Annotated[
             Literal["query", "mutation"],
             Doc(

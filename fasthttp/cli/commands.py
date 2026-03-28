@@ -10,6 +10,13 @@ from fasthttp.cli.output import formatter
 app = typer.Typer(help="FastHTTP CLI - HTTP client from command line")
 
 
+def _check_https_url(url: str) -> str:
+    url = url.strip()
+    if url.startswith(("https://", "http://")):
+        return url
+    return f"https://{url}"
+
+
 def parse_headers(headers_str: str | None) -> dict[str, str] | None:
     if not headers_str:
         return None
@@ -58,8 +65,9 @@ def get(
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
     debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
-    _execute_request("GET", url, output, headers, timeout=timeout, debug=debug)
+    _execute_request("GET", url, output, headers, timeout=timeout, debug=debug, proxy=proxy)
 
 
 @app.command()
@@ -71,6 +79,7 @@ def post(
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
     debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     json_data: dict[str, Any] | None = None
     if json_body:
@@ -80,7 +89,8 @@ def post(
             formatter.error(f"Invalid JSON: {e}")
             raise typer.Exit(1)
 
-    _execute_request("POST", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug)
+    _execute_request(
+        "POST",url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
 
 
 @app.command()
@@ -92,6 +102,7 @@ def put(
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
     debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     json_data: dict[str, Any] | None = None
     if json_body:
@@ -101,7 +112,7 @@ def put(
             formatter.error(f"Invalid JSON: {e}")
             raise typer.Exit(1)
 
-    _execute_request("PUT", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug)
+    _execute_request("PUT", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
 
 
 @app.command()
@@ -113,6 +124,7 @@ def patch(
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
     debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     json_data: dict[str, Any] | None = None
     if json_body:
@@ -122,7 +134,7 @@ def patch(
             formatter.error(f"Invalid JSON: {e}")
             raise typer.Exit(1)
 
-    _execute_request("PATCH", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug)
+    _execute_request("PATCH", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
 
 
 @app.command()
@@ -132,8 +144,9 @@ def delete(
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
     debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
-    _execute_request("DELETE", url, output, headers, timeout=timeout, debug=debug)
+    _execute_request("DELETE", url, output, headers, timeout=timeout, debug=debug, proxy=proxy)
 
 
 @app.command()
@@ -146,10 +159,9 @@ def graphql(
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
     debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
-    """
-    Execute a GraphQL query or mutation.
-    """
+    url = _check_https_url(url)
     headers = parse_headers(headers_str=headers)
 
     json_data: dict[str, Any] = {"query": query}
@@ -167,6 +179,8 @@ def graphql(
         formatter.info(f"  Query: {query}")
         if variables:
             formatter.info(f"  Variables: {variables}")
+    if proxy:
+        formatter.info(f"  Proxy: {proxy}")
 
     try:
         resp = run_request(
@@ -175,6 +189,7 @@ def graphql(
             headers=headers,
             json_data=json_data,
             timeout=timeout,
+            proxy=proxy,
         )
 
         if resp.status >= 400:
@@ -212,7 +227,9 @@ def _execute_request(
     data: str | None = None,
     timeout: float = 30.0,
     debug: bool = False,
+    proxy: str | None = None,
 ) -> None:
+    url = _check_https_url(url)
     headers = parse_headers(headers_str)
 
     if debug:
@@ -223,6 +240,8 @@ def _execute_request(
             formatter.info(f"  JSON: {json.dumps(json_data, indent=2)}")
         if data:
             formatter.info(f"  Data: {data}")
+        if proxy:
+            formatter.info(f"  Proxy: {proxy}")
 
     try:
         resp = run_request(
@@ -232,6 +251,7 @@ def _execute_request(
             json_data=json_data,
             data=data,
             timeout=timeout,
+            proxy=proxy,
         )
 
         if resp.status >= 400:

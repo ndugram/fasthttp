@@ -93,4 +93,4 @@ Continue learning:
 
 - [HTTP Methods](http-methods.md) - All supported HTTP methods
 - [Request Parameters](request-parameters.md) - Query, JSON, headers
-- [Configuration](../en/configuration.md) - More settings
+- [Configuration](../configuration.md) - More settings

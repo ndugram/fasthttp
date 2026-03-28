@@ -5,7 +5,7 @@ from fasthttp.client import HTTPClient
 from fasthttp.response import Response
 from fasthttp.routing import Route
 from fasthttp.middleware import MiddlewareManager as MM
-
+from fasthttp.__meta__ import __version__
 
 class TestHTTPClient:
     """Tests for the HTTPClient class."""
@@ -106,7 +106,7 @@ class TestHTTPClient:
         call_kwargs = mock_httpx_client.request.call_args.kwargs
         headers = call_kwargs.get("headers", {})
         assert "User-Agent" in headers
-        assert headers["User-Agent"] == "fasthttp/1.1.2"
+        assert headers["User-Agent"] == f"fasthttp/{__version__}"
 
     @pytest.mark.asyncio
     async def test_send_request_handles_4xx_status(self, http_client, mock_httpx_client) -> None:

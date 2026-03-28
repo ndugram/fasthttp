@@ -129,6 +129,6 @@ async def get_data(resp: Response) -> dict:
 
 ## See Also
 
-- [Quick Start](en/quick-start.md)
-- [Pydantic Validation](en/pydantic-validation.md)
-- [Examples](en/examples.md)
+- [Quick Start](quick-start.md)
+- [Pydantic Validation](pydantic-validation.md)
+- [Examples](examples.md)

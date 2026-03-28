@@ -2,6 +2,10 @@
   <img src="https://fasthttp.ndugram.dev/logo.png" style="background:white; padding:12px; border-radius:10px; width:350">
 </p>
 
+![GitHub stars](https://img.shields.io/github/stars/ndugram/fasthttp?style=social)
+![GitHub forks](https://img.shields.io/github/forks/ndugram/fasthttp?style=social)
+![GitHub watchers](https://img.shields.io/github/watchers/ndugram/fasthttp?style=social)
+
 <div align="center">
 
 ![httpx](https://img.shields.io/badge/httpx-0.28.1-blue.svg)
@@ -106,15 +110,5 @@ if __name__ == "__main__":
     app.run()
 ```
 
+![Recent Activity](https://images.repography.com/0/ndugram/fasthttp/recent-activity.svg)
 
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
-
-## Security
-
-See [SECURITY.md](SECURITY.md) for security policies.

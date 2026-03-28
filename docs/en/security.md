@@ -113,6 +113,16 @@ FastHTTP limits the number of redirects (default 10) and blocks dangerous redire
 
 By default, FastHTTP limits concurrent requests to 100. This protects against accidentally creating too many connections.
 
+### Request Signing
+
+FastHTTP automatically signs all outgoing requests using HMAC-SHA256. This provides:
+
+- Request authenticity verification
+- Tampering detection
+- Replay attack protection
+
+See [Request Signing](request-signing.md) for details.
+
 ## Disabling Protection
 
 All checks are enabled by default. This is the recommended configuration for most cases. If needed, you can disable protection:

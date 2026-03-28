@@ -13,7 +13,7 @@ app = FastHTTP(
 )
 
 
-@app.get(url="https://httpbin.org/get")
+@app.get("https://httpbin.org/get")
 async def profile(resp: Response) -> int:
     return resp.status
 

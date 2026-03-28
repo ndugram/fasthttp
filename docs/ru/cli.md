@@ -109,33 +109,64 @@ fasthttp get https://api.example.com/data --debug
 
 ### status — только статус (по умолчанию)
 
+### Прокси (-p, --proxy)
+
 ```bash
 fasthttp get https://api.example.com/data status
 # 200
+# HTTP прокси
+fasthttp get https://api.example.com/data -p "http://proxy.example.com:8080"
+
+# HTTPS прокси
+fasthttp get https://api.example.com/data -p "https://proxy.example.com:8080"
+
+# SOCKS5 прокси
+fasthttp get https://api.example.com/data -p "socks5://proxy.example.com:1080"
+
+# Прокси с авторизацией
+fasthttp get https://api.example.com/data -p "http://user:password@proxy.example.com:8080"
 ```
 
 ### json — JSON тело ответа
 
+## Формат вывода
+
+Второй аргумент после URL определяет что вывести:
+
+### status — только статус (по умолчанию)
+
 ```bash
 fasthttp get https://api.example.com/data json
 # {"id": 1, "name": "John"}
+fasthttp get https://api.example.com/data status
+# 200
 ```
 
 ### text — текст ответа
 
+### json — JSON тело ответа
+
 ```bash
 fasthttp get https://api.example.com/data text
 # <html>...</html>
+fasthttp get https://api.example.com/data json
+# {"id": 1, "name": "John"}
 ```
 
 ### headers — заголовки ответа
 
+### text — текст ответа
+
 ```bash
 fasthttp get https://api.example.com/data headers
 # {"Content-Type": "application/json", "Date": "..."}
+fasthttp get https://api.example.com/data text
+# <html>...</html>
 ```
 
 ### all — всё вместе
+
+### headers — заголовки ответа
 
 ```bash
 fasthttp get https://api.example.com/data all
@@ -143,11 +174,15 @@ fasthttp get https://api.example.com/data all
 # Elapsed: 234.56ms
 # Headers: {...}
 # Body: {...}
+fasthttp get https://api.example.com/data headers
+# {"Content-Type": "application/json", "Date": "..."}
 ```
 
 ## Примеры
 
 ### Простой GET
+
+### all — всё вместе
 
 ```bash
 $ fasthttp get https://jsonplaceholder.typicode.com/posts/1 json
@@ -157,14 +192,48 @@ $ fasthttp get https://jsonplaceholder.typicode.com/posts/1 json
   "title": "sunt aut facere repellat provident occaecati",
   "body": "..."
 }
+fasthttp get https://api.example.com/data all
+# Status: 200
+# Elapsed: 234.56ms
+# Headers: {...}
+# Body: {...}
 ```
 
 ### POST с JSON
 
+## Примеры
+
+### Простой GET
+
 ```bash
 $ fasthttp post https://jsonplaceholder.typicode.com/posts \
   --json '{"title": "foo", "body": "bar", "userId": 1}' json
+$ fasthttp get https://jsonplaceholder.typicode.com/posts/1 json
 {
+  "title": "foo",
+  "body": "bar",
+  "userId": 1,
+  "id": 101
+  "id": 1,
+  "title": "sunt aut facere repellat provident occaecati",
+  "body": "..."
+}
+```
+
+### С заголовками
+
+### POST с JSON
+
+```bash
+$ fasthttp get https://httpbin.org/headers \
+  -H "Authorization: Bearer test-token" json
+$ fasthttp post https://jsonplaceholder.typicode.com/posts \
+  --json '{"title": "foo", "body": "bar", "userId": 1}' json
+{
+  "headers": {
+    "Authorization": "Bearer test-token",
+    "Host": "httpbin.org"
+  }
   "title": "foo",
   "body": "bar",
   "userId": 1,
@@ -172,9 +241,17 @@ $ fasthttp post https://jsonplaceholder.typicode.com/posts \
 }
 ```
 
+### С отладкой
+
 ### С заголовками
 
 ```bash
+$ fasthttp get https://httpbin.org/get --debug
+ℹ → GET https://httpbin.org/get
+✔ HTTP 200 in 234.56ms
+ℹ ← Response headers:
+ℹ   Content-Type: application/json
+ℹ   Date: Mon, 15 Jan 2025 10:30:00 GMT
 $ fasthttp get https://httpbin.org/headers \
   -H "Authorization: Bearer test-token" json
 {
@@ -185,9 +262,14 @@ $ fasthttp get https://httpbin.org/headers \
 }
 ```
 
+### Проверить статус API
+
 ### С отладкой
 
 ```bash
+$ fasthttp get https://api.example.com/health
+✔ HTTP 200 in 45.23ms
+200
 $ fasthttp get https://httpbin.org/get --debug
 ℹ → GET https://httpbin.org/get
 ✔ HTTP 200 in 234.56ms
@@ -196,9 +278,14 @@ $ fasthttp get https://httpbin.org/get --debug
 ℹ   Date: Mon, 15 Jan 2025 10:30:00 GMT
 ```
 
+## Справка
+
 ### Проверить статус API
 
 ```bash
+fasthttp --help
+fasthttp get --help
+fasthttp post --help
 $ fasthttp get https://api.example.com/health
 ✔ HTTP 200 in 45.23ms
 200
