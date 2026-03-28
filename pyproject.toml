@@ -49,6 +49,7 @@ requires-python = ">=3.10"
 dependencies = [
     "annotated-doc>=0.0.4",
     "httpx>=0.28.1",
+    "orjson>=3.11.7",
     "pydantic>=2.12.5",
     "typer>=0.24.1",
     "uvicorn>=0.42.0",
