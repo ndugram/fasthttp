@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://fasthttp.ndugram.dev/logo.png" style="background:white; padding:12px; border-radius:10px; width:350">
+  <img src="https://fasthttp.ndugram.dev/ru/latest/logo.png" style="background:white; padding:12px; border-radius:10px; width:350">
 </p>
 
 ![GitHub stars](https://img.shields.io/github/stars/ndugram/fasthttp?style=social)
