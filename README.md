@@ -110,5 +110,4 @@ if __name__ == "__main__":
     app.run()
 ```
 
-![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=ndugram&theme=github-compact)
 
