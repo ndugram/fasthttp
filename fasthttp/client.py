@@ -77,11 +77,21 @@ class HTTPClient:
                 """
             )
         ] = None,
+        startup_uuid: Annotated[
+            str | None,
+            Doc(
+                """
+                UUID generated on application startup.
+                Will be sent as X-Request-ID header in all requests.
+                """
+            )
+        ] = None,
     ) -> None:
         self.request_configs = request_configs
         self.logger = logger
         self.middleware_manager = middleware_manager
         self.security = security
+        self.startup_uuid = startup_uuid
 
     def _validate_request(self, route: Route) -> bool:
         if not route.request_model:
@@ -100,6 +110,10 @@ class HTTPClient:
     async def _prepare_config(self, route: Route, config: dict) -> dict:
         headers = dict(config.get("headers") or {})
         headers.setdefault("User-Agent", f"fasthttp/{__version__}")
+
+        if self.startup_uuid:
+            headers.setdefault("X-Request-ID", self.startup_uuid)
+
         config["headers"] = headers
 
         if self.security:

@@ -39,6 +39,8 @@ app = FastHTTP(
 | `put_request` | `dict` | `{}` | Настройки по умолчанию для PUT |
 | `patch_request` | `dict` | `{}` | Настройки по умолчанию для PATCH |
 | `delete_request` | `dict` | `{}` | Настройки по умолчанию для DELETE |
+| `generate_startup_uuid` | `bool` | `False` | Генерировать UUID при запуске |
+| `startup_uuid_version` | `str` | `"v4"` | Версия UUID: `v4` или `v7` |
 
 ### Параметры запроса
 
@@ -363,6 +365,59 @@ app = FastHTTP(
         "timeout": 30.0,
     },
 )
+```
+
+## Startup UUID
+
+При запуске приложения можно сгенерировать уникальный идентификатор (UUID), который будет автоматически добавляться в заголовки всех запросов:
+
+```python
+from fasthttp import FastHTTP
+
+app = FastHTTP(generate_startup_uuid=True)
+print(app.startup_uuid)  # UUID('...')
+```
+
+### Заголовок X-Request-ID
+
+Сгенерированный UUID добавляется в заголовок `X-Request-ID` каждого запроса:
+
+```python
+app = FastHTTP(generate_startup_uuid=True)
+
+
+@app.get(url="https://api.example.com/data")
+async def handler(resp):
+    return resp.json()
+```
+
+При выполнении запроса будет отправлен заголовок:
+```
+X-Request-ID: 550e8400-e29b-41d4-a716-446655440000
+```
+
+### Версия UUID
+
+Поддерживаются две версии UUID:
+
+```python
+# UUID v4 (случайный UUID)
+app = FastHTTP(generate_startup_uuid=True, startup_uuid_version="v4")
+
+# UUID v7 (временной UUID, требует Python 3.12+)
+app = FastHTTP(generate_startup_uuid=True, startup_uuid_version="v7")
+```
+
+### Доступ к UUID
+
+```python
+app = FastHTTP(generate_startup_uuid=True)
+
+# Доступ через приложение
+print(app.startup_uuid)  # '550e8400-e29b-41d4-a716-446655440000'
+
+# Доступ через клиент
+print(app.client.startup_uuid)  # '550e8400-e29b-41d4-a716-446655440000'
 ```
 
 ## Примеры конфигурации
