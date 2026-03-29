@@ -5,6 +5,7 @@ import inspect
 import json
 import secrets
 import time
+import uuid
 from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args, get_origin
 
 import httpx
@@ -15,10 +16,9 @@ from .graphql.client import create_graphql_client
 from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
 from .openapi.generator import generate_openapi_schema
-from .openapi.swagger import get_swagger_html, get_not_found_html
+from .openapi.swagger import get_not_found_html, get_swagger_html
 from .routing import Route
 from .security import Security
-
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -246,12 +246,44 @@ class FastHTTP:
                 """
             ),
         ] = None,
+        generate_startup_uuid: Annotated[
+            bool,
+            Doc(
+                """
+                Whether to generate a random UUID on application startup.
+                The generated UUID will be stored in `app.startup_uuid`.
+                **Example**
+                ```python
+                from fashttp import FastHTTP
+                app = FastHTTP(generate_startup_uuid=True)
+                print(app.startup_uuid)  # UUID('...')
+                ```
+                """
+            ),
+        ] = False,
+        startup_uuid_version: Annotated[
+            str,
+            Doc(
+                """
+                The version of UUID to generate on startup if `generate_startup_uuid` is True.
+                Supported versions: 'v4' (random UUID), 'v7' (time-based UUID with random component, requires Python 3.12+).
+                **Example**
+                ```python
+                from fashttp import FastHTTP
+                app = FastHTTP(generate_startup_uuid=True, startup_uuid_version="v7")
+                ```
+                """
+            ),
+        ] = "v4",
     ) -> None:
         self.logger = setup_logger(debug=debug)
         self.routes: list[Route] = []
         self.http2_enabled = http2
         self.lifespan = lifespan
         self.proxy = proxy
+        self.generate_startup_uuid = generate_startup_uuid
+        self.startup_uuid_version = startup_uuid_version
+
 
         if middleware is None:
             normalized_middleware = []
@@ -273,11 +305,16 @@ class FastHTTP:
         self.security_enabled = security
         self.secret_key = secret_key or secrets.token_bytes(32)
         self.security = Security(secret_key=self.secret_key) if security else None
+        self.startup_uuid = None
+        if self.generate_startup_uuid and self.startup_uuid_version == "v4":
+            self.startup_uuid = str(uuid.uuid4())
+
         self.client = HTTPClient(
             self.request_configs,
             self.logger,
             self.middleware_manager,
-            self.security
+            self.security,
+            self.startup_uuid
         )
 
     def _check_annotated_parameters(
@@ -916,7 +953,7 @@ class FastHTTP:
 
     async def _run_asgi_server(
         self,
-        app: "ASGIApp",
+        app: ASGIApp,
         host: str,
         port: int,
     ) -> None:
@@ -1073,8 +1110,8 @@ class ASGIApp:
                 await self._send_json(send, result)
 
         except httpx.ConnectError as e:
-            await self._send_json(send, {"error": f"Connection error: {str(e)}"})
+            await self._send_json(send, {"error": f"Connection error: {e!s}"})
         except httpx.TimeoutException as e:
-            await self._send_json(send, {"error": f"Timeout: {str(e)}"})
+            await self._send_json(send, {"error": f"Timeout: {e!s}"})
         except Exception as e:
-            await self._send_json(send, {"error": f"Request failed: {str(e)}"})
+            await self._send_json(send, {"error": f"Request failed: {e!s}"})
