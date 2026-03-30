@@ -278,6 +278,23 @@ class FastHTTP:
             ),
         ] = "v4",
         base_url: Annotated[
+            str | None,
+            Doc(
+                """
+                Default base URL for included routers with relative paths.
+
+                This value is used by `include_router()` when the router tree
+                contains relative URLs like `/users` and no explicit
+                `base_url` override is provided.
+
+                Example:
+                ```python
+                app = FastHTTP(base_url="https://api.example.com")
+                ```
+                """
+            ),
+        ] = None,
+        docs_base_url: Annotated[
             str,
             Doc(
                 """
@@ -288,7 +305,7 @@ class FastHTTP:
 
                 Example:
                 ```python
-                app = FastHTTP(base_url="/api")
+                app = FastHTTP(docs_base_url="/api")
                 ```
                 """
             ),
@@ -300,6 +317,7 @@ class FastHTTP:
         self.lifespan = lifespan
         self.proxy = proxy
         self.base_url = base_url
+        self.docs_base_url = docs_base_url
         self.generate_startup_uuid = generate_startup_uuid
         self.startup_uuid_version = startup_uuid_version
 
@@ -550,9 +568,11 @@ class FastHTTP:
             tags: Tags prepended before router tags.
             dependencies: Dependencies prepended before router dependencies.
             base_url: Base URL override for the included router tree.
+                If not provided, `FastHTTP.base_url` will be used.
         """
+        resolved_base_url = base_url if base_url is not None else self.base_url
         routes = router.build_routes(
-            base_url=base_url,
+            base_url=resolved_base_url,
             prefix=prefix,
             tags=tags,
             dependencies=dependencies,
@@ -1028,17 +1048,17 @@ class FastHTTP:
             host: Host to bind to. Default is "127.0.0.1".
             port: Port to bind to. Default is 8000.
             base_url: Optional prefix for documentation endpoints.
-                If not provided, `FastHTTP.base_url` will be used.
+                If not provided, `FastHTTP.docs_base_url` will be used.
         """
         self.logger.info("FastHTTP started")
 
-        base_url = (
-            base_url if base_url is not None else self.base_url
+        docs_base_url = (
+            base_url if base_url is not None else self.docs_base_url
         )
-        app = ASGIApp(self, base_url=base_url)
+        app = ASGIApp(self, base_url=docs_base_url)
 
         server_base_url = f"http://{host}:{port}"
-        docs_urls = build_docs_urls(base_url)
+        docs_urls = build_docs_urls(docs_base_url)
 
         print(f"\n\033[92mfasthttp\033[0m running on \033[94m{server_base_url}\033[0m")
         print(

@@ -34,11 +34,17 @@ class TestFastHTTPApp:
         assert app.request_configs["GET"]["timeout"] == 60.0
         assert app.request_configs["POST"]["timeout"] == 120.0
 
-    def test_app_creation_with_docs_base_url(self) -> None:
+    def test_app_creation_with_base_url(self) -> None:
         """Test FastHTTP creation with base_url."""
-        app = FastHTTP(base_url="/api")
+        app = FastHTTP(base_url="https://example.com")
 
-        assert app.base_url == "/api"
+        assert app.base_url == "https://example.com"
+
+    def test_app_creation_with_docs_base_url(self) -> None:
+        """Test FastHTTP creation with docs_base_url."""
+        app = FastHTTP(docs_base_url="/api")
+
+        assert app.docs_base_url == "/api"
 
     def test_app_get_decorator(self) -> None:
         """Test GET decorator registers route."""
@@ -170,13 +176,26 @@ class TestFastHTTPApp:
         with pytest.raises(ValueError, match="Relative URL requires base_url"):
             app.include_router(router)
 
+    def test_app_include_router_uses_app_base_url_by_default(self) -> None:
+        app = FastHTTP(base_url="https://example.com")
+        router = Router(prefix="/v1")
+
+        @router.get("/me")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        app.include_router(router)
+
+        assert len(app.routes) == 1
+        assert app.routes[0].url == "https://example.com/v1/me"
+
     @pytest.mark.asyncio
     async def test_asgi_handle_request_docs_uses_app_docs_base_url(self) -> None:
-        """Test ASGI docs path uses base_url from FastHTTP."""
+        """Test ASGI docs path uses docs_base_url from FastHTTP."""
         from fasthttp.app import ASGIApp
 
-        app = FastHTTP(base_url="/api")
-        asgi_app = ASGIApp(app, base_url=app.base_url)
+        app = FastHTTP(docs_base_url="/api")
+        asgi_app = ASGIApp(app, base_url=app.docs_base_url)
 
         scope = {"type": "http", "path": "/api/docs", "method": "GET"}
         receive = AsyncMock()
