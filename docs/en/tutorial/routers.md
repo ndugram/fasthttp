@@ -229,6 +229,44 @@ app.include_router(router, base_url="https://api.example.com")
 
 If no `base_url` is provided, FastHTTP raises `ValueError`.
 
+## base_url in FastHTTP Constructor
+
+You can set `base_url` directly in the `FastHTTP` constructor, and it will be applied to all decorators:
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP(base_url="https://api.example.com")
+
+
+@app.get("/users")      # → https://api.example.com/users
+async def get_users(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.post("/users")     # → https://api.example.com/users
+async def create_user(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.graphql("/graphql")  # → https://api.example.com/graphql
+async def query(resp: Response) -> dict:
+    return {"query": "{ users { id } }"}
+```
+
+This works the same way for all decorators: `get`, `post`, `put`, `patch`, `delete`, and `graphql`.
+
+Absolute URLs are used as-is and ignore `base_url`:
+
+```python
+app = FastHTTP(base_url="https://api.example.com")
+
+@app.get("https://other.com/api")  # → https://other.com/api (base_url ignored)
+async def other_api(resp: Response) -> dict:
+    return resp.json()
+```
+
 ## When to Use Routers
 
 Use routers when your project has:
