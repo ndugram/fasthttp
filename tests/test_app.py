@@ -240,6 +240,25 @@ class TestFastHTTPASGI:
         assert call_args["status"] == 200
 
     @pytest.mark.asyncio
+    async def test_asgi_handle_request_docs_with_base_url(self) -> None:
+        """Test ASGI handling docs path with base_url prefix."""
+        from fasthttp.app import ASGIApp
+
+        app = FastHTTP()
+        asgi_app = ASGIApp(app, base_url="/api")
+
+        scope = {"type": "http", "path": "/api/docs", "method": "GET"}
+        receive = AsyncMock()
+        send = AsyncMock()
+
+        await asgi_app.handle_request(scope, receive, send)
+
+        assert send.called
+        body = send.call_args_list[1][0][0]["body"].decode("utf-8")
+        assert "/api/openapi.json" in body
+        assert "/api/request" in body
+
+    @pytest.mark.asyncio
     async def test_asgi_handle_request_openapi_json(self) -> None:
         """Test ASGI handling /openapi.json path."""
         from fasthttp.app import ASGIApp
@@ -262,6 +281,28 @@ class TestFastHTTPASGI:
         assert call_args["status"] == 200
 
     @pytest.mark.asyncio
+    async def test_asgi_handle_request_openapi_json_with_base_url(self) -> None:
+        """Test ASGI handling prefixed /openapi.json path."""
+        from fasthttp.app import ASGIApp
+
+        app = FastHTTP()
+        asgi_app = ASGIApp(app, base_url="api")
+
+        @app.get(url="https://example.com/api")
+        async def handler(resp: Response) -> dict:
+            return {}
+
+        scope = {"type": "http", "path": "/api/openapi.json", "method": "GET"}
+        receive = AsyncMock()
+        send = AsyncMock()
+
+        await asgi_app.handle_request(scope, receive, send)
+
+        assert send.called
+        body = send.call_args_list[1][0][0]["body"].decode("utf-8")
+        assert '"url": "/api/request"' in body
+
+    @pytest.mark.asyncio
     async def test_asgi_handle_request_404(self) -> None:
         """Test ASGI handling unknown path returns 404."""
         from fasthttp.app import ASGIApp
@@ -278,6 +319,25 @@ class TestFastHTTPASGI:
         assert send.called
         call_args = send.call_args_list[0][0][0]
         assert call_args["status"] == 404
+
+    @pytest.mark.asyncio
+    async def test_asgi_handle_request_404_uses_prefixed_docs_links(self) -> None:
+        """Test 404 page uses base_url-aware docs links."""
+        from fasthttp.app import ASGIApp
+
+        app = FastHTTP()
+        asgi_app = ASGIApp(app, base_url="/api")
+
+        scope = {"type": "http", "path": "/unknown", "method": "GET"}
+        receive = AsyncMock()
+        send = AsyncMock()
+
+        await asgi_app.handle_request(scope, receive, send)
+
+        assert send.called
+        body = send.call_args_list[1][0][0]["body"].decode("utf-8")
+        assert "/api/docs" in body
+        assert "/api/openapi.json" in body
 
     @pytest.mark.asyncio
     async def test_asgi_handle_proxy_request(self) -> None:

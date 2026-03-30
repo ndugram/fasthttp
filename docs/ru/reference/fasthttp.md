@@ -49,8 +49,30 @@ app.run(tags: list = None)
 Запустить с Swagger UI.
 
 ```python
-app.web_run(host: str = "127.0.0.1", port: int = 8000)
+app.web_run(host: str = "127.0.0.1", port: int = 8000, base_url: str = "")
 ```
+
+- `base_url` - Необязательный префикс URL для документации, например `"/api"`
+
+### include_router()
+
+Подключить `Router` к приложению.
+
+```python
+app.include_router(
+    router: Router,
+    prefix: str = "",
+    tags: list = None,
+    dependencies: list = None,
+    base_url: str = None,
+)
+```
+
+- `router` - Экземпляр роутера
+- `prefix` - Необязательный префикс перед prefix роутера
+- `tags` - Необязательные теги, добавляемые перед тегами роутера
+- `dependencies` - Необязательные зависимости, добавляемые перед зависимостями роутера
+- `base_url` - Необязательный override для base_url дерева роутеров
 
 ### get(), post(), put(), patch(), delete()
 
@@ -59,3 +81,25 @@ app.web_run(host: str = "127.0.0.1", port: int = 8000)
 ### graphql()
 
 Декоратор для GraphQL.
+
+## Router
+
+`Router` доступен через:
+
+```python
+from fasthttp import Router
+```
+
+Базовый конструктор:
+
+```python
+Router(
+    base_url: str = None,
+    prefix: str = "",
+    tags: list = None,
+    dependencies: list = None,
+)
+```
+
+Примеры использования есть в:
+- `docs/ru/tutorial/routers.md`

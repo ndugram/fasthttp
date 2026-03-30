@@ -902,14 +902,25 @@ class FastHTTP:
                 """,
             ),
         ] = 8000,
+        base_url: Annotated[
+            str,
+            Doc(
+                """
+                Optional URL prefix for Swagger/OpenAPI endpoints.
+
+                For example, with `base_url="/api"`, the docs will be served at
+                `/api/docs`, `/api/openapi.json`, and `/api/request`.
+                """
+            ),
+        ] = "",
     ) -> None:
         """
         Run the FastHTTP application as an ASGI server with Swagger UI.
 
         This method starts a local HTTP server that serves:
-        - /docs - Swagger UI interface
-        - /openapi.json - OpenAPI schema
-        - /request - Execute HTTP requests from Swagger UI
+        - {base_url}/docs - Swagger UI interface
+        - {base_url}/openapi.json - OpenAPI schema
+        - {base_url}/request - Execute HTTP requests from Swagger UI
 
         The server allows you to test and execute HTTP requests
         through the Swagger UI interface.
@@ -930,15 +941,20 @@ class FastHTTP:
         Args:
             host: Host to bind to. Default is "127.0.0.1".
             port: Port to bind to. Default is 8000.
+            base_url: Optional prefix for documentation endpoints.
         """
         self.logger.info("FastHTTP started")
 
-        app = ASGIApp(self)
+        app = ASGIApp(self, base_url=base_url)
 
-        base_url = f"http://{host}:{port}"
+        server_base_url = f"http://{host}:{port}"
+        docs_urls = build_docs_urls(base_url)
 
-        print(f"\n\033[92mfasthttp\033[0m running on \033[94m{base_url}\033[0m")
-        print(f"\033[93mdocs\033[0m: \033[94m{base_url}/docs\033[0m\n")
+        print(f"\n\033[92mfasthttp\033[0m running on \033[94m{server_base_url}\033[0m")
+        print(
+            f"\033[93mdocs\033[0m: "
+            f"\033[94m{server_base_url}{docs_urls['docs_url']}\033[0m\n"
+        )
 
         try:
             import uvicorn
@@ -981,8 +997,14 @@ class ASGIApp:
             FastHTTP,
             Doc("FastHTTP application instance"),
         ],
+        *,
+        base_url: Annotated[
+            str,
+            Doc("Optional docs base URL prefix"),
+        ] = "",
     ) -> None:
         self.fasthttp = app
+        self.docs_urls = build_docs_urls(base_url)
 
     async def __call__(
         self,
@@ -1010,12 +1032,21 @@ class ASGIApp:
                     if not message.get("more_body"):
                         break
 
-        if path == "/docs" or path.startswith("/docs"):
-            await self._send_html(send, get_swagger_html())
-        elif path == "/openapi.json":
-            schema = generate_openapi_schema(self.fasthttp)
+        if path == self.docs_urls["docs_url"] or path.startswith(f"{self.docs_urls['docs_url']}/"):
+            await self._send_html(
+                send,
+                get_swagger_html(
+                    openapi_url=self.docs_urls["openapi_url"],
+                    request_url=self.docs_urls["request_url"],
+                ),
+            )
+        elif path == self.docs_urls["openapi_url"]:
+            schema = generate_openapi_schema(
+                self.fasthttp,
+                server_url=self.docs_urls["request_url"],
+            )
             await self._send_json(send, schema)
-        elif path == "/request":
+        elif path == self.docs_urls["request_url"]:
             await self._handle_proxy(send, method, body)
         else:
             await self._send_404(send, path)
@@ -1044,7 +1075,10 @@ class ASGIApp:
         })
 
     async def _send_404(self, send: Callable[..., Any], path: str = "/") -> None:
-        html = get_not_found_html()
+        html = get_not_found_html(
+            docs_url=self.docs_urls["docs_url"],
+            openapi_url=self.docs_urls["openapi_url"],
+        )
         await send({
             "type": "http.response.start",
             "status": 404,

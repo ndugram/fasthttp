@@ -248,8 +248,8 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             <div class="header-bg-right"></div>
             <div class="logo">fast<span>http</span></div>
             <nav class="nav">
-                <a href="/docs">/docs</a>
-                <a href="/openapi.json">/openapi.json</a>
+                <a href="__FASTHTTP_DOCS_URL__">__FASTHTTP_DOCS_URL__</a>
+                <a href="__FASTHTTP_OPENAPI_URL__">__FASTHTTP_OPENAPI_URL__</a>
             </nav>
         </header>
     </div>
@@ -260,8 +260,8 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             <h1>Page not found</h1>
             <p class="subtitle">The page you're looking for doesn't exist or has been moved.</p>
             <div class="links">
-                <a href="/docs" class="btn btn-primary">GET /docs</a>
-                <a href="/openapi.json" class="btn btn-outline">GET /openapi.json</a>
+                <a href="__FASTHTTP_DOCS_URL__" class="btn btn-primary">GET __FASTHTTP_DOCS_URL__</a>
+                <a href="__FASTHTTP_OPENAPI_URL__" class="btn btn-outline">GET __FASTHTTP_OPENAPI_URL__</a>
             </div>
         </div>
     </main>
@@ -270,8 +270,12 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
 """
 
 
-def get_not_found_html() -> str:
-    return NOT_FOUND_HTML
+def get_not_found_html(*, docs_url: str = "/docs", openapi_url: str = "/openapi.json") -> str:
+    return (
+        NOT_FOUND_HTML
+        .replace("__FASTHTTP_DOCS_URL__", docs_url)
+        .replace("__FASTHTTP_OPENAPI_URL__", openapi_url)
+    )
 
 
 SWAGGER_HTML = """<!DOCTYPE html>
@@ -295,8 +299,8 @@ SWAGGER_HTML = """<!DOCTYPE html>
 
         async function initSwagger() {
             try {
-                console.log('Fetching /openapi.json...');
-                const response = await fetch('/openapi.json');
+                console.log('Fetching __FASTHTTP_OPENAPI_URL__...');
+                const response = await fetch('__FASTHTTP_OPENAPI_URL__');
                 console.log('Response status:', response.status);
                 if (!response.ok) throw new Error('Failed to fetch schema: ' + response.status);
 
@@ -304,7 +308,7 @@ SWAGGER_HTML = """<!DOCTYPE html>
                 console.log('Schema loaded:', schema);
                 cachedSchema = schema;
 
-                schema.servers = [{ url: '/request', description: 'FastHTTP Proxy' }];
+                schema.servers = [{ url: '__FASTHTTP_REQUEST_URL__', description: 'FastHTTP Proxy' }];
 
                 const ui = SwaggerUIBundle({
                     spec: schema,
@@ -355,7 +359,7 @@ SWAGGER_HTML = """<!DOCTYPE html>
                             } catch (e) { body = req.body; }
                         }
 
-                        req.url = '/request';
+                        req.url = '__FASTHTTP_REQUEST_URL__';
                         req.method = 'POST';
                         req.body = JSON.stringify({
                             url: originalUrl,
@@ -396,5 +400,9 @@ SWAGGER_HTML = """<!DOCTYPE html>
 """
 
 
-def get_swagger_html() -> str:
-    return SWAGGER_HTML
+def get_swagger_html(*, openapi_url: str = "/openapi.json", request_url: str = "/request") -> str:
+    return (
+        SWAGGER_HTML
+        .replace("__FASTHTTP_OPENAPI_URL__", openapi_url)
+        .replace("__FASTHTTP_REQUEST_URL__", request_url)
+    )

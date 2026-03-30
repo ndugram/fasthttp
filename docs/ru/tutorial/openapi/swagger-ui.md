@@ -28,11 +28,11 @@ app.web_run()
 
 ## Доступные endpoints
 
-| Endpoint | Описание |
-|----------|----------|
-| `/docs` | Интерфейс Swagger UI |
-| `/openapi.json` | OpenAPI схема в JSON |
-| `/request` | Прокси для выполнения запросов |
+| Endpoint        | Описание                       |
+| --------------- | ------------------------------ |
+| `/docs`         | Интерфейс Swagger UI           |
+| `/openapi.json` | OpenAPI схема в JSON           |
+| `/request`      | Прокси для выполнения запросов |
 
 ## Использование Swagger UI
 
@@ -46,6 +46,14 @@ app.web_run()
 ```python
 app.web_run(host="0.0.0.0", port=8080)
 ```
+
+## Кастомный base URL для документации
+
+```python
+app.web_run(base_url="/api")
+```
+
+Теперь документация будет доступна по адресу `http://127.0.0.1:8000/api/docs`.
 
 ## Пример
 

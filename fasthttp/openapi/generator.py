@@ -249,12 +249,31 @@ def _normalize_path(url: str) -> str:
     return api_path
 
 
-def generate_openapi_schema(app: FastHTTP) -> dict[str, Any]:
+def generate_openapi_schema(
+    app: Annotated[
+        FastHTTP,
+        Doc("FastHTTP application instance."),
+    ],
+    *,
+    server_url: Annotated[
+        str | None,
+        Doc(
+            """
+            Optional Swagger proxy server URL.
+
+            When provided, it will be added to the OpenAPI `servers`
+            section so Swagger UI can send requests through the
+            FastHTTP proxy endpoint.
+            """
+        ),
+    ] = None,
+) -> dict[str, Any]:
     """
     Generate OpenAPI 3.0 schema from FastHTTP application.
 
     Args:
         app: FastHTTP application instance.
+        server_url: Optional proxy URL added to the `servers` section.
 
     Returns:
         OpenAPI schema as a dictionary.
@@ -365,5 +384,13 @@ def generate_openapi_schema(app: FastHTTP) -> dict[str, Any]:
             "schemas": schemas,
         },
     }
+
+    if server_url:
+        openapi_schema["servers"] = [
+            {
+                "url": server_url,
+                "description": "FastHTTP Proxy",
+            }
+        ]
 
     return openapi_schema
