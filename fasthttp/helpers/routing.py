@@ -133,7 +133,19 @@ def resolve_url(*, url: str, base_url: str | None, prefix: str) -> str:
     return urljoin(base, path)
 
 
+def apply_base_url(*, url: str, base_url: str | None) -> str:
+    url = url.strip()
+    if url.startswith(("https://", "http://")):
+        return url
+
+    if base_url:
+        return check_https_url(url=f"{base_url.rstrip('/')}/{url.lstrip('/')}")
+
+    return check_https_url(url=url)
+
+
 __all__ = (
+    "apply_base_url",
     "check_annotated_parameters",
     "check_annotated_return",
     "check_https_url",
