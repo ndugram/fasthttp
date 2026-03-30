@@ -17,6 +17,7 @@ jobs:
       - name: Welcome contributor
         uses: actions/github-script@v8
         with:
+          token: ${{ secrets.GH_TOKEN }}
           script: |
             const { issue, pull_request, sender } = context.payload;
             

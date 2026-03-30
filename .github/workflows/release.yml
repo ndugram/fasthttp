@@ -63,8 +63,7 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Set up Python
         if: steps.tag_check.outputs.skip == 'false'
