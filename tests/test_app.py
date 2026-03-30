@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fasthttp import FastHTTP
 from fasthttp.response import Response
-from fasthttp.routing import Route
+from fasthttp.routing import Route, Router
 
 
 class TestFastHTTPApp:
@@ -109,6 +109,60 @@ class TestFastHTTPApp:
             return resp.json()
 
         assert app.routes[0].params == {"page": "1"}
+
+    def test_app_include_router_basic(self) -> None:
+        app = FastHTTP()
+        router = Router(base_url="https://example.com", prefix="/v1", tags=["users"])
+
+        @router.get("/me", tags=["private"])
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        app.include_router(router)
+
+        assert len(app.routes) == 1
+        assert app.routes[0].url == "https://example.com/v1/me"
+        assert app.routes[0].tags == ["users", "private"]
+
+    def test_app_include_router_with_overrides(self) -> None:
+        app = FastHTTP()
+        router = Router(base_url="https://example.com", prefix="/v1", tags=["users"])
+
+        @router.get("/me")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        app.include_router(router, prefix="/api", tags=["public"])
+
+        assert len(app.routes) == 1
+        assert app.routes[0].url == "https://example.com/api/v1/me"
+        assert app.routes[0].tags == ["public", "users"]
+
+    def test_app_include_router_nested(self) -> None:
+        app = FastHTTP()
+        parent = Router(prefix="/v1")
+        child = Router(prefix="/users")
+
+        @child.get("/me")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        parent.include_router(child)
+        app.include_router(parent, base_url="https://example.com")
+
+        assert len(app.routes) == 1
+        assert app.routes[0].url == "https://example.com/v1/users/me"
+
+    def test_app_include_router_relative_url_requires_base_url(self) -> None:
+        app = FastHTTP()
+        router = Router()
+
+        @router.get("/me")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        with pytest.raises(ValueError, match="Relative URL requires base_url"):
+            app.include_router(router)
 
     def test_app_missing_parameter_annotation_raises_error(self) -> None:
         """Test that missing parameter annotation raises TypeError."""

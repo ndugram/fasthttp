@@ -14,6 +14,7 @@ The tutorial is divided into several sections:
 
 ### Core Features
 - [Parallel Execution](parallel-execution.md) - Concurrent requests
+- [Routers](routers.md) - Group routes with prefixes and nesting
 - [Tags](tags.md) - Grouping and filtering
 - [Dependencies](dependencies.md) - Request modification
 - [Lifespan](lifespan.md) - Startup and shutdown

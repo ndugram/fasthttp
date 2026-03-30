@@ -12,12 +12,16 @@ import httpx
 from annotated_doc import Doc
 
 from .client import HTTPClient
+from .helpers.routing import check_annotated_parameters
+from .helpers.routing import check_annotated_return
+from .helpers.routing import check_https_url
 from .graphql.client import create_graphql_client
 from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
 from .openapi.generator import generate_openapi_schema
 from .openapi.swagger import get_not_found_html, get_swagger_html
-from .routing import Route
+from .openapi.urls import build_docs_urls
+from .routing import Route, Router
 from .security import Security
 
 if TYPE_CHECKING:
@@ -349,17 +353,7 @@ class FastHTTP:
             ),
         ]
     ) -> None:
-        sig = inspect.signature(func)
-
-        for name, param in sig.parameters.items():
-            if param.annotation is inspect.Parameter.empty:
-                msg = (
-                    f"Parameter '{name}' in function '{func.__name__}'"
-                    "must have a type annotation"
-                )
-                raise TypeError(
-                    msg
-                )
+        check_annotated_parameters(func=func)
 
     def _check_annotated_func(
         self,
@@ -393,16 +387,7 @@ class FastHTTP:
             ),
         ]
     ) -> None:
-        sig = inspect.signature(func)
-
-        if sig.return_annotation is inspect.Signature.empty:
-            msg = (
-                f"Function '{func.__name__}' must explicitly"
-                "define return type annotation"
-            )
-            raise TypeError(
-                msg
-            )
+        check_annotated_return(func=func)
 
     def _check_https_url(
         self,
@@ -429,12 +414,7 @@ class FastHTTP:
             >>> _check_https_url("https://api.example.com")
             'https://api.example.com'
         """
-        url = url.strip()
-
-        if url.startswith(("https://", "http://")):
-            return url
-
-        return f"https://{url}"
+        return check_https_url(url=url)
 
     def _add_route(
         self,
@@ -473,6 +453,97 @@ class FastHTTP:
             return func
 
         return decorator
+
+    def include_router(
+        self,
+        router: Annotated[
+            Router,
+            Doc(
+                """
+                Router instance to include into the application.
+
+                The router can define its own routes, nested routers,
+                shared tags, dependencies, prefix, and base_url.
+                """
+            ),
+        ],
+        *,
+        prefix: Annotated[
+            str,
+            Doc(
+                """
+                Optional prefix added before the router prefix.
+
+                Useful when the same router should be mounted under
+                different path segments in different applications.
+                """
+            ),
+        ] = "",
+        tags: Annotated[
+            list[str] | None,
+            Doc(
+                """
+                Optional tags prepended before router tags.
+
+                These tags will be inherited by all routes that come
+                from the included router tree.
+                """
+            ),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc(
+                """
+                Optional dependencies prepended before router dependencies.
+
+                They will run before dependencies declared on the router
+                and on its individual routes.
+                """
+            ),
+        ] = None,
+        base_url: Annotated[
+            str | None,
+            Doc(
+                """
+                Optional base URL override for the included router tree.
+
+                This is useful when a router defines relative paths such
+                as `/users` and the application should provide the host.
+                """
+            ),
+        ] = None,
+    ) -> None:
+        """
+        Include a Router into the FastHTTP application.
+
+        Included routers are resolved into concrete Route objects and then
+        appended to `self.routes`.
+
+        Example:
+            ```python
+            from fasthttp import FastHTTP, Router
+
+            app = FastHTTP()
+            router = Router(base_url="https://api.example.com", prefix="/v1")
+
+            app.include_router(router, prefix="/public")
+            ```
+
+        Args:
+            router: Router instance to include.
+            prefix: Prefix added before the router prefix.
+            tags: Tags prepended before router tags.
+            dependencies: Dependencies prepended before router dependencies.
+            base_url: Base URL override for the included router tree.
+        """
+        routes = router.build_routes(
+            base_url=base_url,
+            prefix=prefix,
+            tags=tags,
+            dependencies=dependencies,
+        )
+        self.routes.extend(routes)
+        self.logger.debug("Included router: %d routes", len(routes))
 
     def get(
         self,
