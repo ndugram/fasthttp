@@ -12,9 +12,7 @@ import httpx
 from annotated_doc import Doc
 
 from .client import HTTPClient
-from .helpers.routing import check_annotated_parameters
-from .helpers.routing import check_annotated_return
-from .helpers.routing import check_https_url
+from .helpers.routing import check_annotated_parameters, check_annotated_return, check_https_url
 from .graphql.client import create_graphql_client
 from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
@@ -279,12 +277,29 @@ class FastHTTP:
                 """
             ),
         ] = "v4",
+        base_url: Annotated[
+            str,
+            Doc(
+                """
+                Default URL prefix for Swagger/OpenAPI endpoints.
+
+                This value is used by `web_run()` when no explicit
+                `base_url` is provided for documentation routes.
+
+                Example:
+                ```python
+                app = FastHTTP(base_url="/api")
+                ```
+                """
+            ),
+        ] = "",
     ) -> None:
         self.logger = setup_logger(debug=debug)
         self.routes: list[Route] = []
         self.http2_enabled = http2
         self.lifespan = lifespan
         self.proxy = proxy
+        self.base_url = base_url
         self.generate_startup_uuid = generate_startup_uuid
         self.startup_uuid_version = startup_uuid_version
 
@@ -974,7 +989,7 @@ class FastHTTP:
             ),
         ] = 8000,
         base_url: Annotated[
-            str,
+            str | None,
             Doc(
                 """
                 Optional URL prefix for Swagger/OpenAPI endpoints.
@@ -983,7 +998,7 @@ class FastHTTP:
                 `/api/docs`, `/api/openapi.json`, and `/api/request`.
                 """
             ),
-        ] = "",
+        ] = None,
     ) -> None:
         """
         Run the FastHTTP application as an ASGI server with Swagger UI.
@@ -1013,9 +1028,13 @@ class FastHTTP:
             host: Host to bind to. Default is "127.0.0.1".
             port: Port to bind to. Default is 8000.
             base_url: Optional prefix for documentation endpoints.
+                If not provided, `FastHTTP.base_url` will be used.
         """
         self.logger.info("FastHTTP started")
 
+        base_url = (
+            base_url if base_url is not None else self.base_url
+        )
         app = ASGIApp(self, base_url=base_url)
 
         server_base_url = f"http://{host}:{port}"

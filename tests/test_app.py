@@ -34,6 +34,12 @@ class TestFastHTTPApp:
         assert app.request_configs["GET"]["timeout"] == 60.0
         assert app.request_configs["POST"]["timeout"] == 120.0
 
+    def test_app_creation_with_docs_base_url(self) -> None:
+        """Test FastHTTP creation with base_url."""
+        app = FastHTTP(base_url="/api")
+
+        assert app.base_url == "/api"
+
     def test_app_get_decorator(self) -> None:
         """Test GET decorator registers route."""
         app = FastHTTP()
@@ -163,6 +169,24 @@ class TestFastHTTPApp:
 
         with pytest.raises(ValueError, match="Relative URL requires base_url"):
             app.include_router(router)
+
+    @pytest.mark.asyncio
+    async def test_asgi_handle_request_docs_uses_app_docs_base_url(self) -> None:
+        """Test ASGI docs path uses base_url from FastHTTP."""
+        from fasthttp.app import ASGIApp
+
+        app = FastHTTP(base_url="/api")
+        asgi_app = ASGIApp(app, base_url=app.base_url)
+
+        scope = {"type": "http", "path": "/api/docs", "method": "GET"}
+        receive = AsyncMock()
+        send = AsyncMock()
+
+        await asgi_app.handle_request(scope, receive, send)
+
+        assert send.called
+        body = send.call_args_list[1][0][0]["body"].decode("utf-8")
+        assert "/api/openapi.json" in body
 
     def test_app_missing_parameter_annotation_raises_error(self) -> None:
         """Test that missing parameter annotation raises TypeError."""
