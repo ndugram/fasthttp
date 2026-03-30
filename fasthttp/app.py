@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 import json
 import secrets
 import time
@@ -12,7 +11,7 @@ import httpx
 from annotated_doc import Doc
 
 from .client import HTTPClient
-from .helpers.routing import check_annotated_parameters, check_annotated_return, check_https_url
+from .helpers.routing import apply_base_url, check_annotated_parameters, check_annotated_return, check_https_url
 from .graphql.client import create_graphql_client
 from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
@@ -281,15 +280,18 @@ class FastHTTP:
             str | None,
             Doc(
                 """
-                Default base URL for included routers with relative paths.
+                Default base URL for requests.
 
-                This value is used by `include_router()` when the router tree
-                contains relative URLs like `/users` and no explicit
-                `base_url` override is provided.
+                This value is used by:
+                - Decorators (`@app.get`, `@app.post`, etc.) with relative paths
+                - GraphQL (`@app.graphql`) with relative paths
+                - `include_router()` when the router tree contains relative URLs
 
                 Example:
                 ```python
                 app = FastHTTP(base_url="https://api.example.com")
+
+                @app.get("/users")  # → https://api.example.com/users
                 ```
                 """
             ),
@@ -449,6 +451,9 @@ class FastHTTP:
         """
         return check_https_url(url=url)
 
+    def _resolve_url(self, url: str) -> str:
+        return apply_base_url(url=url, base_url=self.base_url)
+
     def _add_route(
         self,
         *,
@@ -470,7 +475,7 @@ class FastHTTP:
             self.routes.append(
                 Route(
                     method=method,
-                    url=self._check_https_url(url=url),
+                    url=self._resolve_url(url),
                     handler=func,
                     params=params,
                     json=json,
@@ -834,7 +839,7 @@ class FastHTTP:
             self.routes.append(
                 Route(
                     method="POST",
-                    url=url,
+                    url=self._resolve_url(url),
                     handler=graphql_handler,
                     tags=tags,
                     skip_request=True,
