@@ -186,7 +186,7 @@ from fasthttp import FastHTTP
 
 from src.clients.integrations import setup_integrations_router
 
-app = FastHTTP()
+app = FastHTTP(base_url="https://api.example.com")
 app.include_router(setup_integrations_router())
 ```
 
