@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fasthttp import FastHTTP
 from fasthttp.response import Response
-from fasthttp.routing import Route
+from fasthttp.routing import Route, Router
 
 
 class TestFastHTTPApp:
@@ -33,6 +33,12 @@ class TestFastHTTPApp:
         assert app.security_enabled is False
         assert app.request_configs["GET"]["timeout"] == 60.0
         assert app.request_configs["POST"]["timeout"] == 120.0
+
+    def test_app_creation_with_docs_base_url(self) -> None:
+        """Test FastHTTP creation with base_url."""
+        app = FastHTTP(base_url="/api")
+
+        assert app.base_url == "/api"
 
     def test_app_get_decorator(self) -> None:
         """Test GET decorator registers route."""
@@ -109,6 +115,78 @@ class TestFastHTTPApp:
             return resp.json()
 
         assert app.routes[0].params == {"page": "1"}
+
+    def test_app_include_router_basic(self) -> None:
+        app = FastHTTP()
+        router = Router(base_url="https://example.com", prefix="/v1", tags=["users"])
+
+        @router.get("/me", tags=["private"])
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        app.include_router(router)
+
+        assert len(app.routes) == 1
+        assert app.routes[0].url == "https://example.com/v1/me"
+        assert app.routes[0].tags == ["users", "private"]
+
+    def test_app_include_router_with_overrides(self) -> None:
+        app = FastHTTP()
+        router = Router(base_url="https://example.com", prefix="/v1", tags=["users"])
+
+        @router.get("/me")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        app.include_router(router, prefix="/api", tags=["public"])
+
+        assert len(app.routes) == 1
+        assert app.routes[0].url == "https://example.com/api/v1/me"
+        assert app.routes[0].tags == ["public", "users"]
+
+    def test_app_include_router_nested(self) -> None:
+        app = FastHTTP()
+        parent = Router(prefix="/v1")
+        child = Router(prefix="/users")
+
+        @child.get("/me")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        parent.include_router(child)
+        app.include_router(parent, base_url="https://example.com")
+
+        assert len(app.routes) == 1
+        assert app.routes[0].url == "https://example.com/v1/users/me"
+
+    def test_app_include_router_relative_url_requires_base_url(self) -> None:
+        app = FastHTTP()
+        router = Router()
+
+        @router.get("/me")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        with pytest.raises(ValueError, match="Relative URL requires base_url"):
+            app.include_router(router)
+
+    @pytest.mark.asyncio
+    async def test_asgi_handle_request_docs_uses_app_docs_base_url(self) -> None:
+        """Test ASGI docs path uses base_url from FastHTTP."""
+        from fasthttp.app import ASGIApp
+
+        app = FastHTTP(base_url="/api")
+        asgi_app = ASGIApp(app, base_url=app.base_url)
+
+        scope = {"type": "http", "path": "/api/docs", "method": "GET"}
+        receive = AsyncMock()
+        send = AsyncMock()
+
+        await asgi_app.handle_request(scope, receive, send)
+
+        assert send.called
+        body = send.call_args_list[1][0][0]["body"].decode("utf-8")
+        assert "/api/openapi.json" in body
 
     def test_app_missing_parameter_annotation_raises_error(self) -> None:
         """Test that missing parameter annotation raises TypeError."""
@@ -240,6 +318,25 @@ class TestFastHTTPASGI:
         assert call_args["status"] == 200
 
     @pytest.mark.asyncio
+    async def test_asgi_handle_request_docs_with_base_url(self) -> None:
+        """Test ASGI handling docs path with base_url prefix."""
+        from fasthttp.app import ASGIApp
+
+        app = FastHTTP()
+        asgi_app = ASGIApp(app, base_url="/api")
+
+        scope = {"type": "http", "path": "/api/docs", "method": "GET"}
+        receive = AsyncMock()
+        send = AsyncMock()
+
+        await asgi_app.handle_request(scope, receive, send)
+
+        assert send.called
+        body = send.call_args_list[1][0][0]["body"].decode("utf-8")
+        assert "/api/openapi.json" in body
+        assert "/api/request" in body
+
+    @pytest.mark.asyncio
     async def test_asgi_handle_request_openapi_json(self) -> None:
         """Test ASGI handling /openapi.json path."""
         from fasthttp.app import ASGIApp
@@ -262,6 +359,28 @@ class TestFastHTTPASGI:
         assert call_args["status"] == 200
 
     @pytest.mark.asyncio
+    async def test_asgi_handle_request_openapi_json_with_base_url(self) -> None:
+        """Test ASGI handling prefixed /openapi.json path."""
+        from fasthttp.app import ASGIApp
+
+        app = FastHTTP()
+        asgi_app = ASGIApp(app, base_url="api")
+
+        @app.get(url="https://example.com/api")
+        async def handler(resp: Response) -> dict:
+            return {}
+
+        scope = {"type": "http", "path": "/api/openapi.json", "method": "GET"}
+        receive = AsyncMock()
+        send = AsyncMock()
+
+        await asgi_app.handle_request(scope, receive, send)
+
+        assert send.called
+        body = send.call_args_list[1][0][0]["body"].decode("utf-8")
+        assert '"url": "/api/request"' in body
+
+    @pytest.mark.asyncio
     async def test_asgi_handle_request_404(self) -> None:
         """Test ASGI handling unknown path returns 404."""
         from fasthttp.app import ASGIApp
@@ -278,6 +397,25 @@ class TestFastHTTPASGI:
         assert send.called
         call_args = send.call_args_list[0][0][0]
         assert call_args["status"] == 404
+
+    @pytest.mark.asyncio
+    async def test_asgi_handle_request_404_uses_prefixed_docs_links(self) -> None:
+        """Test 404 page uses base_url-aware docs links."""
+        from fasthttp.app import ASGIApp
+
+        app = FastHTTP()
+        asgi_app = ASGIApp(app, base_url="/api")
+
+        scope = {"type": "http", "path": "/unknown", "method": "GET"}
+        receive = AsyncMock()
+        send = AsyncMock()
+
+        await asgi_app.handle_request(scope, receive, send)
+
+        assert send.called
+        body = send.call_args_list[1][0][0]["body"].decode("utf-8")
+        assert "/api/docs" in body
+        assert "/api/openapi.json" in body
 
     @pytest.mark.asyncio
     async def test_asgi_handle_proxy_request(self) -> None:

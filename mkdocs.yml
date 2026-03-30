@@ -81,6 +81,7 @@ nav:
         - en/tutorial/request-parameters.md
         - en/tutorial/response-handling.md
         - en/tutorial/parallel-execution.md
+        - en/tutorial/routers.md
         - en/tutorial/tags.md
         - en/tutorial/dependencies.md
         - en/tutorial/lifespan.md
@@ -139,6 +140,7 @@ nav:
         - ru/tutorial/request-parameters.md
         - ru/tutorial/response-handling.md
         - ru/tutorial/parallel-execution.md
+        - ru/tutorial/routers.md
         - ru/tutorial/tags.md
         - ru/tutorial/dependencies.md
         - ru/tutorial/lifespan.md

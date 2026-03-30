@@ -63,12 +63,34 @@ app.run(tags=["users"])  # Run only users
 Run with Swagger UI.
 
 ```python
-app.web_run(host: str = "127.0.0.1", port: int = 8000)
+app.web_run(host: str = "127.0.0.1", port: int = 8000, base_url: str = "")
 ```
 
 **Parameters:**
 - `host` - Host to bind
 - `port` - Port to bind
+- `base_url` - Optional docs URL prefix, for example `"/api"`
+
+### include_router()
+
+Include a `Router` into the application.
+
+```python
+app.include_router(
+    router: Router,
+    prefix: str = "",
+    tags: list = None,
+    dependencies: list = None,
+    base_url: str = None,
+)
+```
+
+**Parameters:**
+- `router` - Router instance to include
+- `prefix` - Optional prefix added before the router prefix
+- `tags` - Optional tags added before router tags
+- `dependencies` - Optional dependencies added before router dependencies
+- `base_url` - Optional base URL override for the included router tree
 
 ### get()
 
@@ -117,3 +139,25 @@ Decorator for GraphQL.
     dependencies: list = None,
 )
 ```
+
+## Router
+
+`Router` is available from:
+
+```python
+from fasthttp import Router
+```
+
+Basic constructor:
+
+```python
+Router(
+    base_url: str = None,
+    prefix: str = "",
+    tags: list = None,
+    dependencies: list = None,
+)
+```
+
+See the tutorial page for examples:
+- `docs/en/tutorial/routers.md`

@@ -10,6 +10,7 @@ from fasthttp.response import Response
 
 from .generator import generate_openapi_schema
 from .swagger import get_swagger_html, get_not_found_html
+from .urls import build_docs_urls
 
 if TYPE_CHECKING:
     from fasthttp.app import FastHTTP
@@ -19,7 +20,11 @@ async def handle_docs(
     app: Annotated[
         "FastHTTP",
         Doc("FastHTTP application instance"),
-    ]
+    ],
+    base_url: Annotated[
+        str,
+        Doc("Optional docs base URL prefix"),
+    ] = "",
 ) -> Response:
     """
     Serve Swagger UI HTML.
@@ -27,7 +32,11 @@ async def handle_docs(
     Returns:
         Response with Swagger UI HTML.
     """
-    html = get_swagger_html()
+    urls = build_docs_urls(base_url)
+    html = get_swagger_html(
+        openapi_url=urls["openapi_url"],
+        request_url=urls["request_url"],
+    )
     return Response(
         status=200,
         text=html,
@@ -39,7 +48,11 @@ async def handle_openapi_json(
     app: Annotated[
         "FastHTTP",
         Doc("FastHTTP application instance"),
-    ]
+    ],
+    base_url: Annotated[
+        str,
+        Doc("Optional docs base URL prefix"),
+    ] = "",
 ) -> Response:
     """
     Serve OpenAPI schema as JSON.
@@ -47,7 +60,8 @@ async def handle_openapi_json(
     Returns:
         Response with OpenAPI JSON schema.
     """
-    schema = generate_openapi_schema(app)
+    urls = build_docs_urls(base_url)
+    schema = generate_openapi_schema(app, server_url=urls["request_url"])
     json_str = json.dumps(schema, indent=2, ensure_ascii=False)
     return Response(
         status=200,
@@ -60,7 +74,11 @@ async def handle_not_found(
     path: Annotated[
         str,
         Doc("The requested path that was not found"),
-    ]
+    ],
+    base_url: Annotated[
+        str,
+        Doc("Optional docs base URL prefix"),
+    ] = "",
 ) -> Response:
     """
     Serve custom 404 page for unknown routes.
@@ -68,7 +86,11 @@ async def handle_not_found(
     Returns:
         Response with stylish 404 page.
     """
-    html = get_not_found_html()
+    urls = build_docs_urls(base_url)
+    html = get_not_found_html(
+        docs_url=urls["docs_url"],
+        openapi_url=urls["openapi_url"],
+    )
     return Response(
         status=404,
         text=html,

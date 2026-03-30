@@ -101,6 +101,17 @@ async def get_user(resp: Response) -> dict:
 app.web_run(host="0.0.0.0", port=8080)
 ```
 
+### Custom Docs Base URL
+
+```python
+app.web_run(base_url="/api")
+```
+
+This serves the documentation endpoints at:
+- `http://127.0.0.1:8000/api/docs`
+- `http://127.0.0.1:8000/api/openapi.json`
+- `http://127.0.0.1:8000/api/request`
+
 ### With Tags
 
 ```python

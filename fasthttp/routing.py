@@ -1,8 +1,16 @@
+from __future__ import annotations
+
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Annotated, Literal
 
 from annotated_doc import Doc
 from pydantic import BaseModel
+
+from .helpers.routing import check_annotated_parameters as _check_annotated_parameters
+from .helpers.routing import check_annotated_return as _check_annotated_func
+from .helpers.routing import join_prefix as _join_prefix
+from .helpers.routing import resolve_url as _resolve_url
 
 
 class Route:
@@ -198,3 +206,565 @@ class Route:
         self.dependencies = dependencies or []
         self.skip_request = skip_request
         self.responses = responses or {}
+
+
+@dataclass(frozen=True, slots=True)
+class _RouteDef:
+    """
+    Internal representation of a route defined on Router.
+
+    Stored before URL/prefix/base_url resolution.
+    """
+
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"]
+    url: str
+    handler: Callable[..., object]
+    params: dict | None
+    json: dict | None
+    data: object | None
+    response_model: type[BaseModel] | None
+    request_model: type[BaseModel] | None
+    tags: list[str]
+    dependencies: list
+    skip_request: bool
+    responses: dict[int, dict[Literal["model"], type[BaseModel]]]
+
+
+@dataclass(frozen=True, slots=True)
+class _IncludeDef:
+    """
+    Internal representation of Router.include_router() call.
+    """
+
+    router: Router
+    prefix: str
+    tags: list[str]
+    dependencies: list
+    base_url: str | None
+
+
+class Router:
+    """
+    Router for grouping and composing routes, similar to FastAPI/APIRouter.
+
+    Router collects route definitions and can be included into a FastHTTP app
+    via FastHTTP.include_router(router, ...).
+
+    It supports:
+    - base_url (e.g. "https://api.example.com")
+    - prefix (e.g. "/v1")
+    - tags and dependencies inheritance
+    - nested routers via include_router()
+    """
+
+    def __init__(
+        self,
+        *,
+        base_url: Annotated[
+            str | None,
+            Doc(
+                """
+                Base URL used to resolve relative route paths.
+
+                Example:
+                    "https://api.example.com"
+                """
+            ),
+        ] = None,
+        prefix: Annotated[
+            str,
+            Doc(
+                """
+                Shared path prefix applied to all routes in this router.
+
+                Example:
+                    "/v1"
+                """
+            ),
+        ] = "",
+        tags: Annotated[
+            list[str] | None,
+            Doc(
+                """
+                Shared tags inherited by all routes in this router.
+
+                Useful for grouping related routes such as "users",
+                "payments", or "admin".
+                """
+            ),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc(
+                """
+                Shared dependencies inherited by all routes in this router.
+
+                These dependencies will run before route-specific
+                dependencies.
+                """
+            ),
+        ] = None,
+    ) -> None:
+        """
+        Create a new Router.
+
+        Router groups related route definitions and can be included into
+        FastHTTP or other Router instances.
+
+        Args:
+            base_url: Base URL used to resolve relative route paths.
+            prefix: Shared path prefix for all routes.
+            tags: Shared tags inherited by all routes.
+            dependencies: Shared dependencies inherited by all routes.
+        """
+        self.base_url = base_url
+        self.prefix = prefix
+        self.tags = tags or []
+        self.dependencies = dependencies or []
+        self._route_defs: list[_RouteDef] = []
+        self._include_defs: list[_IncludeDef] = []
+
+    def include_router(
+        self,
+        router: Annotated[
+            Router,
+            Doc(
+                """
+                Child router to include into this router.
+
+                Nested routers allow building larger applications from
+                small reusable route groups.
+                """
+            ),
+        ],
+        *,
+        prefix: Annotated[
+            str,
+            Doc(
+                """
+                Optional prefix added before the child router prefix.
+                """
+            ),
+        ] = "",
+        tags: Annotated[
+            list[str] | None,
+            Doc(
+                """
+                Optional tags prepended before child router tags.
+                """
+            ),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc(
+                """
+                Optional dependencies prepended before child router
+                dependencies.
+                """
+            ),
+        ] = None,
+        base_url: Annotated[
+            str | None,
+            Doc(
+                """
+                Optional base URL override for the child router tree.
+                """
+            ),
+        ] = None,
+    ) -> None:
+        """
+        Include another router into this router.
+
+        Args:
+            router: Child router.
+            prefix: Additional prefix applied before the child router prefix.
+            tags: Tags appended before child route tags.
+            dependencies: Dependencies executed before child route dependencies.
+            base_url: Optional base_url override for the included router tree.
+        """
+        self._include_defs.append(
+            _IncludeDef(
+                router=router,
+                prefix=prefix,
+                tags=tags or [],
+                dependencies=dependencies or [],
+                base_url=base_url,
+            )
+        )
+
+    def _add_route(
+        self,
+        *,
+        method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"],
+        url: str,
+        params: dict | None = None,
+        json: dict | None = None,
+        data: object | None = None,
+        response_model: type[BaseModel] | None = None,
+        request_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
+        dependencies: list | None = None,
+        skip_request: bool = False,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """
+        Register a route definition on the router.
+
+        This stores the route in an unresolved form until `build_routes()`
+        is called.
+        """
+        def decorator(func: Callable[..., object]) -> Callable[..., object]:
+            _check_annotated_parameters(func=func)
+            _check_annotated_func(func=func)
+
+            self._route_defs.append(
+                _RouteDef(
+                    method=method,
+                    url=url,
+                    handler=func,
+                    params=params,
+                    json=json,
+                    data=data,
+                    response_model=response_model,
+                    request_model=request_model,
+                    tags=tags or [],
+                    dependencies=dependencies or [],
+                    skip_request=skip_request,
+                    responses=responses or {},
+                )
+            )
+            return func
+
+        return decorator
+
+    def get(
+        self,
+        url: Annotated[
+            str,
+            Doc(
+                """
+                Route URL or path.
+
+                Can be an absolute URL like
+                `https://api.example.com/users`
+                or a relative path like `/users`.
+                """
+            ),
+        ],
+        *,
+        params: Annotated[
+            dict | None,
+            Doc("Query parameters for the GET request."),
+        ] = None,
+        response_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating the handler result."),
+        ] = None,
+        request_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating request data."),
+        ] = None,
+        tags: Annotated[
+            list[str] | None,
+            Doc("Optional tags for grouping and filtering the route."),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc("Optional dependencies executed before the request."),
+        ] = None,
+        responses: Annotated[
+            dict[int, dict[Literal["model"], type[BaseModel]]] | None,
+            Doc("Optional response models for error status codes."),
+        ] = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """Decorator for registering a GET route on the router."""
+        return self._add_route(
+            method="GET",
+            url=url,
+            params=params,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            responses=responses,
+        )
+
+    def post(
+        self,
+        url: Annotated[
+            str,
+            Doc("Route URL or path for the POST request."),
+        ],
+        *,
+        json: Annotated[
+            dict | None,
+            Doc("Optional JSON body sent with the POST request."),
+        ] = None,
+        data: Annotated[
+            object | None,
+            Doc("Optional raw body or form data for the POST request."),
+        ] = None,
+        response_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating the handler result."),
+        ] = None,
+        request_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating request data."),
+        ] = None,
+        tags: Annotated[
+            list[str] | None,
+            Doc("Optional tags for grouping and filtering the route."),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc("Optional dependencies executed before the request."),
+        ] = None,
+        responses: Annotated[
+            dict[int, dict[Literal["model"], type[BaseModel]]] | None,
+            Doc("Optional response models for error status codes."),
+        ] = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """Decorator for registering a POST route on the router."""
+        return self._add_route(
+            method="POST",
+            url=url,
+            json=json,
+            data=data,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            responses=responses,
+        )
+
+    def put(
+        self,
+        url: Annotated[
+            str,
+            Doc("Route URL or path for the PUT request."),
+        ],
+        *,
+        json: Annotated[
+            dict | None,
+            Doc("Optional JSON body sent with the PUT request."),
+        ] = None,
+        data: Annotated[
+            object | None,
+            Doc("Optional raw body or form data for the PUT request."),
+        ] = None,
+        response_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating the handler result."),
+        ] = None,
+        request_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating request data."),
+        ] = None,
+        tags: Annotated[
+            list[str] | None,
+            Doc("Optional tags for grouping and filtering the route."),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc("Optional dependencies executed before the request."),
+        ] = None,
+        responses: Annotated[
+            dict[int, dict[Literal["model"], type[BaseModel]]] | None,
+            Doc("Optional response models for error status codes."),
+        ] = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """Decorator for registering a PUT route on the router."""
+        return self._add_route(
+            method="PUT",
+            url=url,
+            json=json,
+            data=data,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            responses=responses,
+        )
+
+    def patch(
+        self,
+        url: Annotated[
+            str,
+            Doc("Route URL or path for the PATCH request."),
+        ],
+        *,
+        json: Annotated[
+            dict | None,
+            Doc("Optional JSON body sent with the PATCH request."),
+        ] = None,
+        data: Annotated[
+            object | None,
+            Doc("Optional raw body or form data for the PATCH request."),
+        ] = None,
+        response_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating the handler result."),
+        ] = None,
+        request_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating request data."),
+        ] = None,
+        tags: Annotated[
+            list[str] | None,
+            Doc("Optional tags for grouping and filtering the route."),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc("Optional dependencies executed before the request."),
+        ] = None,
+        responses: Annotated[
+            dict[int, dict[Literal["model"], type[BaseModel]]] | None,
+            Doc("Optional response models for error status codes."),
+        ] = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """Decorator for registering a PATCH route on the router."""
+        return self._add_route(
+            method="PATCH",
+            url=url,
+            json=json,
+            data=data,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            responses=responses,
+        )
+
+    def delete(
+        self,
+        url: Annotated[
+            str,
+            Doc("Route URL or path for the DELETE request."),
+        ],
+        *,
+        json: Annotated[
+            dict | None,
+            Doc("Optional JSON body sent with the DELETE request."),
+        ] = None,
+        data: Annotated[
+            object | None,
+            Doc("Optional raw body or form data for the DELETE request."),
+        ] = None,
+        response_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating the handler result."),
+        ] = None,
+        request_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating request data."),
+        ] = None,
+        tags: Annotated[
+            list[str] | None,
+            Doc("Optional tags for grouping and filtering the route."),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc("Optional dependencies executed before the request."),
+        ] = None,
+        responses: Annotated[
+            dict[int, dict[Literal["model"], type[BaseModel]]] | None,
+            Doc("Optional response models for error status codes."),
+        ] = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """Decorator for registering a DELETE route on the router."""
+        return self._add_route(
+            method="DELETE",
+            url=url,
+            json=json,
+            data=data,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            responses=responses,
+        )
+
+    def build_routes(
+        self,
+        *,
+        base_url: Annotated[
+            str | None,
+            Doc("Optional base URL override for this build call."),
+        ] = None,
+        prefix: Annotated[
+            str,
+            Doc("Optional prefix added before this router prefix."),
+        ] = "",
+        tags: Annotated[
+            list[str] | None,
+            Doc("Optional tags prepended before this router tags."),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc("Optional dependencies prepended before this router dependencies."),
+        ] = None,
+    ) -> list[Route]:
+        """
+        Materialize Router definitions into concrete Route objects.
+
+        Args:
+            base_url: Base URL override for this build call.
+            prefix: Prefix added before this router prefix.
+            tags: Tags prepended before this router tags.
+            dependencies: Dependencies prepended before this router dependencies.
+
+        Returns:
+            List of resolved Route objects ready for execution.
+        """
+        merged_base_url = base_url if base_url is not None else self.base_url
+        merged_prefix = _join_prefix(prefix, self.prefix)
+        merged_tags = (tags or []) + self.tags
+        merged_deps = (dependencies or []) + self.dependencies
+
+        routes: list[Route] = []
+
+        for rd in self._route_defs:
+            route_tags = merged_tags + rd.tags
+            route_deps = merged_deps + rd.dependencies
+            resolved_url = _resolve_url(
+                url=rd.url,
+                base_url=merged_base_url,
+                prefix=merged_prefix,
+            )
+            routes.append(
+                Route(
+                    method=rd.method,
+                    url=resolved_url,
+                    handler=rd.handler,
+                    params=rd.params,
+                    json=rd.json,
+                    data=rd.data,
+                    response_model=rd.response_model,
+                    request_model=rd.request_model,
+                    tags=route_tags,
+                    dependencies=route_deps,
+                    skip_request=rd.skip_request,
+                    responses=rd.responses,
+                )
+            )
+
+        for inc in self._include_defs:
+            child_prefix = _join_prefix(merged_prefix, inc.prefix)
+            child_tags = merged_tags + inc.tags
+            child_deps = merged_deps + inc.dependencies
+            child_base_url = (
+                inc.base_url
+                if inc.base_url is not None
+                else merged_base_url
+            )
+            routes.extend(
+                inc.router.build_routes(
+                    base_url=child_base_url,
+                    prefix=child_prefix,
+                    tags=child_tags,
+                    dependencies=child_deps,
+                )
+            )
+
+        return routes

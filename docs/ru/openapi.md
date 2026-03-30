@@ -101,6 +101,17 @@ async def get_user(resp: Response) -> dict:
 app.web_run(host="0.0.0.0", port=8080)
 ```
 
+### Кастомный base URL для документации
+
+```python
+app.web_run(base_url="/api")
+```
+
+В этом случае endpoints документации будут доступны по адресам:
+- `http://127.0.0.1:8000/api/docs`
+- `http://127.0.0.1:8000/api/openapi.json`
+- `http://127.0.0.1:8000/api/request`
+
 ### С тегами
 
 ```python

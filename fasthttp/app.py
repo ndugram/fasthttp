@@ -12,12 +12,14 @@ import httpx
 from annotated_doc import Doc
 
 from .client import HTTPClient
+from .helpers.routing import check_annotated_parameters, check_annotated_return, check_https_url
 from .graphql.client import create_graphql_client
 from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
 from .openapi.generator import generate_openapi_schema
 from .openapi.swagger import get_not_found_html, get_swagger_html
-from .routing import Route
+from .openapi.urls import build_docs_urls
+from .routing import Route, Router
 from .security import Security
 
 if TYPE_CHECKING:
@@ -275,12 +277,29 @@ class FastHTTP:
                 """
             ),
         ] = "v4",
+        base_url: Annotated[
+            str,
+            Doc(
+                """
+                Default URL prefix for Swagger/OpenAPI endpoints.
+
+                This value is used by `web_run()` when no explicit
+                `base_url` is provided for documentation routes.
+
+                Example:
+                ```python
+                app = FastHTTP(base_url="/api")
+                ```
+                """
+            ),
+        ] = "",
     ) -> None:
         self.logger = setup_logger(debug=debug)
         self.routes: list[Route] = []
         self.http2_enabled = http2
         self.lifespan = lifespan
         self.proxy = proxy
+        self.base_url = base_url
         self.generate_startup_uuid = generate_startup_uuid
         self.startup_uuid_version = startup_uuid_version
 
@@ -349,17 +368,7 @@ class FastHTTP:
             ),
         ]
     ) -> None:
-        sig = inspect.signature(func)
-
-        for name, param in sig.parameters.items():
-            if param.annotation is inspect.Parameter.empty:
-                msg = (
-                    f"Parameter '{name}' in function '{func.__name__}'"
-                    "must have a type annotation"
-                )
-                raise TypeError(
-                    msg
-                )
+        check_annotated_parameters(func=func)
 
     def _check_annotated_func(
         self,
@@ -393,16 +402,7 @@ class FastHTTP:
             ),
         ]
     ) -> None:
-        sig = inspect.signature(func)
-
-        if sig.return_annotation is inspect.Signature.empty:
-            msg = (
-                f"Function '{func.__name__}' must explicitly"
-                "define return type annotation"
-            )
-            raise TypeError(
-                msg
-            )
+        check_annotated_return(func=func)
 
     def _check_https_url(
         self,
@@ -429,12 +429,7 @@ class FastHTTP:
             >>> _check_https_url("https://api.example.com")
             'https://api.example.com'
         """
-        url = url.strip()
-
-        if url.startswith(("https://", "http://")):
-            return url
-
-        return f"https://{url}"
+        return check_https_url(url=url)
 
     def _add_route(
         self,
@@ -473,6 +468,97 @@ class FastHTTP:
             return func
 
         return decorator
+
+    def include_router(
+        self,
+        router: Annotated[
+            Router,
+            Doc(
+                """
+                Router instance to include into the application.
+
+                The router can define its own routes, nested routers,
+                shared tags, dependencies, prefix, and base_url.
+                """
+            ),
+        ],
+        *,
+        prefix: Annotated[
+            str,
+            Doc(
+                """
+                Optional prefix added before the router prefix.
+
+                Useful when the same router should be mounted under
+                different path segments in different applications.
+                """
+            ),
+        ] = "",
+        tags: Annotated[
+            list[str] | None,
+            Doc(
+                """
+                Optional tags prepended before router tags.
+
+                These tags will be inherited by all routes that come
+                from the included router tree.
+                """
+            ),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc(
+                """
+                Optional dependencies prepended before router dependencies.
+
+                They will run before dependencies declared on the router
+                and on its individual routes.
+                """
+            ),
+        ] = None,
+        base_url: Annotated[
+            str | None,
+            Doc(
+                """
+                Optional base URL override for the included router tree.
+
+                This is useful when a router defines relative paths such
+                as `/users` and the application should provide the host.
+                """
+            ),
+        ] = None,
+    ) -> None:
+        """
+        Include a Router into the FastHTTP application.
+
+        Included routers are resolved into concrete Route objects and then
+        appended to `self.routes`.
+
+        Example:
+            ```python
+            from fasthttp import FastHTTP, Router
+
+            app = FastHTTP()
+            router = Router(base_url="https://api.example.com", prefix="/v1")
+
+            app.include_router(router, prefix="/public")
+            ```
+
+        Args:
+            router: Router instance to include.
+            prefix: Prefix added before the router prefix.
+            tags: Tags prepended before router tags.
+            dependencies: Dependencies prepended before router dependencies.
+            base_url: Base URL override for the included router tree.
+        """
+        routes = router.build_routes(
+            base_url=base_url,
+            prefix=prefix,
+            tags=tags,
+            dependencies=dependencies,
+        )
+        self.routes.extend(routes)
+        self.logger.debug("Included router: %d routes", len(routes))
 
     def get(
         self,
@@ -902,14 +988,25 @@ class FastHTTP:
                 """,
             ),
         ] = 8000,
+        base_url: Annotated[
+            str | None,
+            Doc(
+                """
+                Optional URL prefix for Swagger/OpenAPI endpoints.
+
+                For example, with `base_url="/api"`, the docs will be served at
+                `/api/docs`, `/api/openapi.json`, and `/api/request`.
+                """
+            ),
+        ] = None,
     ) -> None:
         """
         Run the FastHTTP application as an ASGI server with Swagger UI.
 
         This method starts a local HTTP server that serves:
-        - /docs - Swagger UI interface
-        - /openapi.json - OpenAPI schema
-        - /request - Execute HTTP requests from Swagger UI
+        - {base_url}/docs - Swagger UI interface
+        - {base_url}/openapi.json - OpenAPI schema
+        - {base_url}/request - Execute HTTP requests from Swagger UI
 
         The server allows you to test and execute HTTP requests
         through the Swagger UI interface.
@@ -930,15 +1027,24 @@ class FastHTTP:
         Args:
             host: Host to bind to. Default is "127.0.0.1".
             port: Port to bind to. Default is 8000.
+            base_url: Optional prefix for documentation endpoints.
+                If not provided, `FastHTTP.base_url` will be used.
         """
         self.logger.info("FastHTTP started")
 
-        app = ASGIApp(self)
+        base_url = (
+            base_url if base_url is not None else self.base_url
+        )
+        app = ASGIApp(self, base_url=base_url)
 
-        base_url = f"http://{host}:{port}"
+        server_base_url = f"http://{host}:{port}"
+        docs_urls = build_docs_urls(base_url)
 
-        print(f"\n\033[92mfasthttp\033[0m running on \033[94m{base_url}\033[0m")
-        print(f"\033[93mdocs\033[0m: \033[94m{base_url}/docs\033[0m\n")
+        print(f"\n\033[92mfasthttp\033[0m running on \033[94m{server_base_url}\033[0m")
+        print(
+            f"\033[93mdocs\033[0m: "
+            f"\033[94m{server_base_url}{docs_urls['docs_url']}\033[0m\n"
+        )
 
         try:
             import uvicorn
@@ -981,8 +1087,14 @@ class ASGIApp:
             FastHTTP,
             Doc("FastHTTP application instance"),
         ],
+        *,
+        base_url: Annotated[
+            str,
+            Doc("Optional docs base URL prefix"),
+        ] = "",
     ) -> None:
         self.fasthttp = app
+        self.docs_urls = build_docs_urls(base_url)
 
     async def __call__(
         self,
@@ -1010,12 +1122,21 @@ class ASGIApp:
                     if not message.get("more_body"):
                         break
 
-        if path == "/docs" or path.startswith("/docs"):
-            await self._send_html(send, get_swagger_html())
-        elif path == "/openapi.json":
-            schema = generate_openapi_schema(self.fasthttp)
+        if path == self.docs_urls["docs_url"] or path.startswith(f"{self.docs_urls['docs_url']}/"):
+            await self._send_html(
+                send,
+                get_swagger_html(
+                    openapi_url=self.docs_urls["openapi_url"],
+                    request_url=self.docs_urls["request_url"],
+                ),
+            )
+        elif path == self.docs_urls["openapi_url"]:
+            schema = generate_openapi_schema(
+                self.fasthttp,
+                server_url=self.docs_urls["request_url"],
+            )
             await self._send_json(send, schema)
-        elif path == "/request":
+        elif path == self.docs_urls["request_url"]:
             await self._handle_proxy(send, method, body)
         else:
             await self._send_404(send, path)
@@ -1044,7 +1165,10 @@ class ASGIApp:
         })
 
     async def _send_404(self, send: Callable[..., Any], path: str = "/") -> None:
-        html = get_not_found_html()
+        html = get_not_found_html(
+            docs_url=self.docs_urls["docs_url"],
+            openapi_url=self.docs_urls["openapi_url"],
+        )
         await send({
             "type": "http.response.start",
             "status": 404,

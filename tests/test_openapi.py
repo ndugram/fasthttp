@@ -336,3 +336,20 @@ class TestGenerateOpenAPISchema:
         assert "version" in schema["info"]
         assert schema["info"]["title"] == "FastHTTP API"
         assert schema["info"]["version"] == "1.0.0"
+
+    def test_generate_openapi_schema_with_server_url(self) -> None:
+        """Test generating OpenAPI schema with Swagger proxy server URL."""
+        app = FastHTTP()
+
+        @app.get(url="https://example.com/api")
+        async def handler(resp: Response) -> dict:
+            return {}
+
+        schema = generate_openapi_schema(app, server_url="/api/request")
+
+        assert schema["servers"] == [
+            {
+                "url": "/api/request",
+                "description": "FastHTTP Proxy",
+            }
+        ]

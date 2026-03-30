@@ -59,6 +59,14 @@ All HTTP requests are automatically displayed with:
 app.web_run(host="0.0.0.0", port=8080)
 ```
 
+## Custom Docs Base URL
+
+```python
+app.web_run(base_url="/api")
+```
+
+Now the docs will be available at `http://127.0.0.1:8000/api/docs`.
+
 ## With Tags
 
 ```python
@@ -98,4 +106,4 @@ async def create_user(resp: Response) -> dict:
 app.web_run()
 ```
 
-Now open `http://127.0.0.1:8000/docs` to test your requests.
+Now open `http://127.0.0.1:8000/docs` or your prefixed docs URL such as `http://127.0.0.1:8000/api/docs`.
