@@ -14,6 +14,7 @@ app = FastHTTP(
     security: bool = True,
     lifespan: Callable = None,
     middleware: list = [],
+    base_url: str = None,
     get_request: dict = {},
     post_request: dict = {},
     put_request: dict = {},
@@ -32,7 +33,23 @@ app = FastHTTP(
 | `security` | `bool` | `True` | Включить безопасность |
 | `lifespan` | `Callable` | `None` | Обработчик запуска/завершения |
 | `middleware` | `list` | `[]` | Список middleware |
+| `base_url` | `str` | `None` | Базовый URL для декораторов и роутеров |
 | `get_request` | `dict` | `{}` | Настройки GET |
+| `post_request` | `dict` | `{}` | Настройки POST |
+| `put_request` | `dict` | `{}` | Настройки PUT |
+| `patch_request` | `dict` | `{}` | Настройки PATCH |
+| `delete_request` | `dict` | `{}` | Настройки DELETE |
+
+**Использование base_url:**
+
+```python
+app = FastHTTP(base_url="https://api.example.com")
+
+@app.get("/users")      # → https://api.example.com/users
+@app.post("/users")     # → https://api.example.com/users
+
+@app.get("https://other.com/api")  # → https://other.com/api (абсолютный URL)
+```
 
 ## Методы
 
