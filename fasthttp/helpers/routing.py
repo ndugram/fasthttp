@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 from urllib.parse import urljoin
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def check_annotated_parameters(*, func: Callable[..., object]) -> None:
