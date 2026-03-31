@@ -239,7 +239,7 @@ class HTTPClient:
         config: dict,
         response: httpx.Response
     ) -> Response:
-        return Response(
+        resp = Response(
             status=response.status_code,
             text=response.text,
             headers=dict(response.headers),
@@ -249,6 +249,8 @@ class HTTPClient:
             req_json=route.json,
             req_data=route.data,
         )
+        resp._set_url(route.url)
+        return resp
 
     async def _process_handler_result(
         self,
@@ -334,6 +336,7 @@ class HTTPClient:
                 headers={},
                 method=route.method,
             )
+            empty_response._set_url(route.url)
             handler_result = await route.handler(empty_response)
             return await self._process_handler_result(
                 empty_response,
