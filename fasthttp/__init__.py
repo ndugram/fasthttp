@@ -1,3 +1,5 @@
+import status as status
+
 from .__meta__ import __version__
 from .app import FastHTTP
 from .dependencies import Depends
@@ -11,5 +13,6 @@ __all__ = (
     "FastHTTP",
     "MiddlewareManager",
     "Router",
+    "status"
     "__version__"
 )
