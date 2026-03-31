@@ -18,6 +18,22 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             --color-text-gray: #9f9f9f;
             --color-gray: #f4f4f4;
             --color-white: #ffffff;
+            --bg-primary: #f4f4f4;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e1e1e;
+            --text-secondary: #9f9f9f;
+            --border-color: #e0e0e0;
+        }
+
+        [data-theme="dark"] {
+            --color-gray: #1a1a1a;
+            --color-total-black: #f4f4f4;
+            --color-text-gray: #9f9f9f;
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --text-primary: #f4f4f4;
+            --text-secondary: #9f9f9f;
+            --border-color: #333333;
         }
 
         *, *::before, *::after {
@@ -27,19 +43,20 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
         }
 
         html {
-            background-color: var(--color-gray);
+            background-color: var(--bg-primary);
             -webkit-text-size-adjust: 100%;
         }
 
         body {
-            background-color: var(--color-gray);
-            color: var(--color-total-black);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             font-family: var(--font-urbanist), var(--font-manrope), system-ui, sans-serif;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             line-height: 1.5;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
@@ -70,12 +87,13 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             left: 0;
             width: 35%;
             height: 100%;
-            background: var(--color-white);
+            background: var(--bg-secondary);
             border-top-left-radius: 16px;
             border-bottom-left-radius: 28px;
             transform: skewX(-14deg);
             transform-origin: bottom left;
             z-index: 1;
+            transition: background-color 0.3s ease;
         }
 
         .header-bg-right {
@@ -84,9 +102,10 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             right: 0;
             width: 85%;
             height: 100%;
-            background: var(--color-white);
+            background: var(--bg-secondary);
             border-radius: 16px;
             z-index: 0;
+            transition: background-color 0.3s ease;
         }
 
         .logo {
@@ -98,6 +117,8 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             font-size: 20px;
             font-weight: 600;
             letter-spacing: -0.02em;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
         }
 
         .logo span {
@@ -117,7 +138,7 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             padding: 8px 16px;
             font-size: 14px;
             font-weight: 600;
-            color: var(--color-total-black);
+            color: var(--text-primary);
             text-decoration: none;
             background: rgba(46, 115, 255, 0.1);
             border-radius: 10px;
@@ -127,6 +148,39 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
         .nav a:hover {
             background: rgba(46, 115, 255, 0.2);
         }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 10;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(46, 115, 255, 0.1);
+        }
+
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-primary);
+            transition: fill 0.3s ease;
+        }
+
+        .theme-toggle .sun-icon { display: none; }
+        .theme-toggle .moon-icon { display: block; }
+
+        [data-theme="dark"] .theme-toggle .sun-icon { display: block; }
+        [data-theme="dark"] .theme-toggle .moon-icon { display: none; }
 
         /* Main */
         main {
@@ -145,11 +199,12 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             justify-content: center;
             align-items: center;
             padding: 60px 40px;
-            background: var(--color-white);
+            background: var(--bg-secondary);
             border-radius: 24px;
             text-align: center;
             max-width: 600px;
             width: 100%;
+            transition: background-color 0.3s ease;
         }
 
         .error-code {
@@ -169,14 +224,17 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             letter-spacing: -0.02em;
             line-height: 1.1;
             margin-bottom: 12px;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
         }
 
         .subtitle {
-            color: var(--color-text-gray);
+            color: var(--text-secondary);
             font-size: 16px;
             max-width: 400px;
             line-height: 1.5;
             margin-bottom: 32px;
+            transition: color 0.3s ease;
         }
 
         .btn {
@@ -239,7 +297,62 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
                 width: 100%;
             }
         }
+
+        /* Footer */
+        .footer {
+            margin-top: auto;
+            padding: 24px 0;
+            width: 100%;
+        }
+
+        .footer-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .footer-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .footer-link:hover {
+            background: var(--color-brand-blue);
+            color: var(--color-white);
+            transform: translateY(-2px);
+        }
+
+        .footer-link svg {
+            width: 22px;
+            height: 22px;
+        }
     </style>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+
+            window.toggleTheme = function() {
+                const current = document.documentElement.getAttribute('data-theme');
+                const next = current === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('theme', next);
+            };
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
@@ -251,6 +364,15 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
                 <a href="__FASTHTTP_DOCS_URL__">__FASTHTTP_DOCS_URL__</a>
                 <a href="__FASTHTTP_OPENAPI_URL__">__FASTHTTP_OPENAPI_URL__</a>
             </nav>
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                <svg class="moon-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                </svg>
+                <svg class="sun-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="5"/>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+            </button>
         </header>
     </div>
 
@@ -265,6 +387,16 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             </div>
         </div>
     </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <a href="https://github.com/ndugram/fasthttp" class="footer-link" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                </svg>
+            </a>
+        </div>
+    </footer>
 </body>
 </html>
 """
@@ -288,9 +420,53 @@ SWAGGER_HTML = """<!DOCTYPE html>
     <style>
         body { margin: 0; padding: 0; }
         .topbar { display: none; }
+        .swagger-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 12px 20px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            gap: 12px;
+        }
+        .swagger-links {
+            display: flex;
+            gap: 8px;
+            margin-right: auto;
+        }
+        .swagger-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #f4f4f4;
+            color: #1e1e1e;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .swagger-link:hover {
+            background: #2e73ff;
+            color: #fff;
+        }
+        .swagger-link svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
     </style>
 </head>
 <body>
+    <div class="swagger-header">
+        <div class="swagger-links">
+            <a href="https://github.com/ndugram/fasthttp" class="swagger-link" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                </svg>
+            </a>
+        </div>
+    </div>
     <div id="swagger-ui"></div>
     <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui-bundle.js" charset="UTF-8"></script>
     <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
