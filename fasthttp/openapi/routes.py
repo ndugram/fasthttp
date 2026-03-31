@@ -7,7 +7,7 @@ import httpx
 from annotated_doc import Doc
 
 from fasthttp.response import Response
-
+from fasthttp import status
 from .generator import generate_openapi_schema
 from .swagger import get_swagger_html, get_not_found_html
 from .urls import build_docs_urls
@@ -38,7 +38,7 @@ async def handle_docs(
         request_url=urls["request_url"],
     )
     return Response(
-        status=200,
+        status=status.HTTP_200_OK,
         text=html,
         headers={"Content-Type": "text/html"},
     )
@@ -64,7 +64,7 @@ async def handle_openapi_json(
     schema = generate_openapi_schema(app, server_url=urls["request_url"])
     json_str = json.dumps(schema, indent=2, ensure_ascii=False)
     return Response(
-        status=200,
+        status=status.HTTP_200_OK,
         text=json_str,
         headers={"Content-Type": "application/json"},
     )
@@ -92,7 +92,7 @@ async def handle_not_found(
         openapi_url=urls["openapi_url"],
     )
     return Response(
-        status=404,
+        status=status.HTTP_404_NOT_FOUND,
         text=html,
         headers={"Content-Type": "text/html"},
     )
@@ -127,7 +127,7 @@ async def handle_request(
 
     if not url:
         return Response(
-            status=400,
+            status=status.HTTP_400_BAD_REQUEST,
             text=json.dumps({"error": "URL is required"}),
             headers={"Content-Type": "application/json"},
         )
@@ -160,26 +160,26 @@ async def handle_request(
                 pass
 
             return Response(
-                status=200,
+                status=status.HTTP_200_OK,
                 text=json.dumps(result, indent=2, ensure_ascii=False),
                 headers={"Content-Type": "application/json"},
             )
 
     except httpx.ConnectError as e:
         return Response(
-            status=502,
+            status=status.HTTP_502_BAD_GATEWAY,
             text=json.dumps({"error": f"Connection error: {str(e)}"}),
             headers={"Content-Type": "application/json"},
         )
     except httpx.TimeoutException as e:
         return Response(
-            status=504,
+            status=status.HTTP_504_GATEWAY_TIMEOUT,
             text=json.dumps({"error": f"Timeout: {str(e)}"}),
             headers={"Content-Type": "application/json"},
         )
     except Exception as e:
         return Response(
-            status=500,
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             text=json.dumps({"error": f"Request failed: {str(e)}"}),
             headers={"Content-Type": "application/json"},
         )
