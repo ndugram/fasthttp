@@ -21,5 +21,5 @@ jobs:
       - name: Run Labeler
         uses: actions/labeler@v6
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.GH_TOKEN }}
           configuration-path: .github/labeler.yml
