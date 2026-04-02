@@ -220,7 +220,7 @@ class TestFastHTTPApp:
         """Test that missing return annotation raises TypeError."""
         app = FastHTTP()
 
-        with pytest.raises(TypeError, match="must explicitlydefine return type"):
+        with pytest.raises(TypeError, match="must explicitly define return type"):
             @app.get(url="https://example.com/api")
             async def handler(resp: Response):  # Missing return annotation
                 return {}
