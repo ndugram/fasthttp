@@ -267,6 +267,75 @@ clear             # clear screen
 exit              # exit REPL
 ```
 
+## Running Application Files
+
+FastHTTP CLI provides two commands to run your application files directly.
+
+### Run Mode — Execute Requests
+
+Run your FastHTTP app in request mode. Executes all registered HTTP requests and displays results:
+
+```bash
+fasthttp run main.py
+```
+
+With tag filtering:
+
+```bash
+fasthttp run main.py --tags api,users
+```
+
+Enable debug mode:
+
+```bash
+fasthttp run main.py --debug
+```
+
+Options:
+- `-t, --tags` — Run only routes with specific tags (comma-separated)
+- `-d, --debug` — Enable debug mode
+
+### Dev Mode — Development Server
+
+Run your FastHTTP app with an interactive Swagger UI for testing requests:
+
+```bash
+fasthttp dev main.py
+```
+
+With custom host and port:
+
+```bash
+fasthttp dev main.py --host 0.0.0.0 --port 3000
+```
+
+With base URL for documentation:
+
+```bash
+fasthttp dev main.py --base-url /api
+```
+
+Enable debug mode:
+
+```bash
+fasthttp dev main.py --debug
+```
+
+Options:
+- `-h, --host` — Host to bind the server to (default: 127.0.0.1)
+- `-p, --port` — Port to bind the server to (default: 8000)
+- `-b, --base-url` — Base URL prefix for documentation endpoints
+- `-d, --debug` — Enable debug mode
+
+Example output:
+
+```
+▲ FastHTTP dev server
+➜  Server:   http://127.0.0.1:8000
+➜  Docs:     http://127.0.0.1:8000/docs
+─────────────────────────────────
+```
+
 ## See Also
 
 - [Quick Start](quick-start.md) — basics
