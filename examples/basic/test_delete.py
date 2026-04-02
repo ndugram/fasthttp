@@ -9,5 +9,4 @@ async def test_delete(resp: Response) -> int:
     return resp.status
 
 
-if __name__ == "__main__":
-    app.run()
+
