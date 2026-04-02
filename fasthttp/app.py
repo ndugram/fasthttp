@@ -11,8 +11,13 @@ import httpx
 from annotated_doc import Doc
 
 from .client import HTTPClient
-from .helpers.routing import apply_base_url, check_annotated_parameters, check_annotated_return, check_https_url
 from .graphql.client import create_graphql_client
+from .helpers.route_inspect import (
+    check_annotated_parameters,
+    check_annotated_return,
+    validate_handler,
+)
+from .helpers.routing import apply_base_url, check_https_url
 from .logging import setup_logger
 from .middleware import BaseMiddleware, MiddlewareManager
 from .openapi.generator import generate_openapi_schema
@@ -469,8 +474,7 @@ class FastHTTP:
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
-            self._check_annotated_parameters(func=func)
-            self._check_annotated_func(func=func)
+            validate_handler(func=func)
 
             self.routes.append(
                 Route(
@@ -795,8 +799,7 @@ class FastHTTP:
         ```
         """
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
-            self._check_annotated_parameters(func=func)
-            self._check_annotated_func(func=func)
+            validate_handler(func=func)
 
             async def graphql_handler(response: Response) -> object:
                 from inspect import iscoroutinefunction
