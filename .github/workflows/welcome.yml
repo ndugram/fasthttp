@@ -1,13 +1,10 @@
 name: Welcome Bot
 
 on:
-  issues:
-    types: [opened]
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
 
 permissions:
-  issues: write
   pull-requests: write
 
 jobs:
@@ -17,31 +14,46 @@ jobs:
       - name: Welcome contributor
         uses: actions/github-script@v8
         with:
-          token: ${{ secrets.GH_TOKEN }}
           script: |
-            const { issue, pull_request, sender } = context.payload;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prNumber = context.payload.pull_request.number;
+            const sender = context.payload.sender.login;
+            const marker = '<!-- welcome-bot -->';
             
-            let message;
+            const message = `${marker}
+👋 # Thanks for your contribution, @${sender}!
+
+Please make sure:
+- Code is clean and formatted
+- Tests are passing
+- PR description is clear
+
+Maintainers will review it soon.
+`;
             
-            if (issue) {
-              // Issue opened
-              message = `👋 **Thanks @${sender.login}** for opening this issue! 🎉\n\nWe'll review it soon. Please make sure to:\n- Use a descriptive title\n- Include steps to reproduce if it's a bug\n- Check existing issues before creating a new one\n\nLooking forward to your contribution! ❤️`;
-              
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: prNumber
+            });
+            
+            const existingComment = comments.find(comment => 
+              comment.body.includes(marker)
+            );
+            
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
                 body: message
               });
-              
-            } else if (pull_request) {
-              // PR opened
-              message = `👋 **Thanks @${sender.login}** for this contribution! 🚀\n\nWe're excited to review your PR.\n\n💡 **Tips:**\n- Keep your PR focused and atomic\n- Add tests if applicable\n- Update docs if needed\n\nHappy coding! ✨`;
-              
+            } else {
               await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pull_request.number,
+                owner,
+                repo,
+                issue_number: prNumber,
                 body: message
               });
             }
