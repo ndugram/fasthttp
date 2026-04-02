@@ -7,10 +7,9 @@ from typing import Annotated, Literal
 from annotated_doc import Doc
 from pydantic import BaseModel
 
-from .helpers.routing import check_annotated_parameters as _check_annotated_parameters
-from .helpers.routing import check_annotated_return as _check_annotated_func
 from .helpers.routing import join_prefix as _join_prefix
 from .helpers.routing import resolve_url as _resolve_url
+from .helpers.route_inspect import validate_handler
 
 
 class Route:
@@ -414,8 +413,7 @@ class Router:
         is called.
         """
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
-            _check_annotated_parameters(func=func)
-            _check_annotated_func(func=func)
+            validate_handler(func=func)
 
             self._route_defs.append(
                 _RouteDef(
