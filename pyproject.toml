@@ -68,6 +68,9 @@ dev = [
     "ruff>=0.14.14",
     "mypy>=1.13.0",
     "pre-commit>=4.0.0",
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+    "pymdown-extensions>=10.2",
 ]
 
 [project.scripts]

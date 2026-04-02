@@ -1,50 +1,6 @@
 from __future__ import annotations
 
-import inspect
-from typing import TYPE_CHECKING
 from urllib.parse import urljoin
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
-
-def check_annotated_parameters(*, func: Callable[..., object]) -> None:
-    """
-    Validate that all function parameters have type annotations.
-
-    Args:
-        func: Target function to validate.
-
-    Raises:
-        TypeError: If any parameter does not have a type annotation.
-    """
-    sig = inspect.signature(func)
-    for name, param in sig.parameters.items():
-        if param.annotation is inspect.Parameter.empty:
-            msg = (
-                f"Parameter '{name}' in function '{func.__name__}'"
-                "must have a type annotation"
-            )
-            raise TypeError(msg)
-
-
-def check_annotated_return(*, func: Callable[..., object]) -> None:
-    """
-    Validate that a function has an explicit return type annotation.
-
-    Args:
-        func: Target function to validate.
-
-    Raises:
-        TypeError: If the function does not have a return type annotation.
-    """
-    sig = inspect.signature(func)
-    if sig.return_annotation is inspect.Signature.empty:
-        msg = (
-            f"Function '{func.__name__}' must explicitly"
-            "define return type annotation"
-        )
-        raise TypeError(msg)
 
 
 def check_https_url(*, url: str) -> str:
@@ -149,8 +105,6 @@ def apply_base_url(*, url: str, base_url: str | None) -> str:
 
 __all__ = (
     "apply_base_url",
-    "check_annotated_parameters",
-    "check_annotated_return",
     "check_https_url",
     "join_prefix",
     "resolve_url",

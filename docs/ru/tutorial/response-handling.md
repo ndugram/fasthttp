@@ -52,6 +52,28 @@ text = resp.text  # Возвращает str
 sent = resp.req_json()  # Возвращает {"name": "John"}
 ```
 
+### assets()
+
+Извлекает URL-адреса CSS и JavaScript ресурсов из HTML-страницы:
+
+```python
+# Получить все ресурсы
+result = resp.assets()
+# Returns: {"css": [...], "js": [...]}
+
+# Только CSS
+css_only = resp.assets(js=False)
+
+# Только JS
+js_only = resp.assets(css=False)
+```
+
+Метод парсит:
+- CSS: теги `<link rel="stylesheet" href="...">`
+- JS: теги `<script src="...">`
+
+Все ссылки нормализуются относительно URL запроса.
+
 ## Обработка ошибок
 
 FastHTTP автоматически обрабатывает ошибки:

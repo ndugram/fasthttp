@@ -61,6 +61,28 @@ Returns request body as text:
 sent = resp.req_text()  # Returns "raw data"
 ```
 
+### assets()
+
+Extracts CSS and JavaScript asset URLs from HTML page:
+
+```python
+# Get all assets
+result = resp.assets()
+# Returns: {"css": [...], "js": [...]}
+
+# CSS only
+css_only = resp.assets(js=False)
+
+# JS only
+js_only = resp.assets(css=False)
+```
+
+The method parses:
+- CSS: `<link rel="stylesheet" href="...">` tags
+- JS: `<script src="...">` tags
+
+All URLs are normalized relative to the request URL.
+
 ## Error Handling
 
 FastHTTP automatically handles errors and logs them:

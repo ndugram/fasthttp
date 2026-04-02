@@ -1,7 +1,30 @@
+from __future__ import annotations
+
 import json
+import re
 from typing import Annotated, Any
+from urllib.parse import urljoin
 
 from annotated_doc import Doc
+
+
+def extract_assets(html: str, base_url: str) -> dict:
+    css_pattern = re.compile(
+        r'<link[^>]+rel=["\']stylesheet["\'][^>]+href=["\']([^"\']+)["\']',
+        re.IGNORECASE
+    )
+    js_pattern = re.compile(
+        r'<script[^>]+src=["\']([^"\']+)["\']',
+        re.IGNORECASE
+    )
+
+    css_links = [urljoin(base_url, href) for href in css_pattern.findall(html)]
+    js_links = [urljoin(base_url, src) for src in js_pattern.findall(html)]
+
+    return {
+        "css": css_links,
+        "js": js_links
+    }
 
 
 class Response:
@@ -116,6 +139,14 @@ class Response:
         self._query = query
         self._req_json = req_json
         self._req_data = req_data
+        self._url: str | None = None
+
+    def _set_url(self, url: str | None) -> None:
+        self._url = url
+
+    @property
+    def url(self) -> str | None:
+        return self._url
 
     @property
     def method(
@@ -244,6 +275,20 @@ class Response:
         if self._req_data is not None:
             return str(self._req_data)
         return None
+
+    def assets(
+        self,
+        *,
+        css: bool = True,
+        js: bool = True
+    ) -> dict[str, list[str]]:
+        base_url = self._url if self._url else ""
+        result = extract_assets(self.text, base_url)
+        if not css:
+            result["css"] = []
+        if not js:
+            result["js"] = []
+        return result
 
     def __repr__(self) -> str:
         """
