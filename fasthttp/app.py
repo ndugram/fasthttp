@@ -874,24 +874,29 @@ class FastHTTP:
                 elapsed,
             )
 
-            handler_result = getattr(result, "_handler_result", None)
-            if route.response_model and handler_result is not None:
-                if get_origin(route.response_model) is list:
-                    item_model = get_args(route.response_model)[0]
-                    handler_result = [
-                        item_model.model_validate(item)
-                        for item in handler_result
-                    ]
-                else:
-                    handler_result = route.response_model.model_validate(
-                        handler_result
-                    )
-
-                self.logger.debug("[RESULT] %s", handler_result)
-            elif handler_result is not None:
-                self.logger.debug("[RESULT] %s", handler_result)
-            elif result.text:
-                self.logger.debug("[RESULT] %s", result.text)
+            if route.response_model:
+                json_data = result.json()
+                if json_data is not None:
+                    if get_origin(route.response_model) is list:
+                        item_model = get_args(route.response_model)[0]
+                        validated = [
+                            item_model.model_validate(item)
+                            for item in json_data
+                        ]
+                    else:
+                        validated = route.response_model.model_validate(
+                            json_data
+                        )
+                    result._handler_result = validated
+                    self.logger.debug("[RESULT] %s", validated)
+                elif result.text:
+                    self.logger.debug("[RESULT] %s", result.text)
+            else:
+                handler_result = getattr(result, "_handler_result", None)
+                if handler_result is not None:
+                    self.logger.debug("[RESULT] %s", handler_result)
+                elif result.text:
+                    self.logger.debug("[RESULT] %s", result.text)
         else:
             self.logger.error(
                 "✖️ %-6s %-30s ERR %6.2fms",
@@ -1207,6 +1212,24 @@ class ASGIApp:
             "body": html.encode("utf-8"),
         })
 
+    def _normalize_url(self, url: str) -> str:
+        """Normalize URL for matching."""
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        return f"{parsed.netloc}{parsed.path}"
+
+    def _find_route(self, url: str, method: str) -> Route | None:
+        """Find matching route by URL and method."""
+        normalized_url = self._normalize_url(url)
+        for route in self.fasthttp.routes:
+            route_normalized = self._normalize_url(route.url)
+            if route.method.upper() == method.upper():
+                if route_normalized == normalized_url:
+                    return route
+                if route_normalized in normalized_url or normalized_url in route_normalized:
+                    return route
+        return None
+
     async def _handle_proxy(
         self,
         send: Callable[..., Any],
@@ -1230,6 +1253,8 @@ class ASGIApp:
             if not url:
                 await self._send_json(send, {"error": "URL is required"})
                 return
+
+            route = self._find_route(url, real_method)
 
             async with httpx.AsyncClient(
                 proxy=self.fasthttp.proxy,
@@ -1255,9 +1280,27 @@ class ASGIApp:
                 }
 
                 try:
-                    result["json"] = response.json()
-                except Exception:
-                    pass
+                    json_data = response.json()
+                    if route and route.response_model:
+                        if get_origin(route.response_model) is list:
+                            item_model = get_args(route.response_model)[0]
+                            validated = [
+                                item_model.model_validate(item)
+                                for item in json_data
+                            ]
+                            result["json"] = [
+                                item.model_dump() for item in validated
+                            ]
+                        else:
+                            validated = route.response_model.model_validate(
+                                json_data
+                            )
+                            result["json"] = validated.model_dump()
+                        result["body"] = json.dumps(result["json"], ensure_ascii=False)
+                    else:
+                        result["json"] = json_data
+                except Exception as e:
+                    print(f"DEBUG: validation error={e}")
 
                 await self._send_json(send, result)
 
