@@ -22,7 +22,7 @@ jobs:
             const marker = '<!-- welcome-bot -->';
             
             const message = `${marker}
-👋 # Thanks for your contribution, @${sender}!
+👋 Thanks for your contribution, @${sender}!
 
 Please make sure:
 - Code is clean and formatted

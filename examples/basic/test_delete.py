@@ -1,13 +1,16 @@
 from fasthttp import FastHTTP
 from fasthttp.response import Response
+from pydantic import BaseModel
 
-app = FastHTTP()
+class TestSwagger(BaseModel):
+    origin: str
+
+app = FastHTTP(debug=True)
 
 
-@app.delete(url="https://httpbin.org/delete")
+@app.delete("httpbin.org/delete", response_model=TestSwagger)
 async def test_delete(resp: Response) -> int:
     return resp.status
 
 
-if __name__ == "__main__":
-    app.run()
+

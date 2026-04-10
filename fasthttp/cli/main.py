@@ -3,6 +3,7 @@ import typer
 from fasthttp.__meta__ import __version__
 from fasthttp.cli.commands import app as commands_app
 from fasthttp.cli.output import formatter
+from fasthttp.cli.run import run_app
 
 app = typer.Typer(
     name="fasthttp",
@@ -38,5 +39,6 @@ def callback(ctx: typer.Context) -> None:
 
 
 app.add_typer(commands_app, name="")
+app.add_typer(run_app, name="")
 
 __all__ = ("app",)
