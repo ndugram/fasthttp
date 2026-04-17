@@ -117,7 +117,7 @@ class ResponseProtection:
                 text = content.decode("utf-8", errors="ignore")
                 xss_check = self.detect_xss(text)
                 if xss_check[0]:
-                    return xss_check
+                    return False, xss_check[1]
             except Exception:
                 pass
 
