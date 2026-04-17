@@ -16,7 +16,7 @@ FastHTTP GUI is a cross-platform desktop application built with [Tauri](https://
 === "Linux"
 
     ```bash
-    curl -fsSL https://fasthttp.ndugram.dev/install.sh | bash
+    curl -fsSL https://raw.githubusercontent.com/ndugram/fasthttp/master/docs/install.sh | bash
     ```
 
     The script downloads the latest `.AppImage`, makes it executable and places it in `~/.local/bin/fasthttp-gui`.
@@ -30,7 +30,7 @@ FastHTTP GUI is a cross-platform desktop application built with [Tauri](https://
 === "macOS"
 
     ```bash
-    curl -fsSL https://fasthttp.ndugram.dev/install.sh | bash
+    curl -fsSL https://raw.githubusercontent.com/ndugram/fasthttp/master/docs/install.sh | bash
     ```
 
     The script downloads the `.dmg`, mounts it and copies the `.app` to `/Applications`.
@@ -38,7 +38,7 @@ FastHTTP GUI is a cross-platform desktop application built with [Tauri](https://
 === "Windows (PowerShell)"
 
     ```powershell
-    irm https://fasthttp.ndugram.dev/install.ps1 | iex
+    irm https://raw.githubusercontent.com/ndugram/fasthttp/master/docs/install.ps1 | iex
     ```
 
     The script downloads and silently runs the `.msi` installer.
@@ -46,7 +46,7 @@ FastHTTP GUI is a cross-platform desktop application built with [Tauri](https://
 === "Windows (Git Bash)"
 
     ```bash
-    curl -fsSL https://fasthttp.ndugram.dev/install.sh | bash
+    curl -fsSL https://raw.githubusercontent.com/ndugram/fasthttp/master/docs/install.sh | bash
     ```
 
 ## Manual Download
