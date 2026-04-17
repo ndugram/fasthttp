@@ -229,7 +229,7 @@ class Response:
     ]:
         return {}
 
-    def json(self) -> dict[str, Any]:
+    def json(self) -> Any:
         """
         Parse the response body as JSON.
 

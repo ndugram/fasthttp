@@ -53,7 +53,7 @@ class Security:
         return self._signer._secret_key
 
     async def pre_request(self, url: str, method: str) -> None:
-        self._ssrf.validate_request(url)
+        await self._ssrf.validate_request(url)
 
         if not self._limits.validate_url_length(url):
             raise SecurityError(f"URL too long: {len(url)} chars")

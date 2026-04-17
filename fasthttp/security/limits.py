@@ -19,7 +19,11 @@ class Limits:
         config: LimitsConfig | None = None
     ) -> None:
         self._config = config or LimitsConfig()
-        self._semaphore: asyncio.Semaphore | None = None
+        self._semaphore: asyncio.Semaphore | None = (
+            asyncio.Semaphore(self._config.max_concurrent_requests)
+            if self._config.max_concurrent_requests > 0
+            else None
+        )
         self._last_request_time = 0.0
         self._cooldown_lock = asyncio.Lock()
 
@@ -47,11 +51,7 @@ class Limits:
         return len(url) <= self._config.max_url_length
 
     async def acquire(self) -> None:
-        if self._config.max_concurrent_requests > 0:
-            if not self._semaphore:
-                self._semaphore = asyncio.Semaphore(
-                    self._config.max_concurrent_requests
-                )
+        if self._semaphore:
             await self._semaphore.acquire()
 
     def release(self) -> None:

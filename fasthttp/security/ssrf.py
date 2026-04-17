@@ -1,3 +1,4 @@
+import asyncio
 import ipaddress
 import socket
 from urllib.parse import urlparse
@@ -41,7 +42,7 @@ class SSRFProtection:
     def __init__(self):
         self._dns_cache = {}
 
-    def check_url(self, url: str) -> bool:
+    async def check_url(self, url: str) -> bool:
         parsed = urlparse(url)
         hostname = parsed.hostname
 
@@ -60,7 +61,7 @@ class SSRFProtection:
             return False
 
         try:
-            ip_str = socket.gethostbyname(hostname)
+            ip_str = await asyncio.to_thread(socket.gethostbyname, hostname)
             ip = ipaddress.ip_address(ip_str)
 
             if ip.is_loopback:
@@ -83,8 +84,8 @@ class SSRFProtection:
 
         return True
 
-    def validate_request(self, url: str) -> None:
-        if not self.check_url(url):
+    async def validate_request(self, url: str) -> None:
+        if not await self.check_url(url):
             raise SSRFBlockedError(f"SSRF protection blocked request to: {url}")
 
 
