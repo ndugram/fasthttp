@@ -10,7 +10,7 @@ exclude = ["/tests", "/docs", "/examples"]
 
 [project]
 name = "fasthttp-client"
-version = "1.2.4"
+version = "1.2.5"
 description = "Fast and simple HTTP client library with async support and beautiful logging"
 readme = "README.md"
 license = {text = "MIT"}
