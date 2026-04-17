@@ -126,6 +126,7 @@ nav:
       - en/reference/middleware.md
       - en/reference/dependencies.md
       - en/reference/cli.md
+    - GUI App: en/gui.md
     - About:
       - en/about/index.md
   - Russian:
@@ -185,6 +186,7 @@ nav:
       - ru/reference/middleware.md
       - ru/reference/dependencies.md
       - ru/reference/cli.md
+    - GUI App: ru/gui.md
     - About:
       - ru/about/index.md
 
