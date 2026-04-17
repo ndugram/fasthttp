@@ -520,7 +520,6 @@ class CacheMiddleware(BaseMiddleware):
         self.cache_methods = cache_methods or ["GET"]
         self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
         self._lock = asyncio.Lock()
-        self._cached_response: Response | None = None
 
     def _generate_key(self, route: "Route") -> str:
         key_data = f"{route.method}:{route.url}:{json.dumps(route.params or {}, sort_keys=True)}"
@@ -551,7 +550,7 @@ class CacheMiddleware(BaseMiddleware):
 
                 if time.time() < entry.expires_at:
                     self._cache.move_to_end(key)
-                    self._cached_response = entry.response
+                    config["_cache_hit"] = entry.response
                     return config
                 del self._cache[key]
 
@@ -578,9 +577,8 @@ class CacheMiddleware(BaseMiddleware):
         if route.method not in self.cache_methods:
             return response
 
-        if self._cached_response is not None:
-            cached = self._cached_response
-            self._cached_response = None
+        cached = config.get("_cache_hit")
+        if cached is not None:
             return cached
 
         key = self._generate_key(route)
