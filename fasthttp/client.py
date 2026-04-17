@@ -108,6 +108,7 @@ class HTTPClient:
             return False
 
     async def _prepare_config(self, route: Route, config: dict) -> dict:
+        config = dict(config)
         headers = dict(config.get("headers") or {})
         headers.setdefault("User-Agent", f"fasthttp/{__version__}")
 
