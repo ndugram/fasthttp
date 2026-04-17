@@ -350,8 +350,15 @@ class FastHTTP:
         self.secret_key = secret_key or secrets.token_bytes(32)
         self.security = Security(secret_key=self.secret_key) if security else None
         self.startup_uuid = None
-        if self.generate_startup_uuid and self.startup_uuid_version == "v4":
-            self.startup_uuid = str(uuid.uuid4())
+        if self.generate_startup_uuid:
+            if self.startup_uuid_version == "v7":
+                import sys
+                if sys.version_info >= (3, 13):
+                    self.startup_uuid = str(uuid.uuid7())
+                else:
+                    self.startup_uuid = str(uuid.uuid4())
+            else:
+                self.startup_uuid = str(uuid.uuid4())
 
         self.client = HTTPClient(
             self.request_configs,
@@ -875,7 +882,10 @@ class FastHTTP:
             )
 
             if route.response_model:
-                json_data = result.json()
+                try:
+                    json_data = result.json()
+                except Exception:
+                    json_data = None
                 if json_data is not None:
                     if get_origin(route.response_model) is list:
                         item_model = get_args(route.response_model)[0]
@@ -1223,11 +1233,8 @@ class ASGIApp:
         normalized_url = self._normalize_url(url)
         for route in self.fasthttp.routes:
             route_normalized = self._normalize_url(route.url)
-            if route.method.upper() == method.upper():
-                if route_normalized == normalized_url:
-                    return route
-                if route_normalized in normalized_url or normalized_url in route_normalized:
-                    return route
+            if route.method.upper() == method.upper() and route_normalized == normalized_url:
+                return route
         return None
 
     async def _handle_proxy(
@@ -1300,7 +1307,7 @@ class ASGIApp:
                     else:
                         result["json"] = json_data
                 except Exception as e:
-                    print(f"DEBUG: validation error={e}")
+                    self.fasthttp.logger.debug("validation error=%s", e)
 
                 await self._send_json(send, result)
 
