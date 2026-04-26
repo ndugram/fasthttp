@@ -170,3 +170,114 @@ class TestResponse:
         """Test that handler result is stored in response."""
         sample_response._handler_result = "processed result"
         assert sample_response._handler_result == "processed result"
+
+
+class TestResponseUrl:
+    def test_url_initially_none(self):
+        r = Response(status=200, text="", headers={})
+        assert r.url is None
+
+    def test_set_url(self):
+        r = Response(status=200, text="", headers={})
+        r._set_url("https://example.com/path")
+        assert r.url == "https://example.com/path"
+
+    def test_set_url_overwrites(self):
+        r = Response(status=200, text="", headers={})
+        r._set_url("https://first.com")
+        r._set_url("https://second.com")
+        assert r.url == "https://second.com"
+
+    def test_set_url_none(self):
+        r = Response(status=200, text="", headers={})
+        r._set_url("https://example.com")
+        r._set_url(None)
+        assert r.url is None
+
+
+class TestResponseAssets:
+    def test_assets_returns_dict_with_css_and_js(self):
+        r = Response(status=200, text="<html></html>", headers={})
+        result = r.assets()
+        assert "css" in result
+        assert "js" in result
+
+    def test_assets_extracts_css_links(self):
+        html = '<link rel="stylesheet" href="/style.css">'
+        r = Response(status=200, text=html, headers={})
+        r._set_url("https://example.com")
+        result = r.assets()
+        assert any("style.css" in link for link in result["css"])
+
+    def test_assets_extracts_js_links(self):
+        html = '<script src="/app.js"></script>'
+        r = Response(status=200, text=html, headers={})
+        r._set_url("https://example.com")
+        result = r.assets()
+        assert any("app.js" in link for link in result["js"])
+
+    def test_assets_css_false_returns_empty_css(self):
+        html = '<link rel="stylesheet" href="/style.css">'
+        r = Response(status=200, text=html, headers={})
+        result = r.assets(css=False)
+        assert result["css"] == []
+
+    def test_assets_js_false_returns_empty_js(self):
+        html = '<script src="/app.js"></script>'
+        r = Response(status=200, text=html, headers={})
+        result = r.assets(js=False)
+        assert result["js"] == []
+
+    def test_assets_empty_html_returns_empty_lists(self):
+        r = Response(status=200, text="<html><body></body></html>", headers={})
+        result = r.assets()
+        assert result["css"] == []
+        assert result["js"] == []
+
+
+class TestResponseReqText:
+    def test_req_text_json_priority_over_data(self):
+        r = Response(
+            status=200, text="", headers={},
+            req_json={"x": 1}, req_data="ignored"
+        )
+        result = r.req_text()
+        assert result == '{"x": 1}'
+
+    def test_req_text_data_when_no_json(self):
+        r = Response(status=200, text="", headers={}, req_data="raw text")
+        result = r.req_text()
+        assert "raw text" in result
+
+    def test_req_text_bytes_data(self):
+        r = Response(status=200, text="", headers={}, req_data=b"bytes")
+        result = r.req_text()
+        assert result is not None
+
+
+class TestResponseDefaults:
+    def test_method_default_none(self):
+        r = Response(status=200, text="", headers={})
+        assert r.method is None
+
+    def test_req_headers_default_none(self):
+        r = Response(status=200, text="", headers={})
+        assert r.req_headers is None
+
+    def test_query_default_none(self):
+        r = Response(status=200, text="", headers={})
+        assert r.query is None
+
+    def test_handler_result_default_none(self):
+        r = Response(status=200, text="", headers={})
+        assert r._handler_result is None
+
+    def test_path_params_always_empty_dict(self):
+        r = Response(status=200, text="", headers={}, method="GET")
+        assert r.path_params == {}
+        assert isinstance(r.path_params, dict)
+
+    def test_repr_format(self):
+        for status in [200, 201, 400, 404, 500]:
+            r = Response(status=status, text="", headers={})
+            assert repr(r) == f"<Response [{status}]>"
