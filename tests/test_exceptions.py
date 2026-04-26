@@ -128,3 +128,162 @@ class TestLogSuccess:
         # Just verify it doesn't crash
         log_success("http://example.com", "GET", 200, 100.0)
         assert True
+
+
+class TestFastHTTPErrorBase:
+    def test_is_exception_subclass(self):
+        assert issubclass(FastHTTPError, Exception)
+
+    def test_str_contains_message(self):
+        err = FastHTTPError("something broke")
+        assert "something broke" in str(err)
+
+    def test_str_contains_url(self):
+        err = FastHTTPError("oops", url="https://x.com")
+        assert "https://x.com" in str(err)
+
+    def test_str_contains_method(self):
+        err = FastHTTPError("oops", method="DELETE")
+        assert "DELETE" in str(err)
+
+    def test_str_contains_status(self):
+        err = FastHTTPError("oops", status_code=503)
+        assert "503" in str(err)
+
+    def test_details_default_empty_dict(self):
+        err = FastHTTPError("oops")
+        assert err.details == {}
+
+    def test_details_stored(self):
+        err = FastHTTPError("oops", details={"key": "val"})
+        assert err.details["key"] == "val"
+
+    def test_details_none_becomes_empty(self):
+        err = FastHTTPError("oops", details=None)
+        assert err.details == {}
+
+    def test_str_contains_details(self):
+        err = FastHTTPError("oops", details={"foo": "bar"})
+        assert "foo" in str(err)
+
+    def test_log_does_not_raise(self):
+        err = FastHTTPError("oops", url="u", method="GET", status_code=500)
+        err.log()
+
+    def test_log_with_custom_level(self):
+        err = FastHTTPError("oops")
+        err.log(level=logging.WARNING)
+
+    def test_can_be_raised_and_caught(self):
+        with pytest.raises(FastHTTPError):
+            raise FastHTTPError("test raise")
+
+
+class TestFastHTTPBadStatusErrorExtended:
+    def test_default_message_no_status(self):
+        err = FastHTTPBadStatusError()
+        assert err.message == "Bad status"
+
+    def test_short_body_not_truncated(self):
+        err = FastHTTPBadStatusError(response_body="short")
+        assert err.details["body_preview"] == "short"
+
+    def test_exactly_100_chars_not_truncated(self):
+        body = "x" * 100
+        err = FastHTTPBadStatusError(response_body=body)
+        assert err.details["body_preview"] == body
+        assert not err.details["body_preview"].endswith("...")
+
+    def test_101_chars_truncated(self):
+        body = "x" * 101
+        err = FastHTTPBadStatusError(response_body=body)
+        assert err.details["body_preview"].endswith("...")
+
+    def test_is_subclass_of_base(self):
+        assert issubclass(FastHTTPBadStatusError, FastHTTPError)
+
+    def test_can_be_raised(self):
+        with pytest.raises(FastHTTPBadStatusError):
+            raise FastHTTPBadStatusError(status_code=404)
+
+
+class TestFastHTTPTimeoutErrorExtended:
+    def test_default_message(self):
+        err = FastHTTPTimeoutError()
+        assert err.message == "Request timed out"
+
+    def test_no_timeout_no_details(self):
+        err = FastHTTPTimeoutError()
+        assert "timeout" not in err.details
+
+    def test_timeout_stored_in_details(self):
+        err = FastHTTPTimeoutError(timeout=30)
+        assert err.details["timeout"] == 30
+
+    def test_is_subclass_of_base(self):
+        assert issubclass(FastHTTPTimeoutError, FastHTTPError)
+
+
+class TestFastHTTPConnectionErrorExtended:
+    def test_default_message(self):
+        err = FastHTTPConnectionError()
+        assert err.message == "Connection failed"
+
+    def test_is_subclass_of_base(self):
+        assert issubclass(FastHTTPConnectionError, FastHTTPError)
+
+    def test_can_be_raised(self):
+        with pytest.raises(FastHTTPConnectionError):
+            raise FastHTTPConnectionError(url="https://x.com")
+
+
+class TestFastHTTPValidationErrorExtended:
+    def test_default_message(self):
+        err = FastHTTPValidationError()
+        assert err.message == "Validation failed"
+
+    def test_is_subclass_of_base(self):
+        assert issubclass(FastHTTPValidationError, FastHTTPError)
+
+
+class TestFastHTTPRequestErrorExtended:
+    def test_is_subclass_of_base(self):
+        assert issubclass(FastHTTPRequestError, FastHTTPError)
+
+    def test_can_be_raised(self):
+        with pytest.raises(FastHTTPRequestError):
+            raise FastHTTPRequestError("bad request")
+
+
+class TestColorize:
+    def test_colorize_returns_string(self):
+        result = colorize("hello", "red")
+        assert isinstance(result, str)
+
+    def test_colorize_contains_original_text(self):
+        result = colorize("world", "blue")
+        assert "world" in result
+
+    def test_colorize_contains_reset(self):
+        result = colorize("text", "green")
+        assert "\033[0m" in result
+
+    def test_colorize_unknown_color_no_crash(self):
+        result = colorize("text", "purple_unicorn")
+        assert "text" in result
+
+
+class TestHandleError:
+    def test_handle_error_raises_by_default(self):
+        err = FastHTTPError("boom")
+        with pytest.raises(FastHTTPError):
+            handle_error(err)
+
+    def test_handle_error_no_raise(self):
+        err = FastHTTPError("boom")
+        handle_error(err, raise_it=False)
+
+    def test_handle_error_raises_correct_type(self):
+        err = FastHTTPBadStatusError(status_code=500)
+        with pytest.raises(FastHTTPBadStatusError):
+            handle_error(err)
