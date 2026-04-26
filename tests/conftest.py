@@ -60,6 +60,6 @@ def http_client(mock_logger, request_configs) -> HTTPClient:
 
 
 @pytest.fixture
-def middleware_manager(mock_logger) -> MM:
+def middleware_manager() -> MM:
     """Create a MiddlewareManager instance for testing."""
-    return MM(logger=mock_logger)
+    return MM()
