@@ -9,6 +9,8 @@ from fasthttp.exceptions import (
     FastHTTPValidationError,
     log_success,
 )
+from fasthttp.exceptions.base import FastHTTPError
+from fasthttp.exceptions.types import colorize, handle_error
 
 
 class TestExceptions:
