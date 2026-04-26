@@ -422,6 +422,85 @@ app = FastHTTP(http2=True)
 
 Servers that don't support HTTP/2 fall back to HTTP/1.1 automatically.
 
+## CLI
+
+FastHTTP ships with a command-line client. After installation, the `fasthttp` command is available globally.
+
+### Quick HTTP requests
+
+```console
+$ fasthttp get https://httpbin.org/get json
+$ fasthttp post https://httpbin.org/post json -j '{"name": "alice"}'
+$ fasthttp delete https://httpbin.org/delete status
+```
+
+Output format is the last positional argument: `status` · `headers` · `json` · `text` · `all`
+
+```console
+$ fasthttp get https://httpbin.org/get all
+Status: 200
+Elapsed: 312.45ms
+Headers:
+{ ... }
+Body:
+{ ... }
+```
+
+Pass headers, timeout, and proxy via options:
+
+```console
+$ fasthttp get https://api.example.com/users json \
+    -H "Authorization:Bearer token,Accept:application/json" \
+    --timeout 10 \
+    --proxy http://proxy.example.com:8080
+```
+
+### Run your app from CLI
+
+Execute all registered routes in a `main.py` without calling `python main.py`:
+
+```console
+$ fasthttp run main.py
+```
+
+Start the dev server with Swagger UI:
+
+```console
+$ fasthttp dev main.py
+$ fasthttp dev main.py --host 0.0.0.0 --port 9000
+```
+
+### GraphQL
+
+```console
+$ fasthttp graphql https://countries.trevorblades.com/graphql \
+    -q "{ countries { name code } }" \
+    json
+```
+
+### Interactive REPL
+
+```console
+$ fasthttp repl
+```
+
+Or just `fasthttp` with no arguments — drops you into the interactive shell.
+
+### Command reference
+
+| Command | Description |
+|---|---|
+| `fasthttp get <url> [output]` | GET request |
+| `fasthttp post <url> [output]` | POST request |
+| `fasthttp put <url> [output]` | PUT request |
+| `fasthttp patch <url> [output]` | PATCH request |
+| `fasthttp delete <url> [output]` | DELETE request |
+| `fasthttp graphql <url> -q <query>` | GraphQL query or mutation |
+| `fasthttp run <file.py>` | Run all routes from a file |
+| `fasthttp dev <file.py>` | Start dev server with Swagger UI |
+| `fasthttp repl` | Interactive REPL |
+| `fasthttp version` | Show version |
+
 ## Contributing
 
 Contributions are welcome! Please read the <a href="https://github.com/ndugram/fasthttp/blob/master/CONTRIBUTING.md" target="_blank">Contributing Guide</a> before opening a pull request.
