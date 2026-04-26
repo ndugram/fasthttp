@@ -33,3 +33,9 @@ config:
           - '.ruff*'
           - '.editorconfig'
           - '.pre-commit-config.yaml'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pyproject.toml'
+          - 'uv.lock'
