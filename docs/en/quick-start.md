@@ -169,6 +169,20 @@ async def patch_user(resp: Response):
 async def delete_user(resp: Response):
     """Delete user."""
     return resp.status
+
+
+# HEAD — check endpoint headers
+@app.head(url="https://api.example.com/users")
+async def check_users(resp: Response):
+    """Check if endpoint exists."""
+    return resp.status
+
+
+# OPTIONS — get allowed methods
+@app.options(url="https://api.example.com/users")
+async def allowed_methods(resp: Response):
+    """Get allowed HTTP methods."""
+    return {"allow": resp.headers.get("allow", "")}
 ```
 
 ## Request Parameters

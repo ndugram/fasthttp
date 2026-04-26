@@ -38,6 +38,8 @@ app = FastHTTP(
 | `put_request` | `dict` | `{}` | PUT settings |
 | `patch_request` | `dict` | `{}` | PATCH settings |
 | `delete_request` | `dict` | `{}` | DELETE settings |
+| `head_request` | `dict` | `{}` | HEAD settings |
+| `options_request` | `dict` | `{}` | OPTIONS settings |
 | `middleware` | `list` | `[]` | Middleware list |
 | `security` | `bool` | `True` | Enable built-in security |
 | `lifespan` | `Callable` | `None` | Context manager for startup/shutdown |
@@ -189,7 +191,34 @@ async def lifespan(app):
     response_model: type = None,
     request_model: type = None,
     responses: dict = None,
-    delete_request: dict = None,
+)
+```
+
+### @app.head()
+
+```python
+@app.head(
+    url: str,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    request_model: type = None,
+    responses: dict = None,
+)
+```
+
+### @app.options()
+
+```python
+@app.options(
+    url: str,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    request_model: type = None,
+    responses: dict = None,
 )
 ```
 
@@ -481,7 +510,7 @@ The Route object represents a registered HTTP request. It contains all informati
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `method` | `str` | HTTP method (GET, POST, PUT, PATCH, DELETE) |
+| `method` | `str` | HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS) |
 | `url` | `str` | Full URL of the request |
 | `params` | `dict` | Query parameters |
 | `json` | `dict` | JSON body sent with request |

@@ -38,7 +38,7 @@ Key features:
 - **Simple** — define HTTP requests as decorated async functions, no boilerplate.
 - **Typed** — full type annotations throughout; validate responses with <a href="https://docs.pydantic.dev/" target="_blank">Pydantic</a> models.
 - **Logged** — colorful, structured request/response logs with timing, built-in.
-- **Complete** — GET, POST, PUT, PATCH, DELETE, and GraphQL out of the box.
+- **Complete** — GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, and GraphQL out of the box.
 - **Extensible** — middleware, dependency injection, routers, lifespan hooks.
 - **Interactive** — built-in Swagger UI via `app.web_run()` to browse and execute requests in the browser.
 - **HTTP/2** — optional HTTP/2 support, with automatic fallback to HTTP/1.1.
@@ -220,9 +220,24 @@ async def put_data(resp: Response) -> dict:
     return resp.json()
 
 
+@app.patch(url="https://httpbin.org/patch")
+async def patch_data(resp: Response) -> dict:
+    return resp.json()
+
+
 @app.delete(url="https://httpbin.org/delete")
 async def delete_data(resp: Response) -> int:
     return resp.status_code
+
+
+@app.head(url="https://httpbin.org/get")
+async def head_data(resp: Response) -> int:
+    return resp.status
+
+
+@app.options(url="https://httpbin.org/get")
+async def options_data(resp: Response) -> dict:
+    return {"allow": resp.headers.get("allow", "")}
 
 
 if __name__ == "__main__":

@@ -291,8 +291,5 @@ class Response:
         return result
 
     def __repr__(self) -> str:
-        """
-                Return a debug-friendly string representation
-        of the response.
-        """
+        """Return a debug-friendly string representation of the response."""
         return f"<Response [{self.status}]>"

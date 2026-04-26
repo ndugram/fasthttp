@@ -781,7 +781,7 @@ class TestHTTPMethod:
     def test_http_method_count(self):
         from fasthttp.types import HTTPMethod
         from typing import get_args
-        assert len(get_args(HTTPMethod)) == 5
+        assert len(get_args(HTTPMethod)) == 7
 
 
 # ---------------------------------------------------------------------------

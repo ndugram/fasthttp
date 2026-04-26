@@ -21,6 +21,8 @@ app = FastHTTP(
     put_request: dict = {},
     patch_request: dict = {},
     delete_request: dict = {},
+    head_request: dict = {},
+    options_request: dict = {},
     middleware: list = [],
     security: bool = True,
     lifespan: Callable = None,
@@ -38,6 +40,8 @@ app = FastHTTP(
 | `put_request` | `dict` | `{}` | Настройки для PUT |
 | `patch_request` | `dict` | `{}` | Настройки для PATCH |
 | `delete_request` | `dict` | `{}` | Настройки для DELETE |
+| `head_request` | `dict` | `{}` | Настройки для HEAD |
+| `options_request` | `dict` | `{}` | Настройки для OPTIONS |
 | `middleware` | `list` | `[]` | Список middleware |
 | `security` | `bool` | `True` | Включить встроенную защиту |
 | `lifespan` | `Callable` | `None` | Контекстный менеджер для startup/shutdown |
@@ -189,7 +193,34 @@ async def lifespan(app):
     response_model: type = None,
     request_model: type = None,
     responses: dict = None,
-    delete_request: dict = None,
+)
+```
+
+### @app.head()
+
+```python
+@app.head(
+    url: str,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    request_model: type = None,
+    responses: dict = None,
+)
+```
+
+### @app.options()
+
+```python
+@app.options(
+    url: str,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    request_model: type = None,
+    responses: dict = None,
 )
 ```
 

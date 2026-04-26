@@ -27,15 +27,15 @@ class Route:
         self,
         *,
         method: Annotated[
-            Literal["GET", "POST", "PUT", "PATCH", "DELETE"],
+            Literal["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
             Doc(
                 """
                 HTTP method for the request.
 
                 Determines how the request will be sent to the server.
 
-                Suppoeted methods are:
-                GET, POST, PUT, PATCH, DELETE.
+                Supported methods are:
+                GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS.
                 """
             ),
         ],
@@ -57,7 +57,7 @@ class Route:
                 """
                 Response handler function.
 
-                This asyncfunction will be called with a Response object
+                This async function will be called with a Response object
                 and can return:
                 - str
                 - Response
@@ -215,7 +215,7 @@ class _RouteDef:
     Stored before URL/prefix/base_url resolution.
     """
 
-    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"]
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
     url: str
     handler: Callable[..., object]
     params: dict | None
@@ -394,7 +394,7 @@ class Router:
     def _add_route(
         self,
         *,
-        method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"],
+        method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
         url: str,
         params: dict | None = None,
         json: dict | None = None,
@@ -676,6 +676,94 @@ class Router:
             url=url,
             json=json,
             data=data,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            responses=responses,
+        )
+
+    def head(
+        self,
+        url: Annotated[
+            str,
+            Doc("Route URL or path for the HEAD request."),
+        ],
+        *,
+        params: Annotated[
+            dict | None,
+            Doc("Query parameters for the HEAD request."),
+        ] = None,
+        response_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating the handler result."),
+        ] = None,
+        request_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating request data."),
+        ] = None,
+        tags: Annotated[
+            list[str] | None,
+            Doc("Optional tags for grouping and filtering the route."),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc("Optional dependencies executed before the request."),
+        ] = None,
+        responses: Annotated[
+            dict[int, dict[Literal["model"], type[BaseModel]]] | None,
+            Doc("Optional response models for error status codes."),
+        ] = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """Decorator for registering a HEAD route on the router."""
+        return self._add_route(
+            method="HEAD",
+            url=url,
+            params=params,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            responses=responses,
+        )
+
+    def options(
+        self,
+        url: Annotated[
+            str,
+            Doc("Route URL or path for the OPTIONS request."),
+        ],
+        *,
+        params: Annotated[
+            dict | None,
+            Doc("Query parameters for the OPTIONS request."),
+        ] = None,
+        response_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating the handler result."),
+        ] = None,
+        request_model: Annotated[
+            type[BaseModel] | None,
+            Doc("Optional Pydantic model for validating request data."),
+        ] = None,
+        tags: Annotated[
+            list[str] | None,
+            Doc("Optional tags for grouping and filtering the route."),
+        ] = None,
+        dependencies: Annotated[
+            list | None,
+            Doc("Optional dependencies executed before the request."),
+        ] = None,
+        responses: Annotated[
+            dict[int, dict[Literal["model"], type[BaseModel]]] | None,
+            Doc("Optional response models for error status codes."),
+        ] = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """Decorator for registering an OPTIONS route on the router."""
+        return self._add_route(
+            method="OPTIONS",
+            url=url,
+            params=params,
             response_model=response_model,
             request_model=request_model,
             tags=tags,

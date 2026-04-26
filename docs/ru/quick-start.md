@@ -170,6 +170,20 @@ async def patch_user(resp: Response):
 async def delete_user(resp: Response):
     """Удалить пользователя."""
     return resp.status
+
+
+# HEAD — проверка заголовков endpoint'а
+@app.head(url="https://api.example.com/users")
+async def check_users(resp: Response):
+    """Проверить существование endpoint'а."""
+    return resp.status
+
+
+# OPTIONS — получение разрешённых методов
+@app.options(url="https://api.example.com/users")
+async def allowed_methods(resp: Response):
+    """Получить разрешённые HTTP-методы."""
+    return {"allow": resp.headers.get("allow", "")}
 ```
 
 ## Параметры запроса

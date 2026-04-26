@@ -8,7 +8,7 @@ The tutorial is divided into several sections:
 
 ### Getting Started
 - [First Steps](first-steps.md) - Installation and basic concepts
-- [HTTP Methods](http-methods.md) - GET, POST, PUT, PATCH, DELETE
+- [HTTP Methods](http-methods.md) - GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
 - [Request Parameters](request-parameters.md) - Query, JSON, headers
 - [Response Handling](response-handling.md) - Working with responses
 

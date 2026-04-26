@@ -57,6 +57,26 @@ async def delete_user(resp: Response) -> dict:
     return resp.status
 ```
 
+## HEAD - Check Endpoint
+
+Returns only headers, no body. Useful for checking if a resource exists or inspecting metadata.
+
+```python
+@app.head(url="https://api.example.com/users")
+async def check_users(resp: Response) -> int:
+    return resp.status
+```
+
+## OPTIONS - Allowed Methods
+
+Returns the HTTP methods supported by the endpoint.
+
+```python
+@app.options(url="https://api.example.com/users")
+async def allowed_methods(resp: Response) -> dict:
+    return {"allow": resp.headers.get("allow", "")}
+```
+
 ## Decorator Parameters
 
 | Parameter | Description |

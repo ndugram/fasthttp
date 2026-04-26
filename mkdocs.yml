@@ -12,15 +12,15 @@ theme:
         name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: deep orange
-      accent: orange
+      primary: custom
+      accent: custom
       toggle:
         icon: material/lightbulb
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: deep orange
-      accent: orange
+      primary: custom
+      accent: custom
       toggle:
         icon: material/lightbulb-outline
         name: Switch to system preference
@@ -51,6 +51,9 @@ theme:
 
 repo_name: ndugram/fasthttp
 repo_url: https://github.com/ndugram/fasthttp
+extra_css:
+  - stylesheets/extra.css
+
 plugins:
   - search
 markdown_extensions:

@@ -88,7 +88,7 @@ def my_dependency_sync(route, config):
 Объект `route` содержит всю информацию о запросе:
 
 ```python
-route.method      # HTTP метод: "GET", "POST", "PUT", "PATCH", "DELETE"
+route.method      # HTTP метод: "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"
 route.url         # Полный URL запроса
 route.params      # Query параметры (словарь)
 route.json        # JSON тело запроса (словарь)
