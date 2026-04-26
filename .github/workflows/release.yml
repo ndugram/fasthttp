@@ -72,7 +72,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.version }}
-          name: v${{ env.version }}
+          name: ${{ env.version }}
           generate_release_notes: true
           draft: false
           prerelease: false
