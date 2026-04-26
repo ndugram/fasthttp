@@ -45,7 +45,7 @@ class FastHTTP:
     web frameworks like FastAPI, but for outgoing requests.
 
     The application manages:
-    - Request routing via decorators (GET, POST, PUT, PATCH, DELETE)
+    - Request routing via decorators (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS)
     - Per-method default request configuration
     - Async request execution
     - Structured and colorized logging
@@ -80,7 +80,7 @@ class FastHTTP:
                 """
                 Enable debug mode.
 
-                When enabled, FastHTTP will print datailed
+                When enabled, FastHTTP will print detailed
                 tracebacks and requests/response logs.
                 """
             ),
@@ -153,8 +153,6 @@ class FastHTTP:
                 RequestsOptinal | None,
                 Doc(
                     """
-               # Create the app
-
                Default configuration for PATCH requests.
 
                Used to configure headers, timeout and
@@ -170,8 +168,34 @@ class FastHTTP:
                     """
                 Default configuration for DELETE requests.
 
-                Allows defining haders, timeout,
+                Allows defining headers, timeout,
                 and other options for DELETE requests.
+                """
+                ),
+            ]
+        ) = None,
+        head_request: (
+            Annotated[
+                RequestsOptinal | None,
+                Doc(
+                    """
+                Default configuration for HEAD requests.
+
+                Allows defining headers, timeout,
+                and other options for HEAD requests.
+                """
+                ),
+            ]
+        ) = None,
+        options_request: (
+            Annotated[
+                RequestsOptinal | None,
+                Doc(
+                    """
+                Default configuration for OPTIONS requests.
+
+                Allows defining headers, timeout,
+                and other options for OPTIONS requests.
                 """
                 ),
             ]
@@ -182,7 +206,7 @@ class FastHTTP:
                 """
                 Enable built-in security features.
 
-                When enabled (default), FastHTTP automatically against:
+                When enabled (default), FastHTTP automatically protects against:
                 - SSRF attacks (blocking localhost and private IPs)
                 - Secret leakage in logs
                 - Circuit breaker for failed hosts
@@ -272,7 +296,7 @@ class FastHTTP:
             Doc(
                 """
                 The version of UUID to generate on startup if `generate_startup_uuid` is True.
-                Supported versions: 'v4' (random UUID), 'v7' (time-based UUID with random component, requires Python 3.12+).
+                Supported versions: 'v4' (random UUID), 'v7' (time-based UUID with random component, requires Python 3.13+).
                 **Example**
                 ```python
                 from fashttp import FastHTTP
@@ -346,6 +370,8 @@ class FastHTTP:
             "PUT": put_request or {},
             "PATCH": patch_request or {},
             "DELETE": delete_request or {},
+            "HEAD": head_request or {},
+            "OPTIONS": options_request or {},
         }
 
         self.security_enabled = security
@@ -471,7 +497,7 @@ class FastHTTP:
     def _add_route(
         self,
         *,
-        method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"],
+        method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
         url: str,
         params: dict | None = None,
         json: dict | None = None,
@@ -709,6 +735,50 @@ class FastHTTP:
             url=url,
             json=json,
             data=data,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            responses=responses,
+        )
+
+    def head(
+        self,
+        url: str,
+        *,
+        params: dict | None = None,
+        response_model: type[BaseModel] | None = None,
+        request_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
+        dependencies: list | None = None,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        return self._add_route(
+            method="HEAD",
+            url=url,
+            params=params,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            responses=responses,
+        )
+
+    def options(
+        self,
+        url: str,
+        *,
+        params: dict | None = None,
+        response_model: type[BaseModel] | None = None,
+        request_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
+        dependencies: list | None = None,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        return self._add_route(
+            method="OPTIONS",
+            url=url,
+            params=params,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
