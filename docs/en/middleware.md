@@ -1,16 +1,23 @@
 # Middleware
 
-Middleware allows adding global logic that will be executed for all requests.
+Middleware lets you intercept and modify every request and response through `FastHTTP` — without changing handler code.
 
-## Introduction
+## What middleware can do
 
-Middleware in FastHTTP works similarly to middleware in FastAPI, but is designed for outgoing requests. It allows:
+- Automatically add authorization headers
+- Log all requests and responses
+- Add timing and tracing headers
+- Retry requests on specific response codes
+- Transform response data
 
-- Modifying requests before sending
-- Modifying responses after receiving
-- Handling errors
-- Adding logging
-- Adding authentication
+## How it works
+
+```
+request  →  mw1.request → mw2.request → mw3.request → [HTTP]
+response ←  mw1.response ← mw2.response ← mw3.response ← [HTTP]
+```
+
+Middleware executes in `__priority__` order on the way in and in **reverse order** on the way out.
 
 ## Creating Middleware
 
@@ -23,44 +30,44 @@ from fasthttp.response import Response
 
 
 class MyMiddleware(BaseMiddleware):
-    async def before_request(self, route, config):
-        """Executed before each request."""
-        # Modify config
-        config.setdefault("headers", {})["X-Custom"] = "value"
-        return config
+    __return_type__ = None
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
 
-    async def after_response(self, response, route, config):
-        """Executed after each response."""
-        # Modify response
+    async def request(self, method, url, kwargs):
+        kwargs["headers"] = kwargs.get("headers") or {}
+        kwargs["headers"]["X-Custom"] = "value"
+        return kwargs
+
+    async def response(self, response):
         return response
 
     async def on_error(self, error, route, config):
-        """Executed on error."""
         print(f"Error: {error}")
-        raise error
 ```
 
-## Using Middleware
+## Attaching to the app
 
-```python
-from fasthttp import FastHTTP
+=== "List"
 
-app = FastHTTP(middleware=MyMiddleware())
-```
+    ```python
+    app = FastHTTP(middleware=[AuthMiddleware(), LoggingMiddleware()])
+    ```
 
-### Multiple Middleware
+=== "Pipe"
 
-Execution order — first added executes first:
+    ```python
+    app = FastHTTP(middleware=AuthMiddleware() | LoggingMiddleware())
+    ```
 
-```python
-app = FastHTTP(middleware=[
-    AuthMiddleware(),
-    LoggingMiddleware(),
-    MetricsMiddleware(),
-])
-```
+=== "Single"
 
-## Middleware Examples
+    ```python
+    app = FastHTTP(middleware=MyMiddleware())
+    ```
+
+## Examples
 
 ### Authentication
 
@@ -70,14 +77,18 @@ from fasthttp.middleware import BaseMiddleware
 
 
 class AuthMiddleware(BaseMiddleware):
+    __return_type__ = bool
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
+
     def __init__(self, token: str):
         self.token = token
 
-    async def before_request(self, route, config):
-        headers = config.get("headers", {})
-        headers["Authorization"] = f"Bearer {self.token}"
-        config["headers"] = headers
-        return config
+    async def request(self, method, url, kwargs):
+        kwargs["headers"] = kwargs.get("headers") or {}
+        kwargs["headers"]["Authorization"] = f"Bearer {self.token}"
+        return kwargs
 
 
 app = FastHTTP(middleware=[AuthMiddleware(token="your-token")])
@@ -92,12 +103,15 @@ from fasthttp.middleware import BaseMiddleware
 
 
 class TraceMiddleware(BaseMiddleware):
-    async def before_request(self, route, config):
-        trace_id = str(uuid.uuid4())
-        headers = config.get("headers", {})
-        headers["X-Trace-ID"] = trace_id
-        config["headers"] = headers
-        return config
+    __return_type__ = None
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
+
+    async def request(self, method, url, kwargs):
+        kwargs["headers"] = kwargs.get("headers") or {}
+        kwargs["headers"]["X-Trace-ID"] = str(uuid.uuid4())
+        return kwargs
 
 
 app = FastHTTP(middleware=[TraceMiddleware()])
@@ -107,20 +121,28 @@ app = FastHTTP(middleware=[TraceMiddleware()])
 
 ```python
 import time
+from contextvars import ContextVar
 from fasthttp import FastHTTP
 from fasthttp.middleware import BaseMiddleware
 
 
 class LoggingMiddleware(BaseMiddleware):
-    async def before_request(self, route, config):
-        print(f"🚀 Sending: {route.method} {route.url}")
-        config["_start_time"] = time.time()
-        return config
+    __return_type__ = None
+    __priority__ = 99
+    __methods__ = None
+    __enabled__ = True
 
-    async def after_response(self, response, route, config):
-        start_time = config.get("_start_time", 0)
-        duration = time.time() - start_time
-        print(f"✅ Response: {route.method} {route.url} - {response.status} ({duration:.2f}s)")
+    def __init__(self) -> None:
+        self._start: ContextVar[float] = ContextVar("log_start", default=0.0)
+
+    async def request(self, method, url, kwargs):
+        print(f"→ {method} {url}")
+        self._start.set(time.monotonic())
+        return kwargs
+
+    async def response(self, response):
+        elapsed = time.monotonic() - self._start.get()
+        print(f"← {response.status} ({elapsed:.2f}s)")
         return response
 
 
@@ -129,55 +151,19 @@ app = FastHTTP(middleware=[LoggingMiddleware()])
 
 ### Caching
 
-FastHTTP comes with built-in CacheMiddleware:
+FastHTTP comes with built-in `CacheMiddleware`:
 
 ```python
 from fasthttp import FastHTTP, CacheMiddleware
 
-app = FastHTTP(middleware=[
-    CacheMiddleware(ttl=3600, max_size=100)  # TTL in seconds, max cache size
-])
+app = FastHTTP(
+    middleware=[CacheMiddleware(ttl=3600, max_size=100)]
+)
 ```
 
-Caches GET requests in memory.
+Caches GET requests in memory with LRU eviction.
 
-### Rate Limiting
-
-```python
-import time
-from collections import defaultdict
-from fasthttp import FastHTTP
-from fasthttp.middleware import BaseMiddleware
-
-
-class RateLimitMiddleware(BaseMiddleware):
-    def __init__(self, max_requests: int = 10, window: int = 60):
-        self.max_requests = max_requests
-        self.window = window
-        self.requests = defaultdict(list)
-
-    async def before_request(self, route, config):
-        now = time.time()
-        host = config.get("headers", {}).get("Host", "default")
-        
-        # Clean old requests
-        self.requests[host] = [
-            t for t in self.requests[host] 
-            if now - t < self.window
-        ]
-        
-        # Check limit
-        if len(self.requests[host]) >= self.max_requests:
-            raise Exception(f"Rate limit exceeded: {self.max_requests} requests per {self.window}s")
-        
-        self.requests[host].append(now)
-        return config
-
-
-app = FastHTTP(middleware=[RateLimitMiddleware(max_requests=10, window=60)])
-```
-
-### Response Modification
+### Response modification
 
 ```python
 from fasthttp import FastHTTP
@@ -185,8 +171,12 @@ from fasthttp.middleware import BaseMiddleware
 
 
 class ResponseModifierMiddleware(BaseMiddleware):
-    async def after_response(self, response, route, config):
-        # Add headers to response
+    __return_type__ = None
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
+
+    async def response(self, response):
         response.headers["X-Custom-Response"] = "value"
         return response
 
@@ -194,60 +184,38 @@ class ResponseModifierMiddleware(BaseMiddleware):
 app = FastHTTP(middleware=[ResponseModifierMiddleware()])
 ```
 
-## Middleware Lifecycle
+## Class attributes
 
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `__return_type__` | `type \| None` | Type this middleware operates on |
+| `__priority__` | `int` | Execution order — **lower runs first** |
+| `__methods__` | `list[str] \| None` | HTTP methods to intercept. `None` = all methods |
+| `__enabled__` | `bool` | `False` skips without removing from chain |
+
+## Runtime toggle
+
+```python
+debug = LoggingMiddleware()
+app = FastHTTP(middleware=[debug])
+
+debug.__enabled__ = False   # disable
+debug.__enabled__ = True    # re-enable
 ```
-before_request → [Send Request] → after_response
-                    or
-                 on_error
-```
-
-### before_request(route, config)
-
-Called before sending each request. Can modify `config`.
-
-**Parameters:**
-- `route` — route information
-- `config` — request configuration
-
-**Returns:** modified `config`
-
-### after_response(response, route, config)
-
-Called after receiving a response. Can modify `response`.
-
-**Parameters:**
-- `response` — response object
-- `route` — route information
-- `config` — request configuration
-
-**Returns:** modified `response`
-
-### on_error(error, route, config)
-
-Called when an error occurs.
-
-**Parameters:**
-- `error` — exception
-- `route` — route information
-- `config` — request configuration
-
-**Can:**
-- Handle error and return a value
-- Re-raise the error
 
 ## Comparison with Dependencies
 
 | Feature | Middleware | Dependencies |
 |---------|------------|--------------|
 | Global application | ✅ Yes | ❌ No |
-| Application to specific request | ❌ No | ✅ Yes |
+| Specific request | ❌ No | ✅ Yes |
 | Response modification | ✅ Yes | ❌ No |
 | Error handling | ✅ Yes | ❌ No |
 | Complexity | Higher | Lower |
 
-## See Also
+## See also
 
+- [Creating Middleware](tutorial/middleware/creating.md) — full API, pipe chaining
+- [Middleware Examples](tutorial/middleware/examples.md) — ready-made recipes
+- [Middleware Reference](reference/middleware.md) — class documentation
 - [Dependencies](dependencies.md) — for specific requests
-- [Configuration](configuration.md) — settings
-- [Quick Start](quick-start.md) — basics
