@@ -88,7 +88,7 @@ Both functions work the same way — the system automatically detects the functi
 The `route` object contains all information about the request:
 
 ```python
-route.method      # HTTP method: "GET", "POST", "PUT", "PATCH", "DELETE"
+route.method      # HTTP method: "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"
 route.url         # Full request URL
 route.params      # Query parameters (dictionary)
 route.json        # JSON request body (dictionary)
