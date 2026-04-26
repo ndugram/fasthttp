@@ -1,31 +1,40 @@
 import json
+from contextvars import ContextVar
 
 from fasthttp import FastHTTP
 from fasthttp.middleware import BaseMiddleware
 from fasthttp.response import Response
-from fasthttp.routing import Route
-from fasthttp.types import RequestsOptinal
 
 
 class ResponseTransformerMiddleware(BaseMiddleware):
-    async def after_response(
-        self, response: Response, route: Route, config: RequestsOptinal
-    ) -> Response:
+    __return_type__ = None
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
+
+    def __init__(self) -> None:
+        self._url: ContextVar[str] = ContextVar("transformer_url", default="")
+
+    async def request(self, method: str, url: str, kwargs: dict) -> dict:
+        self._url.set(url)
+        return kwargs
+
+    async def response(self, response: Response) -> Response:
         try:
             json_data = response.json()
 
             if isinstance(json_data, dict):
                 json_data["_metadata"] = {
                     "transformed_by": "ResponseTransformerMiddleware",
-                    "original_url": route.url,
+                    "original_url": self._url.get(),
                     "status_code": response.status,
                 }
 
             response.text = json.dumps(json_data)
-            print(f"🔄 Transformed response from {route.url}")
+            print(f"Transformed response from {self._url.get()}")
 
         except Exception as e:
-            print(f"⚠️  Could not transform response: {e}")
+            print(f"Could not transform response: {e}")
 
         return response
 
