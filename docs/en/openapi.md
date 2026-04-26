@@ -45,7 +45,7 @@ After running, open in your browser:
 ### Viewing Documentation
 
 All your HTTP requests are automatically displayed in Swagger UI with:
-- HTTP method (GET, POST, PUT, DELETE)
+- HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS)
 - URL address
 - Description from docstring
 - Request parameters
