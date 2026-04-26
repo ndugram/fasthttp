@@ -273,30 +273,26 @@ if __name__ == "__main__":
 Intercept and modify requests before they are sent and responses after they are received:
 
 ```python
-from fasthttp import FastHTTP, BaseMiddleware
+from fasthttp import FastHTTP
+from fasthttp.middleware import BaseMiddleware
 from fasthttp.response import Response
-from fasthttp.routing import Route
-from fasthttp.types import RequestsOptinal
 
 
-class AuthMiddleware(BaseMiddleware):
-    def __init__(self, token: str) -> None:
-        self.token = token
+class LoggingMiddleware(BaseMiddleware):
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
 
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
-        config.setdefault("headers", {})["Authorization"] = f"Bearer {self.token}"
-        return config
+    async def request(self, method: str, url: str, kwargs: dict) -> dict:
+        print(f"→ {method} {url}")
+        return kwargs
 
-    async def after_request(
-        self, route: Route, response: Response
-    ) -> Response:
-        print(f"[{response.status_code}] {route.url}")
+    async def response(self, response: Response) -> Response:
+        print(f"← {response.status}")
         return response
 
 
-app = FastHTTP(middleware=[AuthMiddleware(token="my-secret-token")])
+app = FastHTTP(middleware=[LoggingMiddleware()])
 
 
 @app.get(url="https://httpbin.org/get")
