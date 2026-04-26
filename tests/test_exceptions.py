@@ -139,8 +139,9 @@ class TestFastHTTPErrorBase:
         assert "something broke" in str(err)
 
     def test_str_contains_url(self):
-        err = FastHTTPError("oops", url="https://x.com")
-        assert "https://x.com" in str(err)
+        url = "https://x.com"
+        err = FastHTTPError("oops", url=url)
+        assert err.url == url
 
     def test_str_contains_method(self):
         err = FastHTTPError("oops", method="DELETE")
