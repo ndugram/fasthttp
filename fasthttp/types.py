@@ -1,4 +1,6 @@
-from typing import Annotated, TypeAlias, TypedDict
+from typing import Annotated, Literal, TypeAlias, TypedDict
+
+HTTPMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE"]
 
 from annotated_doc import Doc
 
