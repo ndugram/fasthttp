@@ -1,82 +1,147 @@
 # Middleware Reference
 
-Middleware classes reference.
-
 ## BaseMiddleware
 
-Base class for creating middleware:
+Base class for all middleware. Subclass and override `request` and/or `response`.
 
 ```python
 from fasthttp.middleware import BaseMiddleware
 
-
 class MyMiddleware(BaseMiddleware):
-    async def before_request(self, route, config):
-        return config
-    
-    async def after_response(self, response, route, config):
+    __return_type__ = None
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
+
+    async def request(self, method, url, kwargs):
+        return kwargs
+
+    async def response(self, response):
         return response
-    
+
     async def on_error(self, error, route, config):
-        raise error
+        pass
 ```
 
-## Methods
+### Class attributes
 
-### before_request(route, config)
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `__return_type__` | `type \| None` | Type this middleware operates on |
+| `__priority__` | `int` | Execution order (lower = earlier) |
+| `__methods__` | `list[str] \| None` | HTTP methods to apply to. `None` = all |
+| `__enabled__` | `bool` | `False` skips without removing from chain |
 
-Called before each request.
+### Methods
 
-**Parameters:**
-- `route` - Route information
-- `config` - Request configuration
+#### `request(method, url, kwargs) → dict`
 
-**Returns:** Modified config
+Called before the request is sent.
 
-### after_response(response, route, config)
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `method` | `str` | HTTP method (`"GET"`, `"POST"`, etc.) |
+| `url` | `str` | Resolved URL |
+| `kwargs` | `dict` | Request arguments: `headers`, `params`, `json`, `data`, `timeout` |
 
-Called after each response.
+**Returns:** modified `kwargs`.
 
-**Parameters:**
-- `response` - Response object
-- `route` - Route information
-- `config` - Request configuration
+#### `response(response) → Response`
 
-**Returns:** Modified response
+Called after the response is received. Called in **reverse** priority order.
 
-### on_error(error, route, config)
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `response` | `Response` | Response object |
 
-Called on error.
+**Returns:** modified `Response`.
 
-**Parameters:**
-- `error` - Exception
-- `route` - Route information
-- `config` - Request configuration
+#### `on_error(error, route, config) → None`
 
-**Can:** Handle or re-raise error
+Called on request error.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `error` | `Exception` | Exception |
+| `route` | `Route` | Route information |
+| `config` | `dict` | Request configuration |
+
+---
+
+## MiddlewareChain
+
+Ordered chain of middleware instances, created via the `|` operator.
+
+```python
+from fasthttp.middleware import MiddlewareChain
+
+chain = AuthMiddleware() | LoggingMiddleware() | TimingMiddleware()
+```
+
+Passed directly to `FastHTTP`:
+
+```python
+app = FastHTTP(middleware=chain)
+```
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `__or__(other)` | Appends middleware to end of chain |
+| `__iter__()` | Iterate over middleware |
+| `__len__()` | Number of middleware in chain |
+| `__repr__()` | String representation |
+
+---
+
+## MiddlewareManager
+
+Internal manager that drives chain execution. Accepts `list`, `MiddlewareChain`, or `None`.
+
+```python
+from fasthttp.middleware import MiddlewareManager
+
+manager = MiddlewareManager([AuthMiddleware(), LoggingMiddleware()])
+```
+
+Methods are called automatically by `HTTPClient`.
+
+---
 
 ## CacheMiddleware
 
-Built-in caching middleware:
+Built-in middleware for caching responses in memory.
 
 ```python
-from fasthttp import CacheMiddleware
+from fasthttp import FastHTTP, CacheMiddleware
 
 app = FastHTTP(
     middleware=[CacheMiddleware(ttl=3600, max_size=100)]
 )
 ```
 
-**Parameters:**
-- `ttl` - Cache time-to-live (seconds)
-- `max_size` - Maximum cached requests
+### Constructor parameters
 
-## MiddlewareManager
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `ttl` | `int` | `3600` | Cache time-to-live in seconds |
+| `max_size` | `int` | `100` | Maximum number of entries (LRU eviction) |
+| `cache_methods` | `list[str]` | `["GET"]` | HTTP methods to cache |
 
-Manages middleware execution:
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `clear()` | Clears all cached responses |
+| `get_stats()` | Returns cache statistics |
 
 ```python
-from fasthttp.middleware import MiddlewareManager
+cache = CacheMiddleware(ttl=60)
+app = FastHTTP(middleware=[cache])
 
-manager = MiddlewareManager([middleware1, middleware2])
+# later
+cache.clear()
+print(cache.get_stats())
+# {'size': 0, 'max_size': 100, 'ttl': 60, 'methods': ['GET']}
 ```
