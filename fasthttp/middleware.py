@@ -1,13 +1,20 @@
+from __future__ import annotations
+
 import asyncio
 import hashlib
 import json
 import time
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Annotated
+from contextvars import ContextVar
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar
 
 from annotated_doc import Doc
 
+from .types import HTTPMethod
+
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from .response import Response
     from .routing import Route
     from .types import RequestsOptinal
@@ -17,578 +24,93 @@ class BaseMiddleware:
     """
     Base class for middleware in FastHTTP.
 
-    Middleware allows you to hook into the request/response lifecycle
-    to add custom behavior such as logging, authentication, rate limiting,
-    request modification, response transformation, etc.
+    Override :meth:`request` and/or :meth:`response` to intercept requests
+    and responses. Override :meth:`on_error` to handle errors.
 
-    Override the methods you need in your middleware class:
+    Class attributes:
 
-    - `before_request()`: Called before sending the HTTP request
-    - `after_response()`: Called after receiving a successful response
-    - `on_error()`: Called when an error occurs during the request
+    - ``__return_type__``: expected type this middleware operates on.
+    - ``__priority__``: execution order — lower value runs first.
+    - ``__methods__``: HTTP methods to apply to (``None`` = all).
+    - ``__enabled__``: set to ``False`` to skip without removing from chain.
 
     Example:
     ```python
         from fasthttp.middleware import BaseMiddleware
 
         class LoggingMiddleware(BaseMiddleware):
-            async def before_request(self, route, config):
-                print(f"Requesting: {route.method} {route.url}")
+            __return_type__ = None
+            __priority__ = 0
+            __methods__ = None
+            __enabled__ = True
 
-            async def after_response(self, response, route, config):
-                print(f"Response: {response.status}")
+            async def request(self, method, url, kwargs):
+                print(f"→ {method} {url}")
+                return kwargs
+
+            async def response(self, response):
+                print(f"← {response.status}")
+                return response
 
         app = FastHTTP(middleware=[LoggingMiddleware()])
     ```
     """
 
-    async def before_request(
+    __return_type__: ClassVar[type | None]
+    __priority__: ClassVar[int]
+    __methods__: ClassVar[list[HTTPMethod] | None]
+    __enabled__: ClassVar[bool]
+
+    def __repr__(self) -> str:
+        return_type = getattr(self, "__return_type__", None)
+        return f"<{self.__class__.__name__} return_type={return_type}>"
+
+    def __or__(self, other: BaseMiddleware) -> MiddlewareChain:
+        """Combine two middleware into a :class:`MiddlewareChain` via ``|``."""
+        return MiddlewareChain([self, other])
+
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        super().__init_subclass__(**kwargs)
+
+    async def request(
         self,
-        route: Annotated[
-            "Route",
-            Doc(
-                """
-                The route being executed.
-
-                Contains information about the HTTP method,
-                URL, handler function, and optional request data
-                such as query parameters, JSON body, or raw data.
-                """
-            ),
+        method: Annotated[
+            str,
+            Doc("HTTP method (GET, POST, etc.)."),
         ],
-        config: Annotated[
-            "RequestsOptinal",
+        url: Annotated[
+            str,
+            Doc("Resolved request URL."),
+        ],
+        kwargs: Annotated[
+            dict[str, Any],
             Doc(
                 """
-                Request configuration dictionary.
+                Request keyword arguments (headers, params, json, data, timeout).
 
-                Contains optional settings for the HTTP request
-                including headers, timeout, and redirect behavior.
-                Modifications to this config will be applied to
-                the request before it is sent.
+                Modifications will be applied to the request before it is sent.
+                Always use ``kwargs.get('headers') or {}`` before adding header keys.
                 """
             ),
         ],
     ) -> Annotated[
-        "RequestsOptinal",
-        Doc(
-            """
-            Modified or original request configuration.
-
-            Return the config dict (possibly modified) to apply
-            changes to the request. Any changes to headers, timeout,
-            or redirect settings will be used when sending the request.
-            """
-        ),
+        dict[str, Any],
+        Doc("Modified or original kwargs dict passed to the next middleware or httpx."),
     ]:
-        """
-        Called before sending the HTTP request.
+        """Called before the HTTP request is sent."""
+        return kwargs
 
-        Use this hook to:
-        - Modify request headers
-        - Add authentication tokens
-        - Log outgoing requests
-        - Validate request parameters
-        - Apply rate limiting
-
-        The config dict is mutable and changes will affect the request.
-        """
-        return config
-
-    async def after_response(
+    async def response(
         self,
         response: Annotated[
             "Response",
-            Doc(
-                """
-                The HTTP response object.
-
-                Contains the response status code, text content,
-                headers, and methods for parsing JSON data.
-                """
-            ),
-        ],
-        route: Annotated[
-            "Route",
-            Doc(
-                """
-                The route that was executed.
-
-                Information about the request that generated this response,
-                including method, URL, handler, and request data.
-                """
-            ),
-        ],
-        config: Annotated[
-            "RequestsOptinal",
-            Doc(
-                """
-                Request configuration that was used.
-
-                The config dict that was applied to the request
-                before it was sent. Useful for logging or debugging.
-                """
-            ),
+            Doc("Wrapped Response object."),
         ],
     ) -> Annotated[
         "Response",
-        Doc(
-            """
-            Modified or original response object.
-
-            Return the response object (possibly modified) to apply
-            changes. You can modify the response text, add metadata,
-            or transform the response data in any way.
-            """
-        ),
+        Doc("Modified or replaced response passed back up the chain."),
     ]:
-        """
-        Called after receiving a successful response.
-
-        Use this hook to:
-        - Transform response data
-        - Log response metrics
-        - Cache responses
-        - Validate response schema
-        - Extract custom headers
-
-        The response object is mutable and changes will affect
-        how the response is processed by the handler.
-        """
-        return response
-
-    async def on_error(
-        self,
-        error: Annotated[
-            Exception,
-            Doc(
-                """
-                The exception that occurred.
-
-                Can be any exception raised during request execution,
-                such as connection errors, timeout errors, or
-                HTTP status errors.
-                """
-            ),
-        ],
-        route: Annotated[
-            "Route",
-            Doc(
-                """
-                The route that failed.
-
-                Information about the request that encountered an error,
-                including method, URL, handler, and request data.
-                """
-            ),
-        ],
-        config: Annotated[
-            "RequestsOptinal",
-            Doc(
-                """
-                Request configuration that was used.
-
-                The config dict that was applied to the request
-                before the error occurred. Useful for error logging
-                and debugging.
-                """
-            ),
-        ],
-    ) -> Annotated[
-        None,
-        Doc(
-            """
-            No return value.
-
-            This method is called for side effects only, such as
-            logging, sending notifications, or tracking metrics.
-            """
-        ),
-    ]:
-        """
-        Called when an error occurs during the request.
-
-        Use this hook to:
-        - Log errors with custom formatting
-        - Send error notifications
-        - Implement retry logic
-        - Track error metrics
-
-        Note: This method cannot prevent the error from being logged
-        by the client. It is purely for additional error handling.
-        """
-
-
-class MiddlewareManager:
-    """
-    Manages execution of middleware chain.
-
-    This class is used internally by FastHTTP to execute middleware
-    in the order they were registered.
-    """
-
-    def __init__(
-        self,
-        middlewares: Annotated[
-            list["BaseMiddleware"] | None,
-            Doc(
-                """
-                List of middleware instances to execute.
-
-                Middleware will be executed in the order they
-                appear in this list. Each middleware hook
-                (before_request, after_response, on_error)
-                will be called for all middleware in sequence.
-                """
-            ),
-        ] = None,
-    ) -> Annotated[
-        None,
-        Doc(
-            """
-            No return value.
-
-            Initializes the middleware manager with the provided
-            middleware list or an empty list if None.
-            """
-        ),
-    ]:
-        self.middlewares = middlewares or []
-
-    async def process_before_request(
-        self,
-        route: Annotated[
-            "Route",
-            Doc(
-                """
-                The route being executed.
-
-                Contains information about the HTTP request that
-                is about to be sent, including method, URL,
-                handler, and request data.
-                """
-            ),
-        ],
-        config: Annotated[
-            "RequestsOptinal",
-            Doc(
-                """
-                Initial request configuration.
-
-                The config dict that will be passed through all
-                middleware before_request hooks. Each middleware
-                can modify this config.
-                """
-            ),
-        ],
-    ) -> Annotated[
-        "RequestsOptinal",
-        Doc(
-            """
-            Final request configuration after middleware processing.
-
-            Returns the config dict after all middleware
-            before_request hooks have been executed.
-            Modifications from middleware are applied.
-            """
-        ),
-    ]:
-        """
-        Execute all before_request middleware hooks.
-
-        This method iterates through all registered middleware
-        and calls their before_request method in order.
-        Each middleware can modify the config dict.
-        """
-        current_config = config
-        for middleware in self.middlewares:
-            current_config = await middleware.before_request(
-                route, current_config
-            )
-        return current_config
-
-    async def process_after_response(
-        self,
-        response: Annotated[
-            "Response",
-            Doc(
-                """
-                The HTTP response object.
-
-                Contains the response that was received from
-                the server, including status, text, and headers.
-                """
-            ),
-        ],
-        route: Annotated[
-            "Route",
-            Doc(
-                """
-                The route that was executed.
-
-                Information about the request that generated
-                this response, including method, URL,
-                handler, and request data.
-                """
-            ),
-        ],
-        config: Annotated[
-            "RequestsOptinal",
-            Doc(
-                """
-                Request configuration that was used.
-
-                The config dict that was applied to the request
-                before it was sent.
-                """
-            ),
-        ],
-    ) -> Annotated[
-        "Response",
-        Doc(
-            """
-            Final response object after middleware processing.
-
-            Returns the response after all middleware
-            after_response hooks have been executed.
-            Modifications from middleware are applied.
-            """
-        ),
-    ]:
-        """
-        Execute all after_response middleware hooks.
-
-        This method iterates through all registered middleware
-        and calls their after_response method in order.
-        Each middleware can modify the response object.
-        """
-        current_response = response
-        for middleware in self.middlewares:
-            current_response = await middleware.after_response(
-                current_response, route, config
-            )
-        return current_response
-
-    async def process_on_error(
-        self,
-        error: Annotated[
-            Exception,
-            Doc(
-                """
-                The exception that occurred.
-
-                The error that was raised during request execution.
-                """
-            ),
-        ],
-        route: Annotated[
-            "Route",
-            Doc(
-                """
-                The route that failed.
-
-                Information about the request that encountered
-                an error, including method, URL, handler,
-                and request data.
-                """
-            ),
-        ],
-        config: Annotated[
-            "RequestsOptinal",
-            Doc(
-                """
-                Request configuration that was used.
-
-                The config dict that was applied to the request
-                before the error occurred.
-                """
-            ),
-        ],
-    ) -> Annotated[
-        None,
-        Doc(
-            """
-            No return value.
-
-            This method is called for side effects only,
-            such as error logging or notifications.
-            """
-        ),
-    ]:
-        """
-        Execute all on_error middleware hooks.
-
-        This method iterates through all registered middleware
-        and calls their on_error method in order.
-        Each middleware can handle the error as needed.
-        """
-        for middleware in self.middlewares:
-            await middleware.on_error(error, route, config)
-
-
-class CacheEntry:
-    """
-    Represents a cached response entry.
-
-    Internal class used by CacheMiddleware to store
-    cached responses with expiration time.
-    """
-
-    def __init__(
-        self,
-        response: Annotated[
-            "Response",
-            Doc("The HTTP response to cache."),
-        ],
-        ttl: Annotated[
-            int,
-            Doc(
-                """
-                Time to live in seconds.
-
-                The cached response will expire after this
-                many seconds from creation.
-                """
-            ),
-        ],
-    ) -> None:
-        self.response = response
-        self.expires_at = time.time() + ttl
-
-
-class CacheMiddleware(BaseMiddleware):
-    """
-    Middleware for caching HTTP responses in memory.
-
-    Caches responses based on HTTP method and URL with query parameters.
-    Subsequent requests within the TTL period return cached responses.
-
-    Example:
-        ```python
-            from fasthttp import FastHTTP
-            from fasthttp.middleware import CacheMiddleware
-            from fasthttp.response import Response
-
-            app = FastHTTP(
-                middleware=[CacheMiddleware(ttl=3600, max_size=100)]
-            )
-
-            @app.get(url="https://api.example.com/users")
-            async def get_users(resp: Response):
-                return resp.json()
-        ```
-    """
-
-    def __init__(
-        self,
-        ttl: Annotated[
-            int,
-            Doc(
-                """
-                Time to live for cached responses in seconds.
-
-                Default is 3600 (1 hour). After this time,
-                the cached response is considered expired.
-                """
-            ),
-        ] = 3600,
-        max_size: Annotated[
-            int,
-            Doc(
-                """
-                Maximum number of cached responses.
-
-                When the cache reaches this size, the oldest
-                entry is evicted to make room for new ones.
-                """
-            ),
-        ] = 100,
-        cache_methods: Annotated[
-            list[str] | None,
-            Doc(
-                """
-                HTTP methods to cache.
-
-                Default is ["GET"] - only GET requests are cached.
-                Set to ["GET", "POST"] to cache POST responses as well.
-                """
-            ),
-        ] = None,
-    ) -> None:
-        self.ttl = ttl
-        self.max_size = max_size
-        self.cache_methods = cache_methods or ["GET"]
-        self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
-        self._lock = asyncio.Lock()
-
-    def _generate_key(self, route: "Route") -> str:
-        key_data = f"{route.method}:{route.url}:{json.dumps(route.params or {}, sort_keys=True)}"
-        return hashlib.md5(key_data.encode()).hexdigest()
-
-    async def before_request(
-        self,
-        route: Annotated[
-            "Route",
-            Doc("The route being executed."),
-        ],
-        config: Annotated[
-            "RequestsOptinal",
-            Doc("Request configuration."),
-        ],
-    ) -> Annotated[
-        "RequestsOptinal",
-        Doc("Modified or original request configuration."),
-    ]:
-        if route.method not in self.cache_methods:
-            return config
-
-        key = self._generate_key(route)
-
-        async with self._lock:
-            if key in self._cache:
-                entry = self._cache[key]
-
-                if time.time() < entry.expires_at:
-                    self._cache.move_to_end(key)
-                    config["_cache_hit"] = entry.response
-                    return config
-                del self._cache[key]
-
-        return config
-
-    async def after_response(
-        self,
-        response: Annotated[
-            "Response",
-            Doc("The HTTP response object."),
-        ],
-        route: Annotated[
-            "Route",
-            Doc("The route that was executed."),
-        ],
-        config: Annotated[
-            "RequestsOptinal",
-            Doc("Request configuration that was used."),
-        ],
-    ) -> Annotated[
-        "Response",
-        Doc("Modified or original response object."),
-    ]:
-        if route.method not in self.cache_methods:
-            return response
-
-        cached = config.get("_cache_hit")
-        if cached is not None:
-            return cached
-
-        key = self._generate_key(route)
-
-        async with self._lock:
-            if len(self._cache) >= self.max_size:
-                self._cache.popitem(last=False)
-
-            self._cache[key] = CacheEntry(response, self.ttl)
-
+        """Called after the HTTP response is received."""
         return response
 
     async def on_error(
@@ -605,22 +127,273 @@ class CacheMiddleware(BaseMiddleware):
             "RequestsOptinal",
             Doc("Request configuration that was used."),
         ],
-    ) -> None:
-        key = self._generate_key(route)
-        async with self._lock:
-            self._cache.pop(key, None)
-
-    def clear(self) -> Annotated[
+    ) -> Annotated[
         None,
-        Doc("Clears all cached responses."),
+        Doc("No return value. Called for side effects only."),
     ]:
+        """Called when an error occurs during the request."""
+
+
+class MiddlewareChain:
+    """Ordered chain of :class:`BaseMiddleware` instances.
+
+    Created via the ``|`` operator on middleware objects.
+    Passed directly to :class:`~fasthttp.app.FastHTTP` as ``middleware=``.
+
+    Example:
+    ```python
+        chain = AuthMiddleware() | LoggingMiddleware() | TimingMiddleware()
+        app = FastHTTP(middleware=chain)
+    ```
+    """
+
+    def __init__(self, middlewares: list[BaseMiddleware]) -> None:
+        self._middlewares = middlewares
+
+    def __or__(self, other: BaseMiddleware) -> MiddlewareChain:
+        """Append another middleware to the chain via ``|``."""
+        return MiddlewareChain([*self._middlewares, other])
+
+    def __repr__(self) -> str:
+        names = ", ".join(m.__class__.__name__ for m in self._middlewares)
+        return f"<MiddlewareChain [{names}]>"
+
+    def __iter__(self) -> Iterator[BaseMiddleware]:
+        return iter(self._middlewares)
+
+    def __len__(self) -> int:
+        return len(self._middlewares)
+
+
+class MiddlewareManager:
+    """
+    Manages execution of middleware chain.
+
+    Accepts a list of :class:`BaseMiddleware` instances or a
+    :class:`MiddlewareChain`. Middleware is executed in ``__priority__``
+    order on requests and in reverse order on responses.
+    """
+
+    def __init__(
+        self,
+        middlewares: Annotated[
+            list[BaseMiddleware] | MiddlewareChain | None,
+            Doc(
+                """
+                Middleware to execute. Accepts a list, a MiddlewareChain
+                (built via ``|``), or None for no middleware.
+                """
+            ),
+        ] = None,
+    ) -> None:
+        if isinstance(middlewares, MiddlewareChain):
+            self.middlewares: list[BaseMiddleware] = list(middlewares)
+        else:
+            self.middlewares = middlewares or []
+
+    def _sorted(self) -> list[BaseMiddleware]:
+        return sorted(
+            self.middlewares,
+            key=lambda m: getattr(m, "__priority__", 0),
+        )
+
+    def _active(
+        self,
+        middlewares: list[BaseMiddleware],
+        method: str,
+    ) -> list[BaseMiddleware]:
+        result = []
+        for mw in middlewares:
+            if not getattr(mw, "__enabled__", True):
+                continue
+            allowed = getattr(mw, "__methods__", None)
+            if allowed is not None and method.upper() not in {m.upper() for m in allowed}:
+                continue
+            result.append(mw)
+        return result
+
+    async def process_before_request(
+        self,
+        route: Annotated[
+            "Route",
+            Doc("The route being executed."),
+        ],
+        config: Annotated[
+            "RequestsOptinal",
+            Doc("Initial request configuration."),
+        ],
+    ) -> Annotated[
+        dict[str, Any],
+        Doc("Final request configuration after middleware processing."),
+    ]:
+        """Execute all request middleware hooks in priority order."""
+        kwargs: dict[str, Any] = dict(config)
+        kwargs.setdefault("params", route.params)
+
+        for mw in self._active(self._sorted(), route.method):
+            kwargs = await mw.request(route.method, route.url, kwargs)
+
+        return kwargs
+
+    async def process_after_response(
+        self,
+        response: Annotated[
+            "Response",
+            Doc("The HTTP response object."),
+        ],
+        route: Annotated[
+            "Route",
+            Doc("The route that was executed."),
+        ],
+        config: Annotated[
+            "RequestsOptinal",
+            Doc("Request configuration that was used."),
+        ],
+    ) -> Annotated[
+        "Response",
+        Doc("Final response after middleware processing."),
+    ]:
+        """Execute all response middleware hooks in reverse priority order."""
+        current = response
+        for mw in reversed(self._active(self._sorted(), route.method)):
+            current = await mw.response(current)
+        return current
+
+    async def process_on_error(
+        self,
+        error: Annotated[
+            Exception,
+            Doc("The exception that occurred."),
+        ],
+        route: Annotated[
+            "Route",
+            Doc("The route that failed."),
+        ],
+        config: Annotated[
+            "RequestsOptinal",
+            Doc("Request configuration that was used."),
+        ],
+    ) -> Annotated[
+        None,
+        Doc("No return value."),
+    ]:
+        """Execute all on_error middleware hooks in priority order."""
+        for mw in self._active(self._sorted(), route.method):
+            await mw.on_error(error, route, config)
+
+
+class CacheEntry:
+    """Cached response entry with expiration time."""
+
+    def __init__(
+        self,
+        response: Annotated["Response", Doc("The HTTP response to cache.")],
+        ttl: Annotated[int, Doc("Time to live in seconds.")],
+    ) -> None:
+        self.response = response
+        self.expires_at = time.time() + ttl
+
+
+class CacheMiddleware(BaseMiddleware):
+    """
+    Middleware for caching HTTP responses in memory.
+
+    Caches responses based on HTTP method and URL with query parameters.
+    Subsequent requests within the TTL period return cached responses.
+
+    Example:
+        ```python
+            from fasthttp import FastHTTP
+            from fasthttp.middleware import CacheMiddleware
+
+            app = FastHTTP(
+                middleware=[CacheMiddleware(ttl=3600, max_size=100)]
+            )
+
+            @app.get(url="https://api.example.com/users")
+            async def get_users(resp: Response):
+                return resp.json()
+        ```
+    """
+
+    __return_type__ = None
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
+
+    def __init__(
+        self,
+        ttl: Annotated[
+            int,
+            Doc("Time to live for cached responses in seconds. Default 3600."),
+        ] = 3600,
+        max_size: Annotated[
+            int,
+            Doc("Maximum number of cached responses. Oldest evicted when full."),
+        ] = 100,
+        cache_methods: Annotated[
+            list[str] | None,
+            Doc('HTTP methods to cache. Default ["GET"].'),
+        ] = None,
+    ) -> None:
+        self.ttl = ttl
+        self.max_size = max_size
+        self.cache_methods = cache_methods or ["GET"]
+        self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
+        self._lock = asyncio.Lock()
+        self._state: ContextVar[tuple[str | None, Any]] = ContextVar(
+            f"cache_state_{id(self)}", default=(None, None)
+        )
+
+    def _generate_key(self, method: str, url: str, params: Any) -> str:
+        key_data = f"{method}:{url}:{json.dumps(params or {}, sort_keys=True)}"
+        return hashlib.md5(key_data.encode()).hexdigest()
+
+    async def request(self, method: str, url: str, kwargs: dict[str, Any]) -> dict[str, Any]:
+        if method not in self.cache_methods:
+            self._state.set((None, None))
+            return kwargs
+
+        key = self._generate_key(method, url, kwargs.get("params"))
+
+        async with self._lock:
+            if key in self._cache:
+                entry = self._cache[key]
+                if time.time() < entry.expires_at:
+                    self._cache.move_to_end(key)
+                    self._state.set((key, entry.response))
+                    return kwargs
+                del self._cache[key]
+
+        self._state.set((key, None))
+        return kwargs
+
+    async def response(self, response: "Response") -> "Response":
+        key, cached = self._state.get()
+
+        if cached is not None:
+            return cached
+
+        if key is not None:
+            async with self._lock:
+                if len(self._cache) >= self.max_size:
+                    self._cache.popitem(last=False)
+                self._cache[key] = CacheEntry(response, self.ttl)
+
+        return response
+
+    async def on_error(self, error: Exception, route: "Route", config: "RequestsOptinal") -> None:
+        key, _ = self._state.get()
+        if key is not None:
+            async with self._lock:
+                self._cache.pop(key, None)
+
+    def clear(self) -> None:
         """Clear all cached responses."""
         self._cache.clear()
 
-    def get_stats(self) -> Annotated[
-        dict,
-        Doc("Returns cache statistics."),
-    ]:
+    def get_stats(self) -> dict:
+        """Return cache statistics."""
         return {
             "size": len(self._cache),
             "max_size": self.max_size,
