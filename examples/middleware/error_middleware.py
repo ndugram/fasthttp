@@ -6,6 +6,11 @@ from fasthttp.types import RequestsOptinal
 
 
 class ErrorTrackingMiddleware(BaseMiddleware):
+    __return_type__ = None
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
+
     def __init__(self) -> None:
         self.error_count = 0
 
@@ -13,21 +18,24 @@ class ErrorTrackingMiddleware(BaseMiddleware):
         self, error: Exception, route: Route, config: RequestsOptinal
     ) -> None:
         self.error_count += 1
-        print(f"❌ Error #{self.error_count}: {error.__class__.__name__}")
-        print(f"   Route: {route.method} {route.url}")
-        print(f"   Message: {error!s}")
+        print(f"Error #{self.error_count}: {error.__class__.__name__}")
+        print(f"  Route: {route.method} {route.url}")
+        print(f"  Message: {error!s}")
 
 
 class RequestCounterMiddleware(BaseMiddleware):
+    __return_type__ = None
+    __priority__ = 1
+    __methods__ = None
+    __enabled__ = True
+
     def __init__(self) -> None:
         self.success_count = 0
 
-    async def after_response(
-        self, response: Response, route: Route, config: RequestsOptinal
-    ) -> Response:
+    async def response(self, response: Response) -> Response:
         if response.status < 400:
             self.success_count += 1
-            print(f"✅ Successful requests: {self.success_count}")
+            print(f"Successful requests: {self.success_count}")
         return response
 
 
