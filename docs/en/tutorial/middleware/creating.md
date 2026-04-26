@@ -1,97 +1,156 @@
 # Creating Middleware
 
-Learn how to create custom middleware.
+## BaseMiddleware
 
-## Base Class
-
-Create a class inheriting from `BaseMiddleware`:
+All middleware inherits from `BaseMiddleware`:
 
 ```python
-from fasthttp import FastHTTP
 from fasthttp.middleware import BaseMiddleware
-from fasthttp.response import Response
-
 
 class MyMiddleware(BaseMiddleware):
-    async def before_request(self, route, config):
-        """Executed before each request."""
-        return config
+    __return_type__ = bool
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
 
-    async def after_response(self, response, route, config):
-        """Executed after each response."""
+    async def request(self, method, url, kwargs):
+        # modify kwargs before the request is sent
+        return kwargs
+
+    async def response(self, response):
+        # inspect or modify the response
         return response
 
     async def on_error(self, error, route, config):
-        """Executed on error."""
-        raise error
+        # handle the error
+        pass
 ```
 
-## Method Signatures
+## Class attributes
 
-### before_request(route, config)
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `__return_type__` | `type \| None` | Type this middleware operates on |
+| `__priority__` | `int` | Execution order — **lower runs first** |
+| `__methods__` | `list[str] \| None` | HTTP methods to intercept. `None` = all methods |
+| `__enabled__` | `bool` | `False` skips middleware without removing it from the chain |
 
-Called before sending each request.
+!!! note "No defaults"
+    None of these attributes have defaults in `BaseMiddleware`. Define
+    only the ones you need.
 
-**Parameters:**
-- `route` - Route information
-- `config` - Request configuration
+## `request(method, url, kwargs)`
 
-**Returns:** Modified `config`
+Called **before** the HTTP request is sent. Receives:
 
-### after_response(response, route, config)
+- `method` — HTTP method (`"GET"`, `"POST"`, etc.)
+- `url` — resolved URL (scheme already prepended)
+- `kwargs` — dict with keys: `params`, `headers`, `json`, `data`, `timeout`
 
-Called after receiving a response.
-
-**Parameters:**
-- `response` - Response object
-- `route` - Route information
-- `config` - Request configuration
-
-**Returns:** Modified `response`
-
-### on_error(error, route, config)
-
-Called when an error occurs.
-
-**Parameters:**
-- `error` - Exception
-- `route` - Route information
-- `config` - Request configuration
-
-**Can:** Handle error or re-raise
-
-## Using Middleware
+Must return the (possibly modified) `kwargs` dict:
 
 ```python
-app = FastHTTP(middleware=[MyMiddleware()])
+async def request(self, method, url, kwargs):
+    kwargs["headers"] = kwargs.get("headers") or {}
+    kwargs["headers"]["X-Request-ID"] = "some-id"
+    return kwargs
 ```
 
-## Multiple Middleware
+!!! warning "headers may be None"
+    `kwargs["headers"]` is `None` when no headers were passed.
+    Always use `kwargs.get("headers") or {}` before adding keys.
 
-Execution order - first added executes first:
+## `response(response)`
+
+Called **after** the HTTP response is received. Receives a `Response` object.
+Must return `Response`:
 
 ```python
-app = FastHTTP(middleware=[
-    AuthMiddleware(),
-    LoggingMiddleware(),
-    MetricsMiddleware(),
-])
+async def response(self, response):
+    if response.status >= 400:
+        print(f"Error {response.status}")
+    return response
 ```
 
-## Route Object Attributes
+## `on_error(error, route, config)`
+
+Called on **request error**. Receives:
+
+- `error` — exception
+- `route` — route information
+- `config` — request configuration
 
 ```python
-route.method      # HTTP method
-route.url         # Request URL
-route.params      # Query parameters
-route.json        # JSON body
-route.tags        # Tags
+async def on_error(self, error, route, config):
+    print(f"Error: {route.method} {route.url} — {error}")
 ```
 
-## Config Object Keys
+## Dunder methods
+
+### `__repr__`
 
 ```python
-config.get("headers", {})      # Request headers
-config.get("timeout", 30.0)    # Timeout
-config.get("allow_redirects", True)
+mw = MyMiddleware()
+print(mw)   # <MyMiddleware return_type=<class 'bool'>>
+```
+
+### `__or__` — pipe chaining
+
+Combine middleware via `|`:
+
+```python
+chain = AuthMiddleware() | LoggingMiddleware() | TimingMiddleware()
+```
+
+Result is a `MiddlewareChain`, passed directly to `FastHTTP`:
+
+```python
+app = FastHTTP(middleware=chain)
+```
+
+### `__init_subclass__`
+
+Fires on subclassing `BaseMiddleware`. Override for custom subclass validation:
+
+```python
+class StrictMiddleware(BaseMiddleware):
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if not hasattr(cls, "__priority__"):
+            raise TypeError(f"{cls.__name__} must define __priority__")
+```
+
+## Attaching to the app
+
+=== "List"
+
+    ```python
+    FastHTTP(middleware=[AuthMiddleware(), LoggingMiddleware()])
+    ```
+
+=== "Pipe"
+
+    ```python
+    FastHTTP(middleware=AuthMiddleware() | LoggingMiddleware())
+    ```
+
+=== "Single"
+
+    ```python
+    FastHTTP(middleware=AuthMiddleware())
+    ```
+
+All three forms are equivalent. Sort order is determined by `__priority__` automatically.
+
+## Runtime toggle
+
+```python
+debug = LoggingMiddleware()
+app = FastHTTP(middleware=[debug])
+
+# disable without removing from chain
+debug.__enabled__ = False
+
+# re-enable
+debug.__enabled__ = True
 ```
