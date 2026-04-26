@@ -1,38 +1,38 @@
 from fasthttp import FastHTTP
 from fasthttp.middleware import BaseMiddleware
 from fasthttp.response import Response
-from fasthttp.routing import Route
-from fasthttp.types import RequestsOptinal
 
 
 class LoggingMiddleware(BaseMiddleware):
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
-        print(f"🚀 Sending {route.method} request to {route.url}")
-        return config
+    __return_type__ = None
+    __priority__ = 99
+    __methods__ = ["GET"]
+    __enabled__ = True
 
-    async def after_response(
-        self, response: Response, route: Route, config: RequestsOptinal
-    ) -> Response:
-        print(f"✅ Received response with status {response.status}")
+    async def request(self, method: str, url: str, kwargs: dict) -> dict:
+        print(f"→ {method} {url}")
+        return kwargs
+
+    async def response(self, response: Response) -> Response:
+        print(f"← {response.status}")
         return response
 
 
 class HeaderMiddleware(BaseMiddleware):
-    async def before_request(
-        self, route: Route, config: RequestsOptinal
-    ) -> RequestsOptinal:
-        headers = config.get("headers", {})
-        headers["X-Custom-Header"] = "MyCustomValue"
-        headers["X-Request-ID"] = "12345"
+    __return_type__ = None
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
 
-        config["headers"] = headers
-        print("📝 Added custom headers to request")
-        return config
+    async def request(self, method: str, url: str, kwargs: dict) -> dict:
+        kwargs["headers"] = kwargs.get("headers") or {}
+        kwargs["headers"]["X-Custom-Header"] = "MyCustomValue"
+        kwargs["headers"]["X-Request-ID"] = "12345"
+        print("Added custom headers to request")
+        return kwargs
 
 
-app = FastHTTP(middleware=[LoggingMiddleware(), HeaderMiddleware()])
+app = FastHTTP(middleware=[HeaderMiddleware(), LoggingMiddleware()], debug=True)
 
 
 @app.get(url="https://httpbin.org/get")
