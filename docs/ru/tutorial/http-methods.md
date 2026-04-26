@@ -57,6 +57,26 @@ async def delete_user(resp: Response) -> int:
     return resp.status
 ```
 
+## HEAD - проверка endpoint'а
+
+Возвращает только заголовки, без тела. Удобно для проверки существования ресурса или получения метаданных.
+
+```python
+@app.head(url="https://api.example.com/users")
+async def check_users(resp: Response) -> int:
+    return resp.status
+```
+
+## OPTIONS - разрешённые методы
+
+Возвращает HTTP-методы, поддерживаемые endpoint'ом.
+
+```python
+@app.options(url="https://api.example.com/users")
+async def allowed_methods(resp: Response) -> dict:
+    return {"allow": resp.headers.get("allow", "")}
+```
+
 ## Возвращаемые значения
 
 Обработчики могут возвращать разные типы:
