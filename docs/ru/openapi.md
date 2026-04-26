@@ -45,7 +45,7 @@ app.web_run()
 ### Просмотр документации
 
 Все ваши HTTP-запросы автоматически отображаются в Swagger UI с:
-- Методом HTTP (GET, POST, PUT, DELETE)
+- Методом HTTP (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS)
 - URL адресом
 - Описанием из docstring
 - Параметрами запроса
