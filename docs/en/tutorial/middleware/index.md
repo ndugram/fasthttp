@@ -1,13 +1,25 @@
 # Middleware
 
-Middleware allows adding global logic executed for all requests.
+Middleware lets you intercept and modify **every request and response** through `FastHTTP` — without changing handler code.
 
-## Overview
+## What middleware can do
 
-- [Creating Middleware](creating.md) - How to create custom middleware
-- [Examples](examples.md) - Practical middleware examples
+- Automatically add authorization headers
+- Log all requests and responses
+- Add timing and tracing headers
+- Transform response data
+- Track errors and metrics
 
-## Quick Example
+## How it works
+
+```
+request  →  mw1.request → mw2.request → mw3.request → [HTTP]
+response ←  mw1.response ← mw2.response ← mw3.response ← [HTTP]
+```
+
+Middleware executes in `__priority__` order on the way in and in **reverse order** on the way out.
+
+## Quick example
 
 ```python
 from fasthttp import FastHTTP
@@ -15,29 +27,37 @@ from fasthttp.middleware import BaseMiddleware
 from fasthttp.response import Response
 
 
-class MyMiddleware(BaseMiddleware):
-    async def before_request(self, route, config):
-        # Runs before each request
-        config.setdefault("headers", {})["X-Custom"] = "value"
-        return config
+class LoggingMiddleware(BaseMiddleware):
+    __return_type__ = None
+    __priority__ = 0
+    __methods__ = None
+    __enabled__ = True
 
-    async def after_response(self, response, route, config):
-        # Runs after each response
+    async def request(self, method, url, kwargs):
+        print(f"→ {method} {url}")
+        return kwargs
+
+    async def response(self, response):
+        print(f"← {response.status}")
         return response
 
 
-app = FastHTTP(middleware=[MyMiddleware()])
+app = FastHTTP(middleware=[LoggingMiddleware()])
 ```
 
-## Lifecycle
+Output:
 
 ```
-before_request -> [Send Request] -> after_response
-                    or
-                 on_error
+→ GET https://httpbin.org/get
+← 200
 ```
 
-## Comparison with Dependencies
+## Next steps
+
+- [Creating Middleware](creating.md) — BaseMiddleware API, class attributes, pipe chaining
+- [Examples](examples.md) — auth, logging, timing, method filtering, toggle
+
+## Comparison with dependencies
 
 | Feature | Middleware | Dependencies |
 |---------|------------|--------------|
@@ -45,4 +65,3 @@ before_request -> [Send Request] -> after_response
 | Specific request | No | Yes |
 | Can modify response | Yes | No |
 | Error handling | Yes | No |
-| Simpler to use | No | Yes |

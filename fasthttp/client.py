@@ -282,7 +282,7 @@ class HTTPClient:
                 method=route.method,
                 url=route.url,
                 headers=config.get("headers"),
-                params=route.params,
+                params=config.get("params", route.params),
                 json=route.json,
                 content=route.data,
                 timeout=timeout_config,

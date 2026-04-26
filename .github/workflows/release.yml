@@ -36,6 +36,19 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       
+      - name: Send Telegram announcement
+        if: steps.tag_check.outputs.skip == 'false'
+        run: |
+          TAG="v${{ env.version }}"
+          MESSAGE="⏳ *fasthttp-client ${TAG} coming soon...*
+
+          Новая версия уже собирается и скоро появится на PyPI 📦"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            --data-urlencode "text=${MESSAGE}" \
+            -d "parse_mode=Markdown"
+
       - name: Get current commit SHA
         if: steps.tag_check.outputs.skip == 'false'
         id: commit
@@ -93,14 +106,11 @@ jobs:
         if: steps.tag_check.outputs.skip == 'false'
         run: |
           TAG="v${{ env.version }}"
-          MESSAGE="🚀 *Release Published!*
+          MESSAGE="🚀 *fasthttp-client ${TAG} released*
 
-            📦 *Package:* fasthttp-client ${TAG}
+          ⚡ Async HTTP client with middleware, routing & OpenAPI support
 
-            📝 *Description:* Fast and simple HTTP client library with async support and beautiful logging
-
-            👤 *Author:* ${{ github.actor }}
-            🕐 *Time:* ${{ github.event.head_commit.timestamp }}"
+          👤 ${{ github.actor }} · 🕐 ${{ github.event.head_commit.timestamp }}"
 
           KEYBOARD='{"inline_keyboard":[[{"text":"📦 PyPI","url":"https://pypi.org/project/fasthttp-client/"},{"text":"📖 Docs","url":"https://fasthttp.ndugram.dev"},{"text":"💻 GitHub","url":"https://github.com/'${GITHUB_REPOSITORY}'/releases/tag/'${TAG}'"}]]}'
 

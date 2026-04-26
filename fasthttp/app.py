@@ -19,7 +19,7 @@ from .helpers.route_inspect import (
 )
 from .helpers.routing import apply_base_url, check_https_url
 from .logging import setup_logger
-from .middleware import BaseMiddleware, MiddlewareManager
+from .middleware import BaseMiddleware, MiddlewareChain, MiddlewareManager
 from .openapi.generator import generate_openapi_schema
 from .openapi.swagger import get_not_found_html, get_swagger_html
 from .openapi.urls import build_docs_urls
@@ -330,7 +330,9 @@ class FastHTTP:
 
 
         if middleware is None:
-            normalized_middleware = []
+            normalized_middleware: list[BaseMiddleware] | MiddlewareChain = []
+        elif isinstance(middleware, MiddlewareChain):
+            normalized_middleware = middleware
         elif isinstance(middleware, list):
             normalized_middleware = middleware
         else:

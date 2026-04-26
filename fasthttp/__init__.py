@@ -2,7 +2,7 @@ from . import status
 from .__meta__ import __version__
 from .app import FastHTTP
 from .dependencies import Depends
-from .middleware import BaseMiddleware, CacheMiddleware, MiddlewareManager
+from .middleware import BaseMiddleware, CacheMiddleware, MiddlewareChain, MiddlewareManager
 from .routing import Router
 
 __all__ = (
@@ -10,6 +10,7 @@ __all__ = (
     "CacheMiddleware",
     "Depends",
     "FastHTTP",
+    "MiddlewareChain",
     "MiddlewareManager",
     "Router",
     "__version__",
