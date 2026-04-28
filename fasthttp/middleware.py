@@ -400,3 +400,93 @@ class CacheMiddleware(BaseMiddleware):
             "ttl": self.ttl,
             "methods": self.cache_methods,
         }
+
+
+class SessionMiddleware(BaseMiddleware):
+    """
+    Middleware for persisting cookies across requests and ``app.run()`` calls.
+
+    Captures ``Set-Cookie`` headers from responses and injects them as
+    ``Cookie`` headers into subsequent requests. State survives between
+    separate ``app.run()`` calls as long as the same instance is used.
+
+    Class attributes control priority and filtering — same as any
+    :class:`BaseMiddleware` subclass.
+
+    Example:
+        ```python
+            from fasthttp import FastHTTP
+            from fasthttp.middleware import SessionMiddleware
+
+            session = SessionMiddleware()
+            app = FastHTTP(middleware=session)
+
+            # or chain with other middleware
+            app = FastHTTP(middleware=session | CacheMiddleware())
+
+            @app.post("https://example.com/login", json={"user": "x", "pass": "y"})
+            async def login(resp: Response) -> dict:
+                return resp.json()
+
+            @app.get("https://example.com/profile")
+            async def profile(resp: Response) -> dict:
+                return resp.json()
+
+            app.run(tags=["auth"])
+            app.run(tags=["protected"])
+        ```
+    """
+
+    __return_type__ = None
+    __priority__ = -10
+    __methods__ = None
+    __enabled__ = True
+
+    def __init__(
+        self,
+        cookies: Annotated[
+            dict[str, str] | None,
+            Doc("Pre-seed cookies to inject from the first request. Optional."),
+        ] = None,
+    ) -> None:
+        self.cookies: dict[str, str] = dict(cookies) if cookies else {}
+
+    def __repr__(self) -> str:
+        return f"<SessionMiddleware cookies={list(self.cookies.keys())}>"
+
+    async def request(
+        self,
+        method: Annotated[str, Doc("HTTP method.")],
+        url: Annotated[str, Doc("Request URL.")],
+        kwargs: Annotated[dict[str, Any], Doc("Request kwargs passed to httpx.")],
+    ) -> dict[str, Any]:
+        """Inject stored cookies into outgoing request."""
+        if self.cookies:
+            headers = dict(kwargs.get("headers") or {})
+            headers["Cookie"] = "; ".join(
+                f"{k}={v}" for k, v in self.cookies.items()
+            )
+            kwargs["headers"] = headers
+        return kwargs
+
+    async def response(
+        self,
+        response: Annotated["Response", Doc("Wrapped response object.")],
+    ) -> "Response":
+        """Capture Set-Cookie headers and persist them."""
+        raw = response.headers.get("set-cookie", "")
+        if raw:
+            for cookie_str in raw.split(","):
+                name_value = cookie_str.split(";")[0].strip()
+                if "=" in name_value:
+                    k, v = name_value.split("=", 1)
+                    self.cookies[k.strip()] = v.strip()
+        return response
+
+    def clear(self) -> None:
+        """Clear all stored cookies."""
+        self.cookies.clear()
+
+    def get_cookies(self) -> dict[str, str]:
+        """Return copy of current cookie store."""
+        return dict(self.cookies)

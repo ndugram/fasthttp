@@ -197,3 +197,91 @@ app = FastHTTP(
 - `ttl` — время жизни кэша в секундах
 - `max_size` — максимальное количество записей (LRU-вытеснение)
 - `cache_methods` — список методов для кэширования (по умолчанию `["GET"]`)
+
+## Сессии / Персистентность кук
+
+FastHTTP включает встроенный `SessionMiddleware`, который автоматически
+перехватывает заголовки `Set-Cookie` из ответов и подставляет их как
+`Cookie`-заголовок во все последующие запросы — в том числе между
+отдельными вызовами `app.run()`.
+
+```python
+from fasthttp import FastHTTP, SessionMiddleware
+from fasthttp.response import Response
+
+session = SessionMiddleware()
+app = FastHTTP(middleware=session)
+```
+
+### Login flow (последовательные запросы через tags)
+
+Все маршруты внутри одного `run()` выполняются параллельно, поэтому
+для цепочки запросов, где каждый следующий зависит от куки предыдущего,
+используй `tags`:
+
+```python
+from fasthttp import FastHTTP, SessionMiddleware
+from fasthttp.response import Response
+
+session = SessionMiddleware()
+app = FastHTTP(middleware=session)
+
+
+@app.post(
+    url="https://api.example.com/login",
+    json={"username": "alice", "password": "secret"},
+    tags=["auth"],
+)
+async def login(resp: Response) -> dict:
+    # SessionMiddleware автоматически захватывает Set-Cookie из этого ответа
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/profile", tags=["protected"])
+async def profile(resp: Response) -> dict:
+    # Cookie-заголовок подставляется SessionMiddleware автоматически
+    return resp.json()
+
+
+app.run(tags=["auth"])       # login — куки сохраняются в session.cookies
+app.run(tags=["protected"])  # profile — Cookie-заголовок подставляется автоматически
+```
+
+### Предзагрузка кук
+
+Передай начальный словарь кук чтобы пропустить шаг логина:
+
+```python
+session = SessionMiddleware(cookies={"auth_token": "already-have-this"})
+app = FastHTTP(middleware=session)
+```
+
+### Ручное управление куками
+
+```python
+# посмотреть что хранится
+print(session.get_cookies())   # {"session_id": "abc123", ...}
+
+# удалить все куки (например, logout)
+session.clear()
+```
+
+### Комбинирование с другим middleware
+
+`SessionMiddleware` использует `__priority__ = -10`, то есть запускается
+раньше всех остальных middleware — куки подставляются до того, как auth
+или logging middleware видят запрос.
+
+```python
+from fasthttp import FastHTTP, SessionMiddleware, CacheMiddleware
+
+app = FastHTTP(
+    middleware=SessionMiddleware() | CacheMiddleware(ttl=60)
+)
+```
+
+!!! note "Параллельные запросы и состояние сессии"
+    Внутри одного вызова `app.run()` все маршруты запускаются одновременно
+    через `asyncio.gather`. Если запрос B нуждается в куке, которую устанавливает
+    запрос A, разбей их на отдельные `app.run(tags=[...])` — так A завершится
+    до начала B.
