@@ -197,3 +197,87 @@ app = FastHTTP(
 - `ttl` — cache time-to-live in seconds
 - `max_size` — maximum number of entries (LRU eviction)
 - `cache_methods` — list of methods to cache (default `["GET"]`)
+
+## Session / Cookie persistence
+
+FastHTTP includes built-in `SessionMiddleware` that automatically captures
+`Set-Cookie` response headers and injects them as `Cookie` headers into all
+subsequent requests — including across separate `app.run()` calls.
+
+```python
+from fasthttp import FastHTTP, SessionMiddleware
+from fasthttp.response import Response
+
+session = SessionMiddleware()
+app = FastHTTP(middleware=session)
+```
+
+### Login flow (sequential runs with tags)
+
+Because all routes in one `run()` execute in parallel, use `tags` to run
+requests in order when one depends on cookies set by another:
+
+```python
+from fasthttp import FastHTTP, SessionMiddleware
+from fasthttp.response import Response
+
+session = SessionMiddleware()
+app = FastHTTP(middleware=session)
+
+
+@app.post(
+    url="https://api.example.com/login",
+    json={"username": "alice", "password": "secret"},
+    tags=["auth"],
+)
+async def login(resp: Response) -> dict:
+    # SessionMiddleware captures Set-Cookie from this response automatically
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/profile", tags=["protected"])
+async def profile(resp: Response) -> dict:
+    # Cookie header injected by SessionMiddleware
+    return resp.json()
+
+
+app.run(tags=["auth"])       # login — cookies saved in session.cookies
+app.run(tags=["protected"])  # profile — Cookie header injected automatically
+```
+
+### Pre-seeding cookies
+
+Pass an initial cookie dict to skip a login step:
+
+```python
+session = SessionMiddleware(cookies={"auth_token": "already-have-this"})
+app = FastHTTP(middleware=session)
+```
+
+### Manual cookie management
+
+```python
+# inspect what is stored
+print(session.get_cookies())   # {"session_id": "abc123", ...}
+
+# remove all cookies (e.g. logout)
+session.clear()
+```
+
+### Combining with other middleware
+
+`SessionMiddleware` uses `__priority__ = -10`, so it runs before everything
+else by default — cookies are injected before auth or logging middleware sees the request.
+
+```python
+from fasthttp import FastHTTP, SessionMiddleware, CacheMiddleware
+
+app = FastHTTP(
+    middleware=SessionMiddleware() | CacheMiddleware(ttl=60)
+)
+```
+
+!!! note "Parallel requests and session state"
+    Within a single `app.run()` call, all routes fire concurrently via
+    `asyncio.gather`. If request B needs a cookie set by request A, split
+    them into separate `app.run(tags=[...])` calls so A completes before B starts.
