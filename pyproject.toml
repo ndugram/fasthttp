@@ -10,7 +10,7 @@ exclude = ["/tests", "/docs", "/examples"]
 
 [project]
 name = "fasthttp-client"
-version = "1.2.6"
+version = "1.2.7"
 description = "Fast and simple HTTP client library with async support and beautiful logging"
 readme = "README.md"
 license = {text = "MIT"}
@@ -37,7 +37,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11", 
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
@@ -96,7 +96,7 @@ target-version = "py310"
 [tool.ruff.lint]
 select = [
     "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings  
+    "W",   # pycodestyle warnings
     "F",   # pyflakes
     "I",   # isort
     "C90", # mccabe
