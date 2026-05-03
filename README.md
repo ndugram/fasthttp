@@ -17,6 +17,9 @@
 <a href="https://pypi.org/project/fasthttp-client" target="_blank">
     <img src="https://img.shields.io/pypi/dm/fasthttp-client?color=%2334D058&label=downloads" alt="Monthly downloads">
 </a>
+<a href="https://pepy.tech/projects/fasthttp-client" target="_blank">
+    <img src="https://img.shields.io/pepy/dt/fasthttp-client?color=%2334D058&label=total%20downloads" alt="Total downloads">
+</a>
 <a href="https://codspeed.io/ndugram/fasthttp" target="_blank">
     <img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed">
 </a>
