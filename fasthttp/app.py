@@ -19,7 +19,7 @@ from .helpers.route_inspect import (
 )
 from .helpers.routing import apply_base_url, check_https_url
 from .logging import setup_logger
-from .middleware import BaseMiddleware, MiddlewareChain, MiddlewareManager
+from .middleware import BaseMiddleware, CookieJar, DummyCookieJar, MiddlewareChain, MiddlewareManager, SessionMiddleware
 from .openapi.generator import generate_openapi_schema
 from .openapi.swagger import get_not_found_html, get_swagger_html
 from .openapi.urls import build_docs_urls
@@ -200,6 +200,32 @@ class FastHTTP:
                 ),
             ]
         ) = None,
+        cookie_jar: Annotated[
+            CookieJar | None,
+            Doc(
+                """
+                Cookie jar for automatic cookie handling across requests.
+
+                Cookies captured from ``Set-Cookie`` response headers are stored
+                in the jar and injected into subsequent requests automatically.
+
+                Use :class:`DummyCookieJar` to explicitly disable cookies.
+
+                Example:
+                ```python
+                from fasthttp import FastHTTP, CookieJar, DummyCookieJar
+
+                app = FastHTTP(cookie_jar=CookieJar())
+
+                app = FastHTTP(cookie_jar=CookieJar({"session_id": "abc"}))
+
+                app = FastHTTP(cookie_jar=CookieJar(unsafe=True))
+
+                app = FastHTTP(cookie_jar=DummyCookieJar())
+                ```
+                """
+            ),
+        ] = None,
         security: Annotated[
             bool,
             Doc(
@@ -361,6 +387,12 @@ class FastHTTP:
             normalized_middleware = middleware
         else:
             normalized_middleware = [middleware]
+
+        self.cookie_jar = cookie_jar
+        if cookie_jar is not None and not isinstance(cookie_jar, DummyCookieJar):
+            session_mw = SessionMiddleware(jar=cookie_jar)
+            if isinstance(normalized_middleware, list):
+                normalized_middleware = [session_mw, *normalized_middleware]
 
         self.middleware_manager = MiddlewareManager(normalized_middleware)
 
