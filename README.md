@@ -49,6 +49,20 @@ Key features:
 - **Interactive** — built-in Swagger UI via `app.web_run()` to browse and execute requests in the browser.
 - **HTTP/2** — optional HTTP/2 support, with automatic fallback to HTTP/1.1.
 
+## Sponsors
+
+<p align="center">
+  <a href="https://sudoteach.com" target="_blank">
+    <img src="https://s3.eu-north-1.amazonaws.com/sudoteach.com/media/course_avatars/IMG_1168-2.png" alt="sudoteach.com" height="80">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://sudoteach.com" target="_blank"><strong>SudoTeach</strong></a> — a platform for learning programming. Practical courses on Python, backend, and DevOps from working developers.
+</p>
+
+---
+
 ## Requirements
 
 Python 3.10+
