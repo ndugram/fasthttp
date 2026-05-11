@@ -402,6 +402,102 @@ class CacheMiddleware(BaseMiddleware):
         }
 
 
+class CookieJar:
+    """
+    Cookie storage for FastHTTP.
+
+    Holds cookies that are injected into every outgoing request
+    and updated from ``Set-Cookie`` headers in responses.
+
+    Pass to :class:`FastHTTP` via the ``cookie_jar`` parameter.
+
+    Example:
+    ```python
+        from fasthttp import FastHTTP, CookieJar
+
+        app = FastHTTP(cookie_jar=CookieJar())
+
+        app = FastHTTP(cookie_jar=CookieJar({"session_id": "abc"}))
+
+        app = FastHTTP(cookie_jar=CookieJar(unsafe=True))
+    ```
+    """
+
+    def __init__(
+        self,
+        cookies: Annotated[
+            dict[str, str] | None,
+            Doc("Initial cookies to pre-seed the jar with."),
+        ] = None,
+        *,
+        unsafe: Annotated[
+            bool,
+            Doc(
+                """
+                Allow cookies for IP addresses and localhost.
+
+                By default, cookies for non-domain hosts are rejected.
+                Set to ``True`` to allow them — useful for local development
+                and testing against internal services.
+                """
+            ),
+        ] = False,
+    ) -> None:
+        self._cookies: dict[str, str] = dict(cookies) if cookies else {}
+        self.unsafe = unsafe
+
+    def set(
+        self,
+        name: Annotated[str, Doc("Cookie name.")],
+        value: Annotated[str, Doc("Cookie value.")],
+    ) -> None:
+        self._cookies[name] = value
+
+    def get(
+        self,
+        name: Annotated[str, Doc("Cookie name.")],
+        default: Annotated[str | None, Doc("Fallback value if cookie not found.")] = None,
+    ) -> str | None:
+        return self._cookies.get(name, default)
+
+    def clear(self) -> None:
+        self._cookies.clear()
+
+    def items(self) -> list[tuple[str, str]]:
+        return list(self._cookies.items())
+
+    def __iter__(self) -> Iterator[tuple[str, str]]:
+        return iter(self._cookies.items())
+
+    def __len__(self) -> int:
+        return len(self._cookies)
+
+    def __repr__(self) -> str:
+        return f"<CookieJar cookies={list(self._cookies.keys())} unsafe={self.unsafe}>"
+
+
+class DummyCookieJar(CookieJar):
+    """
+    No-op cookie jar that discards all cookies.
+
+    Use when you want to explicitly disable cookie handling
+    without removing ``cookie_jar`` from the constructor call.
+
+    Example:
+    ```python
+        from fasthttp import FastHTTP, DummyCookieJar
+
+        app = FastHTTP(cookie_jar=DummyCookieJar())
+    ```
+    """
+
+    def set(self, name: str, value: str) -> None:
+        return
+
+    def __repr__(self) -> str:
+        return "<DummyCookieJar>"
+
+
 class SessionMiddleware(BaseMiddleware):
     """
     Middleware for persisting cookies across requests and ``app.run()`` calls.
@@ -448,11 +544,20 @@ class SessionMiddleware(BaseMiddleware):
             dict[str, str] | None,
             Doc("Pre-seed cookies to inject from the first request. Optional."),
         ] = None,
+        *,
+        jar: Annotated[
+            CookieJar | None,
+            Doc("CookieJar instance to use as backing store. Takes priority over cookies."),
+        ] = None,
     ) -> None:
-        self.cookies: dict[str, str] = dict(cookies) if cookies else {}
+        self._jar: CookieJar = jar if jar is not None else CookieJar(cookies)
+
+    @property
+    def cookies(self) -> dict[str, str]:
+        return self._jar._cookies
 
     def __repr__(self) -> str:
-        return f"<SessionMiddleware cookies={list(self.cookies.keys())}>"
+        return f"<SessionMiddleware cookies={list(self._jar._cookies.keys())}>"
 
     async def request(
         self,
@@ -460,11 +565,10 @@ class SessionMiddleware(BaseMiddleware):
         url: Annotated[str, Doc("Request URL.")],
         kwargs: Annotated[dict[str, Any], Doc("Request kwargs passed to httpx.")],
     ) -> dict[str, Any]:
-        """Inject stored cookies into outgoing request."""
-        if self.cookies:
+        if self._jar._cookies:
             headers = dict(kwargs.get("headers") or {})
             headers["Cookie"] = "; ".join(
-                f"{k}={v}" for k, v in self.cookies.items()
+                f"{k}={v}" for k, v in self._jar._cookies.items()
             )
             kwargs["headers"] = headers
         return kwargs
@@ -473,20 +577,17 @@ class SessionMiddleware(BaseMiddleware):
         self,
         response: Annotated["Response", Doc("Wrapped response object.")],
     ) -> "Response":
-        """Capture Set-Cookie headers and persist them."""
         raw = response.headers.get("set-cookie", "")
         if raw:
             for cookie_str in raw.split(","):
                 name_value = cookie_str.split(";")[0].strip()
                 if "=" in name_value:
                     k, v = name_value.split("=", 1)
-                    self.cookies[k.strip()] = v.strip()
+                    self._jar.set(k.strip(), v.strip())
         return response
 
     def clear(self) -> None:
-        """Clear all stored cookies."""
-        self.cookies.clear()
+        self._jar.clear()
 
     def get_cookies(self) -> dict[str, str]:
-        """Return copy of current cookie store."""
-        return dict(self.cookies)
+        return dict(self._jar._cookies)

@@ -109,6 +109,87 @@ manager = MiddlewareManager([AuthMiddleware(), LoggingMiddleware()])
 
 ---
 
+## CookieJar
+
+Хранилище кук, передаётся в `FastHTTP(cookie_jar=...)`. Перехватывает `Set-Cookie` из ответов и подставляет куки в последующие запросы.
+
+```python
+from fasthttp import FastHTTP, CookieJar
+
+app = FastHTTP(cookie_jar=CookieJar())
+app = FastHTTP(cookie_jar=CookieJar({"session_id": "abc"}))
+app = FastHTTP(cookie_jar=CookieJar(unsafe=True))
+```
+
+### Параметры конструктора
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `cookies` | `dict[str, str] \| None` | `None` | Начальные куки для предзагрузки |
+| `unsafe` | `bool` | `False` | Разрешить куки для IP-адресов и localhost |
+
+### Методы
+
+| Метод | Сигнатура | Описание |
+|-------|-----------|----------|
+| `set` | `(name, value) → None` | Сохранить куку |
+| `get` | `(name, default=None) → str \| None` | Получить значение куки |
+| `clear` | `() → None` | Удалить все куки |
+| `items` | `() → list[tuple[str, str]]` | Все куки в виде пар ключ-значение |
+
+---
+
+## DummyCookieJar
+
+No-op хранилище кук. Игнорирует все куки — заголовки `Set-Cookie` не обрабатываются, ничего не подставляется в запросы.
+
+```python
+from fasthttp import FastHTTP, DummyCookieJar
+
+app = FastHTTP(cookie_jar=DummyCookieJar())
+```
+
+Подкласс `CookieJar`. Все методы унаследованы, но `set` — no-op.
+
+---
+
+## SessionMiddleware
+
+Встроенный middleware для персистентности кук. Подключается автоматически при использовании `cookie_jar=` на `FastHTTP`. Используй напрямую для продвинутых случаев (контроль приоритета, цепочки middleware).
+
+```python
+from fasthttp import FastHTTP, SessionMiddleware
+
+app = FastHTTP(middleware=SessionMiddleware())
+```
+
+### Параметры конструктора
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `cookies` | `dict[str, str] \| None` | `None` | Предзагруженные куки |
+| `jar` | `CookieJar \| None` | `None` | Backing `CookieJar`. Имеет приоритет над `cookies` |
+
+### Атрибуты класса
+
+| Атрибут | Значение | Описание |
+|---------|----------|----------|
+| `__priority__` | `-10` | Запускается раньше всех middleware |
+| `__methods__` | `None` | Применяется ко всем HTTP-методам |
+
+### Методы
+
+| Метод | Описание |
+|-------|----------|
+| `get_cookies()` | Возвращает копию текущего хранилища кук как `dict` |
+| `clear()` | Удаляет все хранимые куки |
+
+### Свойство `cookies`
+
+Возвращает внутренний `dict` из backing `CookieJar`. Изменения отражаются немедленно.
+
+---
+
 ## CacheMiddleware
 
 Встроенный middleware для кэширования ответов в памяти.

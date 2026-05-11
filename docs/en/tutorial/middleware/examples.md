@@ -200,17 +200,15 @@ app = FastHTTP(
 
 ## Session / Cookie persistence
 
-FastHTTP includes built-in `SessionMiddleware` that automatically captures
-`Set-Cookie` response headers and injects them as `Cookie` headers into all
-subsequent requests — including across separate `app.run()` calls.
+FastHTTP supports automatic cookie handling via the `cookie_jar` parameter on `FastHTTP` — no middleware import needed.
 
 ```python
-from fasthttp import FastHTTP, SessionMiddleware
-from fasthttp.response import Response
+from fasthttp import FastHTTP, CookieJar
 
-session = SessionMiddleware()
-app = FastHTTP(middleware=session)
+app = FastHTTP(cookie_jar=CookieJar())
 ```
+
+Cookies captured from `Set-Cookie` response headers are stored in the jar and injected into all subsequent requests automatically, including across separate `app.run()` calls.
 
 ### Login flow (sequential runs with tags)
 
@@ -218,11 +216,10 @@ Because all routes in one `run()` execute in parallel, use `tags` to run
 requests in order when one depends on cookies set by another:
 
 ```python
-from fasthttp import FastHTTP, SessionMiddleware
+from fasthttp import FastHTTP, CookieJar
 from fasthttp.response import Response
 
-session = SessionMiddleware()
-app = FastHTTP(middleware=session)
+app = FastHTTP(cookie_jar=CookieJar())
 
 
 @app.post(
@@ -231,17 +228,15 @@ app = FastHTTP(middleware=session)
     tags=["auth"],
 )
 async def login(resp: Response) -> dict:
-    # SessionMiddleware captures Set-Cookie from this response automatically
     return resp.json()
 
 
 @app.get(url="https://api.example.com/profile", tags=["protected"])
 async def profile(resp: Response) -> dict:
-    # Cookie header injected by SessionMiddleware
     return resp.json()
 
 
-app.run(tags=["auth"])       # login — cookies saved in session.cookies
+app.run(tags=["auth"])       # login — cookies saved in jar
 app.run(tags=["protected"])  # profile — Cookie header injected automatically
 ```
 
@@ -250,24 +245,44 @@ app.run(tags=["protected"])  # profile — Cookie header injected automatically
 Pass an initial cookie dict to skip a login step:
 
 ```python
-session = SessionMiddleware(cookies={"auth_token": "already-have-this"})
-app = FastHTTP(middleware=session)
+app = FastHTTP(cookie_jar=CookieJar({"auth_token": "already-have-this"}))
 ```
 
-### Manual cookie management
+### Inspect and clear cookies
 
 ```python
-# inspect what is stored
-print(session.get_cookies())   # {"session_id": "abc123", ...}
+jar = CookieJar()
+app = FastHTTP(cookie_jar=jar)
+
+# inspect
+print(jar.get("session_id"))
+print(jar.items())
 
 # remove all cookies (e.g. logout)
-session.clear()
+jar.clear()
 ```
 
-### Combining with other middleware
+### Allow cookies for IP / localhost
 
-`SessionMiddleware` uses `__priority__ = -10`, so it runs before everything
-else by default — cookies are injected before auth or logging middleware sees the request.
+By default cookies for non-domain hosts are rejected. Set `unsafe=True` for local development:
+
+```python
+app = FastHTTP(cookie_jar=CookieJar(unsafe=True))
+```
+
+### Disable cookies entirely
+
+Use `DummyCookieJar` to explicitly turn off cookie handling:
+
+```python
+from fasthttp import FastHTTP, DummyCookieJar
+
+app = FastHTTP(cookie_jar=DummyCookieJar())
+```
+
+### Advanced: SessionMiddleware directly
+
+For priority control or chaining with other middleware, use `SessionMiddleware` directly:
 
 ```python
 from fasthttp import FastHTTP, SessionMiddleware, CacheMiddleware

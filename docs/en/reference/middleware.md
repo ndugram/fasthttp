@@ -109,6 +109,87 @@ Methods are called automatically by `HTTPClient`.
 
 ---
 
+## CookieJar
+
+Cookie storage passed to `FastHTTP(cookie_jar=...)`. Captures `Set-Cookie` headers from responses and injects cookies into subsequent requests.
+
+```python
+from fasthttp import FastHTTP, CookieJar
+
+app = FastHTTP(cookie_jar=CookieJar())
+app = FastHTTP(cookie_jar=CookieJar({"session_id": "abc"}))
+app = FastHTTP(cookie_jar=CookieJar(unsafe=True))
+```
+
+### Constructor parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `cookies` | `dict[str, str] \| None` | `None` | Initial cookies to pre-seed the jar |
+| `unsafe` | `bool` | `False` | Allow cookies for IP addresses and localhost |
+
+### Methods
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `set` | `(name, value) → None` | Store a cookie |
+| `get` | `(name, default=None) → str \| None` | Retrieve a cookie value |
+| `clear` | `() → None` | Remove all cookies |
+| `items` | `() → list[tuple[str, str]]` | All cookies as key-value pairs |
+
+---
+
+## DummyCookieJar
+
+No-op cookie jar. Discards all cookies — `Set-Cookie` headers are ignored and nothing is injected into requests.
+
+```python
+from fasthttp import FastHTTP, DummyCookieJar
+
+app = FastHTTP(cookie_jar=DummyCookieJar())
+```
+
+Subclass of `CookieJar`. All methods are inherited but `set` is a no-op.
+
+---
+
+## SessionMiddleware
+
+Built-in middleware for cookie persistence. Automatically wired when `cookie_jar=` is used on `FastHTTP`. Use directly for advanced cases (priority control, middleware chaining).
+
+```python
+from fasthttp import FastHTTP, SessionMiddleware
+
+app = FastHTTP(middleware=SessionMiddleware())
+```
+
+### Constructor parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `cookies` | `dict[str, str] \| None` | `None` | Pre-seed cookies |
+| `jar` | `CookieJar \| None` | `None` | Backing `CookieJar` instance. Takes priority over `cookies` |
+
+### Class attributes
+
+| Attribute | Value | Description |
+|-----------|-------|-------------|
+| `__priority__` | `-10` | Runs before all other middleware |
+| `__methods__` | `None` | Applies to all HTTP methods |
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `get_cookies()` | Returns copy of current cookie store as `dict` |
+| `clear()` | Removes all stored cookies |
+
+### `cookies` property
+
+Returns the underlying `dict` from the backing `CookieJar`. Mutations are reflected immediately.
+
+---
+
 ## CacheMiddleware
 
 Built-in middleware for caching responses in memory.
