@@ -53,7 +53,7 @@ Key features:
 
 <p align="center">
   <a href="https://sudoteach.com" target="_blank">
-    <img src="https://s3.eu-north-1.amazonaws.com/sudoteach.com/media/course_avatars/IMG_1168-2.png" alt="sudoteach.com" height="80">
+    <img src="https://sudoteach.com/favicon.ico" alt="sudoteach.com" height="80">
   </a>
 </p>
 
