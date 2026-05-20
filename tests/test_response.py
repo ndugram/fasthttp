@@ -132,7 +132,7 @@ class TestResponse:
         )
 
         result = response.req_text()
-        assert result == '{"key": "value"}'
+        assert result == '{"key":"value"}'
 
     def test_response_req_text_with_data(self) -> None:
         """Test req_text() returns string for raw data requests."""
