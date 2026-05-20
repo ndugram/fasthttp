@@ -1,30 +1,29 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Annotated, Any
-from urllib.parse import urljoin
 
 from annotated_doc import Doc
 
+try:
+    from fasthttp._core import extract_assets
+except ImportError:
+    import re
+    from urllib.parse import urljoin as _urljoin
 
-def extract_assets(html: str, base_url: str) -> dict:
-    css_pattern = re.compile(
+    _CSS_RE = re.compile(
         r'<link[^>]+rel=["\']stylesheet["\'][^>]+href=["\']([^"\']+)["\']',
-        re.IGNORECASE
+        re.IGNORECASE,
     )
-    js_pattern = re.compile(
+    _JS_RE = re.compile(
         r'<script[^>]+src=["\']([^"\']+)["\']',
-        re.IGNORECASE
+        re.IGNORECASE,
     )
 
-    css_links = [urljoin(base_url, href) for href in css_pattern.findall(html)]
-    js_links = [urljoin(base_url, src) for src in js_pattern.findall(html)]
-
-    return {
-        "css": css_links,
-        "js": js_links
-    }
+    def extract_assets(html: str, base_url: str) -> dict:  # type: ignore[misc]
+        css = [_urljoin(base_url, m) for m in _CSS_RE.findall(html)]
+        js = [_urljoin(base_url, m) for m in _JS_RE.findall(html)]
+        return {"css": css, "js": js}
 
 
 class Response:
