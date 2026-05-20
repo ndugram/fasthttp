@@ -10,7 +10,7 @@ features = ["pyo3/extension-module"]
 
 [project]
 name = "fasthttp-client"
-version = "1.2.8"
+version = "1.2.9"
 description = "Fast and simple HTTP client library with async support and beautiful logging"
 readme = "README.md"
 license = {text = "MIT"}
