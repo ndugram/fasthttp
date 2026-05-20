@@ -242,7 +242,7 @@ class TestResponseReqText:
             req_json={"x": 1}, req_data="ignored"
         )
         result = r.req_text()
-        assert result == '{"x": 1}'
+        assert result == '{"x":1}'
 
     def test_req_text_data_when_no_json(self):
         r = Response(status=200, text="", headers={}, req_data="raw text")
