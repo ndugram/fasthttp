@@ -9,37 +9,39 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  # ── 1. Version check, tag creation, GitHub release ──────────────────────────
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      skip: ${{ steps.tag_check.outputs.skip }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_TOKEN }}
-      
+
       - name: Get version from pyproject
         id: version
         run: |
           VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_ENV
-      
+
       - name: Check if tag already exists
         id: tag_check
         run: |
-          TAG="v${{ env.version }}"
+          TAG="v${{ steps.version.outputs.version }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists, skipping release"
             echo "skip=true" >> $GITHUB_OUTPUT
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
-      
-      - name: Send Telegram announcement
+
+      - name: Telegram — coming soon
         if: steps.tag_check.outputs.skip == 'false'
         run: |
-          TAG="v${{ env.version }}"
+          TAG="v${{ steps.version.outputs.version }}"
           MESSAGE="⏳ *fasthttp-client ${TAG} coming soon...*
 
           Новая версия уже собирается и скоро появится на PyPI 📦"
@@ -49,63 +51,162 @@ jobs:
             --data-urlencode "text=${MESSAGE}" \
             -d "parse_mode=Markdown"
 
-      - name: Get current commit SHA
-        if: steps.tag_check.outputs.skip == 'false'
-        id: commit
-        run: |
-          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-
       - name: Create tag via GitHub API
         if: steps.tag_check.outputs.skip == 'false'
         run: |
-          TAG="v${{ env.version }}"
+          TAG="v${{ steps.version.outputs.version }}"
+          SHA=$(git rev-parse HEAD)
           curl -s -X POST "https://api.github.com/repos/${{ github.repository }}/git/refs" \
             -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            -d '{
-              "ref": "refs/tags/'"$TAG"'",
-              "sha": "${{ steps.commit.outputs.sha }}"
-            }'
+            -d "{\"ref\":\"refs/tags/$TAG\",\"sha\":\"$SHA\"}"
 
       - name: Create GitHub Release
         if: steps.tag_check.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.version }}
-          name: ${{ env.version }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
           generate_release_notes: true
           draft: false
           prerelease: false
           token: ${{ secrets.GH_TOKEN }}
 
-      - name: Set up Python
-        if: steps.tag_check.outputs.skip == 'false'
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-          
-      - name: Install dependencies
-        if: steps.tag_check.outputs.skip == 'false'
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-          
-      - name: Build package
-        if: steps.tag_check.outputs.skip == 'false'
-        run: python -m build
-        
-      - name: Publish to PyPI
-        if: steps.tag_check.outputs.skip == 'false'
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          twine upload dist/*
+  # ── 2a. Linux wheels (manylinux, x86_64 + aarch64) ──────────────────────────
+  build-linux:
+    needs: prepare
+    if: needs.prepare.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Send Telegram notification
-        if: steps.tag_check.outputs.skip == 'false'
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manylinux: auto
+          manifest-path: fasthttp/_core/Cargo.toml
+          args: >-
+            --release
+            --out dist
+            --find-interpreter
+          sccache: "true"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-${{ matrix.target }}
+          path: dist
+
+  # ── 2b. macOS wheels (Intel + Apple Silicon) ─────────────────────────────────
+  build-macos:
+    needs: prepare
+    if: needs.prepare.outputs.skip == 'false'
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: macos-13
+            target: x86_64
+          - runner: macos-latest
+            target: aarch64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: |
+            3.10
+            3.11
+            3.12
+            3.13
+
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manifest-path: fasthttp/_core/Cargo.toml
+          args: >-
+            --release
+            --out dist
+            --find-interpreter
+          sccache: "true"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-${{ matrix.target }}
+          path: dist
+
+  # ── 2c. Windows wheels (x86_64) ──────────────────────────────────────────────
+  build-windows:
+    needs: prepare
+    if: needs.prepare.outputs.skip == 'false'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: |
+            3.10
+            3.11
+            3.12
+
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: x86_64
+          manifest-path: fasthttp/_core/Cargo.toml
+          args: >-
+            --release
+            --out dist
+            --find-interpreter
+          sccache: "true"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-x86_64
+          path: dist
+
+  # ── 2d. Source distribution ──────────────────────────────────────────────────
+  build-sdist:
+    needs: prepare
+    if: needs.prepare.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          manifest-path: fasthttp/_core/Cargo.toml
+          args: --out dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
+
+  # ── 3. Publish to PyPI + Telegram notification ───────────────────────────────
+  publish:
+    needs: [prepare, build-linux, build-macos, build-windows, build-sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - uses: PyO3/maturin-action@v1
+        env:
+          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        with:
+          command: upload
+          args: --non-interactive --skip-existing dist/*
+
+      - name: Telegram — released
         run: |
-          TAG="v${{ env.version }}"
+          TAG="v${{ needs.prepare.outputs.version }}"
           MESSAGE="🚀 *fasthttp-client ${TAG} released*
 
           ⚡ Async HTTP client with middleware, routing & OpenAPI support
