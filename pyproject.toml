@@ -1,12 +1,12 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1,<2"]
+build-backend = "maturin"
 
-[tool.hatch.build.targets.wheel]
-packages = ["fasthttp"]
-
-[tool.hatch.build.targets.wheel.sdist]
-exclude = ["/tests", "/docs", "/examples"]
+[tool.maturin]
+manifest-path = "fasthttp/_core/Cargo.toml"
+module-name = "fasthttp._core"
+python-source = "."
+features = ["pyo3/extension-module"]
 
 [project]
 name = "fasthttp-client"
@@ -44,6 +44,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Networking",
     "Typing :: Typed",
+    "Programming Language :: Rust",
 ]
 requires-python = ">=3.10"
 dependencies = [
