@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Annotated, Any
 
+import orjson
 from annotated_doc import Doc
 
 try:
@@ -235,7 +236,7 @@ class Response:
         Returns the parsed JSON object. Raises a
         ValueError if the response body is not valid JSON.
         """
-        return json.loads(self.text)
+        return orjson.loads(self.text)
 
     def req_json(
         self,
