@@ -21,16 +21,17 @@ jobs:
             const sender = context.payload.sender.login;
             const marker = '<!-- welcome-bot -->';
             
-            const message = `${marker}
-👋 Thanks for your contribution, @${sender}!
-
-Please make sure:
-- Code is clean and formatted
-- Tests are passing
-- PR description is clear
-
-Maintainers will review it soon.
-`;
+            const message = [
+              marker,
+              `👋 Thanks for your contribution, @${sender}!`,
+              '',
+              'Please make sure:',
+              '- Code is clean and formatted',
+              '- Tests are passing',
+              '- PR description is clear',
+              '',
+              'Maintainers will review it soon.',
+            ].join('\n');
             
             const { data: comments } = await github.rest.issues.listComments({
               owner,
