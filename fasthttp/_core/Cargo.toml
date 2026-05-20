@@ -1,0 +1,14 @@
+[package]
+name = "fasthttp-core"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+once_cell = "1.21.4"
+pyo3 = { version = "0.28.3", features = ["extension-module"] }
+regex = "1.12.3"
+url = "2.5.8"

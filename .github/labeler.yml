@@ -1,17 +1,25 @@
 # Labeler configuration
 # https://github.com/actions/labeler
 
+# Branch-name based labels (take priority — set intent explicitly)
+feature:
+  - head-branch: ['^feat/', '^feature/']
+
+enhancement:
+  - head-branch: ['^enhance/', '^improvement/']
+
+bug:
+  - head-branch: ['^fix/', '^bug/', '^hotfix/']
+
+refactor:
+  - head-branch: ['^refactor/', '^chore/']
+
 
 docs:
   - changed-files:
-      - any-glob-to-any-file:
+      - all-globs-to-all-files:
           - 'docs/**'
           - '*.md'
-
-code:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'fasthttp/**/*.py'
 
 tests:
   - changed-files:
