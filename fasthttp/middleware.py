@@ -2,11 +2,18 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import json
 import time
 from collections import OrderedDict
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar
+
+import orjson
+
+try:
+    from fasthttp._core import cache_key as _rs_cache_key
+    _HAVE_RUST_CACHE_KEY = True
+except ImportError:
+    _HAVE_RUST_CACHE_KEY = False
 
 from annotated_doc import Doc
 
@@ -346,8 +353,11 @@ class CacheMiddleware(BaseMiddleware):
         )
 
     def _generate_key(self, method: str, url: str, params: Any) -> str:
-        key_data = f"{method}:{url}:{json.dumps(params or {}, sort_keys=True)}"
-        return hashlib.md5(key_data.encode()).hexdigest()
+        params_json = orjson.dumps(params or {}, option=orjson.OPT_SORT_KEYS).decode()
+        if _HAVE_RUST_CACHE_KEY:
+            return _rs_cache_key(method, url, params_json)
+        key_data = f"{method}:{url}:{params_json}"
+        return hashlib.md5(key_data.encode()).hexdigest()  # noqa: S324
 
     async def request(self, method: str, url: str, kwargs: dict[str, Any]) -> dict[str, Any]:
         if method not in self.cache_methods:

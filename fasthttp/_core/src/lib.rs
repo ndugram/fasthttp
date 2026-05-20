@@ -1,3 +1,4 @@
+use md5;
 use once_cell::sync::Lazy;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -135,6 +136,17 @@ fn extract_assets(html: &str, base_url: &str) -> HashMap<String, Vec<String>> {
     HashMap::from([("css".to_string(), css), ("js".to_string(), js)])
 }
 
+/// Generate a cache key: MD5( "METHOD:url:sorted_params_json" ).
+///
+/// `params_json` must be a JSON string with keys already sorted (use
+/// `orjson.dumps(params, option=orjson.OPT_SORT_KEYS).decode()` on the
+/// Python side).
+#[pyfunction]
+fn cache_key(method: &str, url: &str, params_json: &str) -> String {
+    let raw = format!("{method}:{url}:{params_json}");
+    format!("{:x}", md5::compute(raw.as_bytes()))
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(check_https_url, m)?)?;
@@ -142,5 +154,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(resolve_url, m)?)?;
     m.add_function(wrap_pyfunction!(apply_base_url, m)?)?;
     m.add_function(wrap_pyfunction!(extract_assets, m)?)?;
+    m.add_function(wrap_pyfunction!(cache_key, m)?)?;
     Ok(())
 }

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Annotated, Any
 
 import orjson
@@ -271,7 +270,7 @@ class Response:
         ),
     ]:
         if self._req_json is not None:
-            return json.dumps(self._req_json)
+            return orjson.dumps(self._req_json).decode()
         if self._req_data is not None:
             return str(self._req_data)
         return None
