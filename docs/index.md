@@ -35,6 +35,7 @@ FastHTTP is a modern **async HTTP client library** for Python, built on top of *
 The key features are:
 
 * **Fast**: built on <a href="https://www.python-httpx.org/" target="_blank">httpx</a> with full async support and parallel request execution.
+* **Rust-powered**: performance-critical internals (URL resolution, HTML parsing, JSON serialization) are compiled Rust extensions via PyO3 — shipped as pre-built wheels, no Rust toolchain required.
 * **Simple**: define HTTP requests as decorated async functions, no boilerplate.
 * **Typed**: full type annotations throughout; validate responses with <a href="https://docs.pydantic.dev/" target="_blank">Pydantic</a> models.
 * **Logged**: colorful, structured request/response logs with timing, built-in.
