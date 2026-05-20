@@ -15,6 +15,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       skip: ${{ steps.tag_check.outputs.skip }}
+      sha: ${{ steps.sha.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,39 +39,10 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Telegram — coming soon
+      - name: Get HEAD SHA
         if: steps.tag_check.outputs.skip == 'false'
-        run: |
-          TAG="v${{ steps.version.outputs.version }}"
-          MESSAGE="⏳ *fasthttp-client ${TAG} coming soon...*
-
-          Новая версия уже собирается и скоро появится на PyPI 📦"
-
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-            --data-urlencode "text=${MESSAGE}" \
-            -d "parse_mode=Markdown"
-
-      - name: Create tag via GitHub API
-        if: steps.tag_check.outputs.skip == 'false'
-        run: |
-          TAG="v${{ steps.version.outputs.version }}"
-          SHA=$(git rev-parse HEAD)
-          curl -s -X POST "https://api.github.com/repos/${{ github.repository }}/git/refs" \
-            -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            -d "{\"ref\":\"refs/tags/$TAG\",\"sha\":\"$SHA\"}"
-
-      - name: Create GitHub Release
-        if: steps.tag_check.outputs.skip == 'false'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: ${{ steps.version.outputs.version }}
-          generate_release_notes: true
-          draft: false
-          prerelease: false
-          token: ${{ secrets.GH_TOKEN }}
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   # ── 2a. Linux wheels (manylinux, x86_64 + aarch64) ──────────────────────────
   build-linux:
@@ -107,8 +79,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: macos-13
-            target: x86_64
           - runner: macos-latest
             target: aarch64
     steps:
@@ -186,7 +156,7 @@ jobs:
           name: wheels-sdist
           path: dist
 
-  # ── 3. Publish to PyPI + Telegram notification ───────────────────────────────
+  # ── 3. Publish to PyPI + tag + GitHub Release + Telegram ────────────────────
   publish:
     needs: [prepare, build-linux, build-macos, build-windows, build-sdist]
     runs-on: ubuntu-latest
@@ -203,6 +173,24 @@ jobs:
         with:
           command: upload
           args: --non-interactive --skip-existing dist/*
+
+      - name: Create tag via GitHub API
+        run: |
+          TAG="v${{ needs.prepare.outputs.version }}"
+          curl -s -X POST "https://api.github.com/repos/${{ github.repository }}/git/refs" \
+            -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -d "{\"ref\":\"refs/tags/$TAG\",\"sha\":\"${{ needs.prepare.outputs.sha }}\"}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          name: ${{ needs.prepare.outputs.version }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Telegram — released
         run: |
