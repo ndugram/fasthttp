@@ -1,5 +1,14 @@
 import re
 
+try:
+    from fasthttp._core import (
+        sanitize_request_headers as _rs_sanitize_request_headers,
+        check_response_headers as _rs_check_response_headers,
+    )
+    _RUST = True
+except ImportError:
+    _RUST = False
+
 DANGEROUS_RESPONSE_HEADERS = [
     "x-accel-redirect",
     "x-sendfile",
@@ -40,6 +49,8 @@ class HeaderProtection:
         self,
         headers: dict[str, str]
     ) -> dict[str, str]:
+        if _RUST:
+            return _rs_sanitize_request_headers(headers)
         sanitized = {}
         for key, value in headers.items():
             key_clean = self._sanitize_header_name(key)
@@ -70,6 +81,8 @@ class HeaderProtection:
         self,
         headers: dict[str, str]
     ) -> tuple[bool, str | None]:
+        if _RUST:
+            return _rs_check_response_headers(headers)
         for key, value in headers.items():
             key_lower = key.lower()
 

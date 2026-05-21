@@ -3,6 +3,12 @@ import socket
 from urllib.parse import urlparse
 from dataclasses import dataclass
 
+try:
+    from fasthttp._core import is_private_ip as _rs_is_private_ip
+    _RUST = True
+except ImportError:
+    _RUST = False
+
 PRIVATE_RANGES = [
     ipaddress.ip_network("10.0.0.0/8"),
     ipaddress.ip_network("172.16.0.0/12"),
@@ -77,21 +83,23 @@ class RedirectProtection:
 
         try:
             ip_str = socket.gethostbyname(hostname)
-            ip = ipaddress.ip_address(ip_str)
 
-            if ip.is_loopback:
-                return False, f"Redirect to loopback IP: {ip}"
-
-            if ip.is_link_local:
-                return False, f"Redirect to link-local IP: {ip}"
-
-            for network in PRIVATE_RANGES:
-                if ip in network:
-                    return False, f"Redirect to private IP: {ip} ({network})"
+            if _RUST:
+                if _rs_is_private_ip(ip_str):
+                    return False, f"Redirect to private/internal IP: {ip_str}"
+            else:
+                ip = ipaddress.ip_address(ip_str)
+                if ip.is_loopback:
+                    return False, f"Redirect to loopback IP: {ip}"
+                if ip.is_link_local:
+                    return False, f"Redirect to link-local IP: {ip}"
+                for network in PRIVATE_RANGES:
+                    if ip in network:
+                        return False, f"Redirect to private IP: {ip} ({network})"
 
         except socket.gaierror:
             pass
-        except Exception as e:
+        except Exception:
             pass
 
         return True, None

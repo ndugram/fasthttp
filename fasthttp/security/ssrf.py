@@ -3,6 +3,15 @@ import ipaddress
 import socket
 from urllib.parse import urlparse
 
+try:
+    from fasthttp._core import (
+        is_private_ip as _rs_is_private_ip,
+        is_local_hostname as _rs_is_local_hostname,
+    )
+    _RUST = True
+except ImportError:
+    _RUST = False
+
 PRIVATE_RANGES = [
     ipaddress.ip_network("10.0.0.0/8"),
     ipaddress.ip_network("172.16.0.0/12"),
@@ -51,31 +60,30 @@ class SSRFProtection:
 
         hostname_lower = hostname.lower()
 
-        if hostname_lower in LOCALHOST_NAMES:
-            return False
-
-        if any(hostname_lower.endswith(domain) for domain in LOCAL_DOMAINS):
-            return False
-
-        if hostname_lower in ("127.0.0.1", "0.0.0.0", "::1", "0"):
-            return False
+        if _RUST:
+            if _rs_is_local_hostname(hostname_lower):
+                return False
+        else:
+            if hostname_lower in LOCALHOST_NAMES:
+                return False
+            if any(hostname_lower.endswith(domain) for domain in LOCAL_DOMAINS):
+                return False
+            if hostname_lower in ("127.0.0.1", "0.0.0.0", "::1", "0"):
+                return False
 
         try:
             ip_str = await asyncio.to_thread(socket.gethostbyname, hostname)
-            ip = ipaddress.ip_address(ip_str)
 
-            if ip.is_loopback:
-                return False
-
-            if ip.is_link_local:
-                return False
-
-            if ip.is_multicast:
-                return False
-
-            for network in PRIVATE_RANGES:
-                if ip in network:
+            if _RUST:
+                if _rs_is_private_ip(ip_str):
                     return False
+            else:
+                ip = ipaddress.ip_address(ip_str)
+                if ip.is_loopback or ip.is_link_local or ip.is_multicast:
+                    return False
+                for network in PRIVATE_RANGES:
+                    if ip in network:
+                        return False
 
         except socket.gaierror:
             return True

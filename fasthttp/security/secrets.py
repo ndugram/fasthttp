@@ -1,5 +1,16 @@
 import re
 
+try:
+    from fasthttp._core import (
+        mask_cookie as _rs_mask_cookie,
+        mask_headers as _rs_mask_headers,
+        mask_log_message as _rs_mask_log_message,
+        should_mask_value as _rs_should_mask_value,
+    )
+    _RUST = True
+except ImportError:
+    _RUST = False
+
 SECRET_HEADERS = [
     "authorization",
     "x-api-key",
@@ -39,6 +50,8 @@ class SecretsMasking:
         ]
 
     def mask_headers(self, headers: dict[str, str]) -> dict[str, str]:
+        if _RUST:
+            return _rs_mask_headers(headers)
         masked = {}
         for key, value in headers.items():
             key_lower = key.lower()
@@ -54,6 +67,8 @@ class SecretsMasking:
         return masked
 
     def _mask_cookie(self, cookie: str) -> str:
+        if _RUST:
+            return _rs_mask_cookie(cookie)
         parts = cookie.split(";")
         masked_parts = []
         for part in parts:
@@ -76,10 +91,14 @@ class SecretsMasking:
         return url
 
     def mask_log_message(self, message: str) -> str:
+        if _RUST:
+            return _rs_mask_log_message(message)
         result = message
         for pattern in self._compiled_patterns:
             result = pattern.sub(r"\1*****", result)
         return result
 
     def should_mask_value(self, key: str) -> bool:
+        if _RUST:
+            return _rs_should_mask_value(key)
         return bool(SECRET_PARAM_REGEX.search(key))

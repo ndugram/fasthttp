@@ -1,6 +1,15 @@
 import re
 from dataclasses import dataclass
 
+try:
+    from fasthttp._core import (
+        detect_xss as _rs_detect_xss,
+        sanitize_html as _rs_sanitize_html,
+    )
+    _RUST = True
+except ImportError:
+    _RUST = False
+
 DANGEROUS_CONTENT_TYPES = [
     "text/html",
     "application/xhtml+xml",
@@ -78,23 +87,20 @@ class ResponseProtection:
     def sanitize_html(self, content: str) -> str:
         if not self._config.sanitize_html:
             return content
-
-        result = content
-
-        result = SCRIPT_TAG_PATTERN.sub("", result)
-
+        if _RUST:
+            return _rs_sanitize_html(content)
+        result = SCRIPT_TAG_PATTERN.sub("", content)
         result = HTML_TAG_PATTERN.sub("", result)
-
         return result
 
     def detect_xss(self, content: str) -> tuple[bool, str | None]:
+        if _RUST:
+            return _rs_detect_xss(content)
         for pattern in XSS_PATTERNS:
             if pattern.search(content):
                 return True, "Potential XSS detected in response"
-
         if EVENT_HANDLER_PATTERN.search(content):
             return True, "Potential XSS (event handler) detected in response"
-
         return False, None
 
     def validate_response(
