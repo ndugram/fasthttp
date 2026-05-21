@@ -1,4 +1,4 @@
-.PHONY: lint clean dev format
+.PHONY: lint clean dev dev-release build format
 
 lint:
 	ruff check .
@@ -14,7 +14,15 @@ clean:
 
 
 dev:
-	pip install -e .[dev]
+	python -m maturin develop
+
+
+dev-release:
+	python -m maturin develop --release
+
+
+build:
+	python -m maturin build --release --out dist
 
 
 format:
