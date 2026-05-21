@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import secrets
+import sys
 import time
 import uuid
 from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args, get_origin
@@ -412,7 +413,6 @@ class FastHTTP:
         self.startup_uuid = None
         if self.generate_startup_uuid:
             if self.startup_uuid_version == "v7":
-                import sys
                 if sys.version_info >= (3, 13):
                     self.startup_uuid = str(uuid.uuid7())
                 else:
@@ -1036,11 +1036,17 @@ class FastHTTP:
             proxy=self.proxy,
         ) as client:
             if total > 1:
-                tasks = [
-                    self._run_route(client, route)
-                    for route in routes
-                ]
-                results = await asyncio.gather(*tasks)
+                if sys.version_info >= (3, 11):
+                    async with asyncio.TaskGroup() as tg:
+                        tg_tasks = [
+                            tg.create_task(self._run_route(client, route))
+                            for route in routes
+                        ]
+                    results = [t.result() for t in tg_tasks]
+                else:
+                    results = await asyncio.gather(*[
+                        self._run_route(client, route) for route in routes
+                    ])
 
                 for route, elapsed, result in results:
                     self._log_result(route, elapsed, result)
@@ -1242,6 +1248,7 @@ class ASGIApp:
     ) -> None:
         self.fasthttp = app
         self.docs_urls = build_docs_urls(base_url)
+        self._shared_client: httpx.AsyncClient | None = None
 
     async def __call__(
         self,
@@ -1249,7 +1256,30 @@ class ASGIApp:
         receive: Callable[..., Any],
         send: Callable[..., Any],
     ) -> None:
-        await self.handle_request(scope, receive, send)
+        if scope["type"] == "lifespan":
+            await self._handle_lifespan(receive, send)
+        else:
+            await self.handle_request(scope, receive, send)
+
+    async def _handle_lifespan(
+        self,
+        receive: Callable[..., Any],
+        send: Callable[..., Any],
+    ) -> None:
+        while True:
+            message = await receive()
+            if message["type"] == "lifespan.startup":
+                self._shared_client = httpx.AsyncClient(
+                    http2=self.fasthttp.http2_enabled,
+                    proxy=self.fasthttp.proxy,
+                )
+                await send({"type": "lifespan.startup.complete"})
+            elif message["type"] == "lifespan.shutdown":
+                if self._shared_client is not None:
+                    await self._shared_client.aclose()
+                    self._shared_client = None
+                await send({"type": "lifespan.shutdown.complete"})
+                break
 
     async def handle_request(
         self,
@@ -1367,53 +1397,54 @@ class ASGIApp:
 
             route = self._find_route(url, real_method)
 
-            async with httpx.AsyncClient(
-                proxy=self.fasthttp.proxy,
-            ) as client:
-                kwargs: dict[str, Any] = {
-                    "method": real_method,
-                    "url": url,
-                    "headers": headers,
-                }
+            kwargs: dict[str, Any] = {
+                "method": real_method,
+                "url": url,
+                "headers": headers,
+            }
 
-                if req_body and real_method in ("POST", "PUT", "PATCH"):
-                    if isinstance(req_body, dict):
-                        kwargs["json"] = req_body
+            if req_body and real_method in ("POST", "PUT", "PATCH"):
+                if isinstance(req_body, dict):
+                    kwargs["json"] = req_body
+                else:
+                    kwargs["content"] = str(req_body)
+
+            if self._shared_client is not None:
+                response = await self._shared_client.request(**kwargs)
+            else:
+                async with httpx.AsyncClient(proxy=self.fasthttp.proxy) as tmp:
+                    response = await tmp.request(**kwargs)
+
+            result: dict[str, Any] = {
+                "status": response.status_code,
+                "headers": dict(response.headers),
+                "body": response.text,
+            }
+
+            try:
+                json_data = response.json()
+                if route and route.response_model:
+                    if get_origin(route.response_model) is list:
+                        item_model = get_args(route.response_model)[0]
+                        validated = [
+                            item_model.model_validate(item)
+                            for item in json_data
+                        ]
+                        result["json"] = [
+                            item.model_dump() for item in validated
+                        ]
                     else:
-                        kwargs["content"] = str(req_body)
+                        validated = route.response_model.model_validate(
+                            json_data
+                        )
+                        result["json"] = validated.model_dump()
+                    result["body"] = json.dumps(result["json"], ensure_ascii=False)
+                else:
+                    result["json"] = json_data
+            except Exception as e:
+                self.fasthttp.logger.debug("validation error=%s", e)
 
-                response = await client.request(**kwargs)
-
-                result = {
-                    "status": response.status_code,
-                    "headers": dict(response.headers),
-                    "body": response.text,
-                }
-
-                try:
-                    json_data = response.json()
-                    if route and route.response_model:
-                        if get_origin(route.response_model) is list:
-                            item_model = get_args(route.response_model)[0]
-                            validated = [
-                                item_model.model_validate(item)
-                                for item in json_data
-                            ]
-                            result["json"] = [
-                                item.model_dump() for item in validated
-                            ]
-                        else:
-                            validated = route.response_model.model_validate(
-                                json_data
-                            )
-                            result["json"] = validated.model_dump()
-                        result["body"] = json.dumps(result["json"], ensure_ascii=False)
-                    else:
-                        result["json"] = json_data
-                except Exception as e:
-                    self.fasthttp.logger.debug("validation error=%s", e)
-
-                await self._send_json(send, result)
+            await self._send_json(send, result)
 
         except httpx.ConnectError as e:
             await self._send_json(send, {"error": f"Connection error: {e!s}"})
