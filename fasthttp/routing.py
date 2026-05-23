@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from annotated_doc import Doc
-from pydantic import BaseModel
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from pydantic import BaseModel
+
+from .helpers.route_inspect import validate_handler
 from .helpers.routing import join_prefix as _join_prefix
 from .helpers.routing import resolve_url as _resolve_url
-from .helpers.route_inspect import validate_handler
 
 
 class Route:
