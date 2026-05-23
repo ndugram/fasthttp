@@ -137,7 +137,7 @@ class TestBaseMiddleware:
         called = []
 
         class Base(BaseMiddleware):
-            def __init_subclass__(cls, **kwargs):
+            def __init_subclass__(cls, **kwargs) -> None:
                 super().__init_subclass__(**kwargs)
                 called.append(cls.__name__)
 
@@ -820,7 +820,7 @@ class TestMiddlewareIntegration:
             __methods__ = None
             __enabled__ = True
 
-            def __init__(self, name):
+            def __init__(self, name) -> None:
                 self.name = name
 
             async def request(self, method, url, kwargs):
