@@ -1,7 +1,6 @@
 from fasthttp import FastHTTP
 from fasthttp.response import Response
 
-
 app = FastHTTP(debug=True)
 
 
