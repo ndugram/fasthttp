@@ -12,6 +12,7 @@ class Dependency:
             Callable,
             Doc("Async function that modifies request config"),
         ],
+        *,
         use_cache: Annotated[
             bool,
             Doc(
@@ -51,6 +52,7 @@ def Depends(  # noqa: N802
         Callable,
         Doc("Dependency async function that modifies request config"),
     ],
+    *,
     use_cache: Annotated[
         bool,
         Doc(
