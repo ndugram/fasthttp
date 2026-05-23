@@ -28,20 +28,20 @@ class CLIFormatter:
         print(f"{self.ERROR} {message}", file=sys.stderr)
 
     def info(self, message: str) -> None:
-        print(f"{self.CYAN}ℹ{self.RESET} {message}")
+        print(f"{self.CYAN}ℹ{self.RESET} {message}")  # noqa: RUF001
 
-    def result(self, label: str, value: Any) -> None:
+    def result(self, label: str, value: Any) -> None:  # noqa: ANN401
         print(f"{self.ARROW} {self.BOLD}{label}{self.RESET}: {value}")
 
     def header(self, text: str) -> None:
         print(f"\n{self.CYAN}{self.BOLD}{text}{self.RESET}")
         print(f"{self.CYAN}{'─' * len(text)}{self.RESET}")
 
-    def key_value(self, key: str, value: Any, indent: int = 0) -> None:
+    def key_value(self, key: str, value: Any, indent: int = 0) -> None:  # noqa: ANN401
         prefix = " " * indent
         print(f"{prefix}{self.GRAY}{key}:{self.RESET} {value}")
 
-    def json_output(self, data: Any) -> None:
+    def json_output(self, data: Any) -> None:  # noqa: ANN401
         formatted = json.dumps(data, indent=2, ensure_ascii=False)
         print(f"{self.PURPLE}{formatted}{self.RESET}")
 
