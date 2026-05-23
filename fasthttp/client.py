@@ -363,7 +363,7 @@ class HTTPClient:
                         response._handler_result = validated
                         handler_result = await route.handler(response)
                         return await self._process_handler_result(response, handler_result)
-                    except Exception:
+                    except Exception:  # noqa: S110
                         pass
             await self._handle_bad_status(route, config, resp)
             return None
