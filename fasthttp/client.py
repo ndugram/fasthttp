@@ -191,7 +191,7 @@ class HTTPClient:
             content_type=response.headers.get("content-type"),
             status_code=response.status_code,
         )
-        await self.security.post_request(route.url, route.method, True)
+        await self.security.post_request(route.url, route.method, success=True)
 
     async def _handle_bad_status(
         self,
@@ -221,7 +221,7 @@ class HTTPClient:
     ) -> None:
         if self.security:
             self.security.release_slot()
-            await self.security.post_request(route.url, route.method, False, error)
+            await self.security.post_request(route.url, route.method, success=False, error=error)
 
         exc = error_class(
             message=str(error) or "Request failed",
@@ -300,7 +300,7 @@ class HTTPClient:
         except SecurityError as e:
             if self.security:
                 self.security.release_slot()
-                await self.security.post_request(route.url, route.method, False, e)
+                await self.security.post_request(route.url, route.method, success=False, error=e)
             self.logger.error("Security error: %s", e)
         except Exception as e:
             await self._handle_error(route, config, e, FastHTTPRequestError)
