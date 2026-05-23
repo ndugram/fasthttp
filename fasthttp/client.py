@@ -217,7 +217,7 @@ class HTTPClient:
         config: dict,
         error: Exception,
         error_class: type[FastHTTPRequestError],
-        **kwargs
+        **kwargs: object,
     ) -> None:
         if self.security:
             self.security.release_slot()
