@@ -236,7 +236,7 @@ class FastHTTPRepl:
                 except Exception:
                     return resp.text
 
-    async def execute_request(self, method: str, url: str, **kwargs) -> httpx.Response | None:
+    async def execute_request(self, method: str, url: str, **kwargs: object) -> httpx.Response | None:
         """Execute HTTP request."""
         proxy = kwargs.get("proxy", self.proxy)
 
