@@ -1,8 +1,8 @@
 """Tests for FastHTTP application core functionality."""
-import logging
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from contextlib import asynccontextmanager
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from fasthttp import FastHTTP
 from fasthttp.response import Response
@@ -242,7 +242,7 @@ class TestFastHTTPApp:
             return {}
 
         # Mock the actual execution
-        with patch.object(app, '_run') as mock_run:
+        with patch.object(app, "_run") as mock_run:
             app.run(tags=["users"])
             # Should only run routes with "users" tag
             assert mock_run.called
@@ -250,9 +250,9 @@ class TestFastHTTPApp:
     def test_app_run_no_routes_warning(self, caplog) -> None:
         """Test that run() warns when no routes to run."""
         app = FastHTTP()
-        
+
         # Mock asyncio.run to avoid actual execution
-        with patch('asyncio.run'):
+        with patch("asyncio.run"):
             app.run()
 
         # Check that warning was logged (using caplog.text for custom logger)
@@ -299,7 +299,7 @@ class TestFastHTTPLifespan:
             return {}
 
         # Mock the actual HTTP client to avoid real requests
-        with patch('asyncio.run') as mock_run:
+        with patch("asyncio.run"):
             app.run()
             # The lifespan should be integrated into the run cycle
 
@@ -439,8 +439,9 @@ class TestFastHTTPASGI:
     @pytest.mark.asyncio
     async def test_asgi_handle_proxy_request(self) -> None:
         """Test ASGI handling /request proxy endpoint."""
-        from fasthttp.app import ASGIApp
         import json
+
+        from fasthttp.app import ASGIApp
 
         app = FastHTTP()
         asgi_app = ASGIApp(app)
@@ -451,7 +452,7 @@ class TestFastHTTPASGI:
         }).encode()
 
         scope = {"type": "http", "path": "/request", "method": "POST"}
-        
+
         async def receive():
             return {
                 "type": "http.request",
@@ -462,7 +463,7 @@ class TestFastHTTPASGI:
         send = AsyncMock()
 
         # Mock httpx.AsyncClient to avoid real HTTP requests
-        with patch('httpx.AsyncClient') as mock_client:
+        with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -506,7 +507,7 @@ class TestFastHTTPErrorHandling:
             return {}
 
         # Mock asyncio.run to raise ImportError
-        with patch('asyncio.run', side_effect=ImportError("http2 not found")):
+        with patch("asyncio.run", side_effect=ImportError("http2 not found")):
             app.run()
 
         # Should log error about HTTP2 (just verify it doesn't crash)
@@ -523,7 +524,7 @@ class TestFastHTTPErrorHandling:
             return {}
 
         # Mock asyncio.run to raise ConnectError
-        with patch('asyncio.run', side_effect=httpx.ConnectError("Connection failed")):
+        with patch("asyncio.run", side_effect=httpx.ConnectError("Connection failed")):
             app.run()
 
         # Should log connection error (just verify it doesn't crash)
