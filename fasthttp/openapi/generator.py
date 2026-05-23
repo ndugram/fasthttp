@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from fasthttp.routing import Route
 
 
-def _get_type_string(annotation: Any) -> str | None:
+def _get_type_string(annotation: Any) -> str | None:  # noqa: ANN401
     """Convert Python type annotation to OpenAPI type string."""
     if annotation is None:
         return {"type": "string", "nullable": True}
@@ -49,7 +49,7 @@ def _get_type_string(annotation: Any) -> str | None:
     return None
 
 
-def _extract_docstring(func: Any) -> str:
+def _extract_docstring(func: Any) -> str:  # noqa: ANN401
     """Extract docstring from a function."""
     if func and hasattr(func, "__doc__") and func.__doc__:
         doc = inspect.getdoc(func)
@@ -137,15 +137,14 @@ def _generate_response_schema(
                     }
                 },
             }
-        else:
-            return {
-                "description": "Successful response",
-                "content": {
-                    "application/json": {
-                        "schema": {"type": "array"}
-                    }
-                },
-            }
+        return {
+            "description": "Successful response",
+            "content": {
+                "application/json": {
+                    "schema": {"type": "array"}
+                }
+            },
+        }
 
     try:
         if isinstance(response_model, type) and issubclass(response_model, BaseModel):
@@ -213,7 +212,7 @@ def _collect_schemas(routes: list[Route]) -> dict[str, Any]:
                 pass
 
         if route.responses:
-            for status_code, response_config in route.responses.items():
+            for _, response_config in route.responses.items():
                 model = response_config.get("model")
                 try:
                     if model and isinstance(model, type) and issubclass(model, BaseModel):
@@ -235,7 +234,7 @@ def _normalize_path(url: str) -> str:
     from urllib.parse import urlparse
 
     parsed = urlparse(url)
-    host = parsed.netloc.replace(':', '_')
+    host = parsed.netloc.replace(":", "_")
     path = parsed.path
 
     if not path:
