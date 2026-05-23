@@ -4,6 +4,8 @@ from dataclasses import dataclass
 try:
     from fasthttp._core import (
         detect_xss as _rs_detect_xss,
+    )
+    from fasthttp._core import (
         sanitize_html as _rs_sanitize_html,
     )
     _RUST = True
@@ -90,8 +92,7 @@ class ResponseProtection:
         if _RUST:
             return _rs_sanitize_html(content)
         result = SCRIPT_TAG_PATTERN.sub("", content)
-        result = HTML_TAG_PATTERN.sub("", result)
-        return result
+        return HTML_TAG_PATTERN.sub("", result)
 
     def detect_xss(self, content: str) -> tuple[bool, str | None]:
         if _RUST:
@@ -124,7 +125,7 @@ class ResponseProtection:
                 xss_check = self.detect_xss(text)
                 if xss_check[0]:
                     return False, xss_check[1]
-            except Exception:
+            except Exception:  # noqa: S110
                 pass
 
         return True, None
