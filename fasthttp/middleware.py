@@ -351,7 +351,7 @@ class CacheMiddleware(BaseMiddleware):
             f"cache_state_{id(self)}", default=(None, None)
         )
 
-    def _generate_key(self, method: str, url: str, params: Any) -> str:
+    def _generate_key(self, method: str, url: str, params: Any) -> str:  # noqa: ANN401
         params_json = orjson.dumps(params or {}, option=orjson.OPT_SORT_KEYS).decode()
         if _HAVE_RUST_CACHE_KEY:
             return _rs_cache_key(method, url, params_json)
