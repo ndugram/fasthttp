@@ -45,7 +45,7 @@ class Security:
         headers.update(signature_headers)
         return headers
 
-    def enable_signing(self, enabled: bool) -> None:
+    def enable_signing(self, *, enabled: bool) -> None:
         self._sign_requests = enabled
 
     @property
@@ -71,7 +71,7 @@ class Security:
         return self._headers.sanitize_request_headers(headers)
 
     async def post_request(
-        self, url: str, method: str, success: bool, error: Exception | None = None
+        self, url: str, method: str, *, success: bool, error: Exception | None = None
     ) -> None:
         parsed = urlparse(url)
         host = parsed.netloc
