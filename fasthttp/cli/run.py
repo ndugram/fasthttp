@@ -82,10 +82,8 @@ def run_command(
         "--tags",
         help="Run only routes with specific tags (comma-separated)",
     ),
-    debug: bool = typer.Option(
-        False,
-        "-d",
-        "--debug",
+    debug: bool = typer.Option(  # noqa: FBT001
+        default=False,
         help="Enable debug mode",
     ),
 ) -> None:
@@ -146,10 +144,8 @@ def dev_command(
         "--base-url",
         help="Base URL prefix for documentation endpoints",
     ),
-    debug: bool = typer.Option(
-        False,
-        "-d",
-        "--debug",
+    debug: bool = typer.Option(  # noqa: FBT001
+        default=False,
         help="Enable debug mode",
     ),
 ) -> None:
