@@ -1,8 +1,6 @@
 from fasthttp import CookieJar, DummyCookieJar, FastHTTP
 from fasthttp.response import Response
 
-
-
 app_no_cookies = FastHTTP(cookie_jar=DummyCookieJar())
 app_with_cookies = FastHTTP(cookie_jar=CookieJar())
 
