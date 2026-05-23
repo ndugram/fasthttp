@@ -182,7 +182,7 @@ def _generate_error_response_schema(
     }
 
 
-def _collect_schemas(routes: list[Route]) -> dict[str, Any]:
+def _collect_schemas(routes: list[Route]) -> dict[str, Any]:  # noqa: C901
     """Collect all Pydantic schemas from routes."""
     schemas: dict[str, Any] = {}
 
@@ -245,7 +245,7 @@ def _normalize_path(url: str) -> str:
     return api_path
 
 
-def generate_openapi_schema(
+def generate_openapi_schema(  # noqa: C901
     app: Annotated[
         FastHTTP,
         Doc("FastHTTP application instance."),
