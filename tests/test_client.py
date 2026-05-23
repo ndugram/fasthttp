@@ -1,11 +1,13 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
+from fasthttp.__meta__ import __version__
 from fasthttp.client import HTTPClient
+from fasthttp.middleware import MiddlewareManager as MM  # noqa: N817
 from fasthttp.response import Response
 from fasthttp.routing import Route
-from fasthttp.middleware import MiddlewareManager as MM
-from fasthttp.__meta__ import __version__
+
 
 class TestHTTPClient:
     """Tests for the HTTPClient class."""
@@ -52,7 +54,7 @@ class TestHTTPClient:
         )
 
         result = await http_client.send(mock_httpx_client, route)
- 
+
         assert result is not None
         assert result.status == 200
         assert result.text == "Success"
