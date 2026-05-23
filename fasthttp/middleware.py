@@ -17,13 +17,12 @@ except ImportError:
 
 from annotated_doc import Doc
 
-from .types import HTTPMethod
-
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from .response import Response
     from .routing import Route
+    from .types import HTTPMethod
     from .types import RequestsOptinal
 
 
@@ -110,11 +109,11 @@ class BaseMiddleware:
     async def response(
         self,
         response: Annotated[
-            "Response",
+            Response,
             Doc("Wrapped Response object."),
         ],
     ) -> Annotated[
-        "Response",
+        Response,
         Doc("Modified or replaced response passed back up the chain."),
     ]:
         """Called after the HTTP response is received."""
@@ -127,11 +126,11 @@ class BaseMiddleware:
             Doc("The exception that occurred."),
         ],
         route: Annotated[
-            "Route",
+            Route,
             Doc("The route that failed."),
         ],
         config: Annotated[
-            "RequestsOptinal",
+            RequestsOptinal,
             Doc("Request configuration that was used."),
         ],
     ) -> Annotated[
@@ -222,11 +221,11 @@ class MiddlewareManager:
     async def process_before_request(
         self,
         route: Annotated[
-            "Route",
+            Route,
             Doc("The route being executed."),
         ],
         config: Annotated[
-            "RequestsOptinal",
+            RequestsOptinal,
             Doc("Initial request configuration."),
         ],
     ) -> Annotated[
@@ -245,19 +244,19 @@ class MiddlewareManager:
     async def process_after_response(
         self,
         response: Annotated[
-            "Response",
+            Response,
             Doc("The HTTP response object."),
         ],
         route: Annotated[
-            "Route",
+            Route,
             Doc("The route that was executed."),
         ],
         config: Annotated[
-            "RequestsOptinal",
+            RequestsOptinal,
             Doc("Request configuration that was used."),
         ],
     ) -> Annotated[
-        "Response",
+        Response,
         Doc("Final response after middleware processing."),
     ]:
         """Execute all response middleware hooks in reverse priority order."""
@@ -273,11 +272,11 @@ class MiddlewareManager:
             Doc("The exception that occurred."),
         ],
         route: Annotated[
-            "Route",
+            Route,
             Doc("The route that failed."),
         ],
         config: Annotated[
-            "RequestsOptinal",
+            RequestsOptinal,
             Doc("Request configuration that was used."),
         ],
     ) -> Annotated[
@@ -294,7 +293,7 @@ class CacheEntry:
 
     def __init__(
         self,
-        response: Annotated["Response", Doc("The HTTP response to cache.")],
+        response: Annotated[Response, Doc("The HTTP response to cache.")],
         ttl: Annotated[int, Doc("Time to live in seconds.")],
     ) -> None:
         self.response = response
@@ -378,7 +377,7 @@ class CacheMiddleware(BaseMiddleware):
         self._state.set((key, None))
         return kwargs
 
-    async def response(self, response: "Response") -> "Response":
+    async def response(self, response: Response) -> Response:
         key, cached = self._state.get()
 
         if cached is not None:
@@ -392,7 +391,7 @@ class CacheMiddleware(BaseMiddleware):
 
         return response
 
-    async def on_error(self, error: Exception, route: "Route", config: "RequestsOptinal") -> None:
+    async def on_error(self, error: Exception, route: Route, config: RequestsOptinal) -> None:
         key, _ = self._state.get()
         if key is not None:
             async with self._lock:
@@ -585,8 +584,8 @@ class SessionMiddleware(BaseMiddleware):
 
     async def response(
         self,
-        response: Annotated["Response", Doc("Wrapped response object.")],
-    ) -> "Response":
+        response: Annotated[Response, Doc("Wrapped response object.")],
+    ) -> Response:
         raw = response.headers.get("set-cookie", "")
         if raw:
             for cookie_str in raw.split(","):
