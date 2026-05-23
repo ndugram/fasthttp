@@ -155,7 +155,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "E501"]
 "tests/*" = ["S101", "D103", "D104"]
-"examples/*" = ["T201", "S602", "S603"]
+"examples/*" = ["T201", "S602", "S603", "N815"]
 "fasthttp/cli/*" = ["T201"]
 
 [tool.ruff.format]
