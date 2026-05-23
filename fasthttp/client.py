@@ -307,7 +307,7 @@ class HTTPClient:
 
         return None
 
-    async def send(
+    async def send(  # noqa: C901
         self,
         client: httpx.AsyncClient,
         route: Route
