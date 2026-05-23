@@ -137,7 +137,7 @@ class TestBaseMiddleware:
         called = []
 
         class Base(BaseMiddleware):
-            def __init_subclass__(cls, **kwargs) -> None:
+            def __init_subclass__(cls, **kwargs: object) -> None:
                 super().__init_subclass__(**kwargs)
                 called.append(cls.__name__)
 
