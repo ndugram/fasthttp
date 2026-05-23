@@ -1,16 +1,14 @@
 """Tests for helpers/route_inspect.py."""
-import inspect
 import pytest
 from pydantic import BaseModel
 
 from fasthttp.helpers.route_inspect import (
+    COMMON_PARAMS,
     check_annotated_parameters,
     check_annotated_return,
-    validate_handler,
     create_route_params,
-    COMMON_PARAMS,
+    validate_handler,
 )
-
 
 # ---------------------------------------------------------------------------
 # check_annotated_parameters
@@ -52,7 +50,7 @@ class TestCheckAnnotatedParameters:
 
 
 # ---------------------------------------------------------------------------
-# check_annotated_return
+# check_annotated_return  # noqa: ERA001
 # ---------------------------------------------------------------------------
 
 class TestCheckAnnotatedReturn:
