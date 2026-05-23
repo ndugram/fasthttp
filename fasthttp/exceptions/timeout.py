@@ -70,7 +70,7 @@ class FastHTTPTimeoutError(FastHTTPError):
             ]
             | None
         ) = None,
-        **kwargs,
+        **kwargs: object,
     ) -> None:
         timeout_msg = message or "Request timed out"
         details = {"timeout": timeout} if timeout else {}
