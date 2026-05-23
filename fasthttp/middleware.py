@@ -22,8 +22,7 @@ if TYPE_CHECKING:
 
     from .response import Response
     from .routing import Route
-    from .types import HTTPMethod
-    from .types import RequestsOptinal
+    from .types import HTTPMethod, RequestsOptinal
 
 
 class BaseMiddleware:
