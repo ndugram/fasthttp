@@ -53,7 +53,7 @@ class SSRFProtection:
     def __init__(self) -> None:
         self._dns_cache = {}
 
-    async def check_url(self, url: str) -> bool:
+    async def check_url(self, url: str) -> bool:  # noqa: C901
         parsed = urlparse(url)
         hostname = parsed.hostname
 
