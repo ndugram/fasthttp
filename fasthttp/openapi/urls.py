@@ -18,8 +18,7 @@ def normalize_docs_base_url(base_url: str = "") -> str:
     if not normalized or normalized == "/":
         return ""
 
-    normalized = "/" + normalized.strip("/")
-    return normalized
+    return "/" + normalized.strip("/")
 
 
 def build_docs_urls(base_url: str = "") -> dict[str, str]:
