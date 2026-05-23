@@ -2,7 +2,6 @@
 import pytest
 from pydantic import BaseModel
 
-from fasthttp.routing import Route, Router
 from fasthttp.helpers.routing import (
     apply_base_url,
     check_https_url,
@@ -10,7 +9,7 @@ from fasthttp.helpers.routing import (
     resolve_url,
 )
 from fasthttp.response import Response
-
+from fasthttp.routing import Route, Router
 
 # ---------------------------------------------------------------------------
 # Helpers
