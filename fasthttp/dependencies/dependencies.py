@@ -40,7 +40,7 @@ class Dependency:
         self.__name__ = func.__name__
         self._is_async = iscoroutinefunction(func)
 
-    async def __call__(self, route: Any, config: dict) -> dict:
+    async def __call__(self, route: Any, config: dict) -> dict:  # noqa: ANN401
         if self._is_async:
             return await self.func(route, config)
         return self.func(route, config)
