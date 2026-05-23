@@ -1,6 +1,7 @@
 """Tests for GraphQL functionality."""
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 from fasthttp.graphql.types import GraphQLRequest, GraphQLResponse
 
@@ -165,7 +166,7 @@ class TestGraphQLClient:
 
             client = create_graphql_client(url="https://api.example.com/graphql")
             result = await client.mutation(
-                mutation="mutation { createUser(name: \"John\") { id name } }",
+                mutation='mutation { createUser(name: "John") { id name } }',
             )
 
             assert result.data == {"createUser": {"id": 1, "name": "John"}}
@@ -210,7 +211,7 @@ class TestGraphQLClient:
                 url="https://api.example.com/graphql",
                 headers={"Authorization": "Bearer token"},
             )
-            result = await client.query(query="{ test }")
+            await client.query(query="{ test }")
 
             mock_http_client.post.assert_called_once()
             call_kwargs = mock_http_client.post.call_args.kwargs
