@@ -22,7 +22,7 @@ def colorize(text: str, color: str) -> str:
     return f"{COLORS.get(color, '')}{text}{COLORS['reset']}"
 
 
-def handle_error(error: FastHTTPError, raise_it: bool = True) -> None:
+def handle_error(error: FastHTTPError, *, raise_it: bool = True) -> None:
     """
     Handle a FastHTTP error with logging.
 
