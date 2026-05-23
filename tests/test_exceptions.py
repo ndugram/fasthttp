@@ -177,8 +177,8 @@ class TestFastHTTPErrorBase:
         err.log(level=logging.WARNING)
 
     def test_can_be_raised_and_caught(self):
+        msg = "test raise"
         with pytest.raises(FastHTTPError):
-            msg = "test raise"
             raise FastHTTPError(msg)
 
 
@@ -254,8 +254,8 @@ class TestFastHTTPRequestErrorExtended:
         assert issubclass(FastHTTPRequestError, FastHTTPError)
 
     def test_can_be_raised(self):
+        msg = "bad request"
         with pytest.raises(FastHTTPRequestError):
-            msg = "bad request"
             raise FastHTTPRequestError(msg)
 
 
