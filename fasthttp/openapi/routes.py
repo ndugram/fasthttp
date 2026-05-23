@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import contextlib
 import json
 from typing import TYPE_CHECKING, Annotated, Any
 
 import httpx
 from annotated_doc import Doc
 
-from fasthttp.response import Response
 from fasthttp import status
+from fasthttp.response import Response
+
 from .generator import generate_openapi_schema
-from .swagger import get_swagger_html, get_not_found_html
+from .swagger import get_not_found_html, get_swagger_html
 from .urls import build_docs_urls
 
 if TYPE_CHECKING:
@@ -18,7 +20,7 @@ if TYPE_CHECKING:
 
 async def handle_docs(
     app: Annotated[
-        "FastHTTP",
+        FastHTTP,
         Doc("FastHTTP application instance"),
     ],
     base_url: Annotated[
@@ -46,7 +48,7 @@ async def handle_docs(
 
 async def handle_openapi_json(
     app: Annotated[
-        "FastHTTP",
+        FastHTTP,
         Doc("FastHTTP application instance"),
     ],
     base_url: Annotated[
@@ -154,10 +156,8 @@ async def handle_request(
                 "body": response.text,
             }
 
-            try:
+            with contextlib.suppress(Exception):
                 result["json"] = response.json()
-            except Exception:
-                pass
 
             return Response(
                 status=status.HTTP_200_OK,
@@ -168,18 +168,18 @@ async def handle_request(
     except httpx.ConnectError as e:
         return Response(
             status=status.HTTP_502_BAD_GATEWAY,
-            text=json.dumps({"error": f"Connection error: {str(e)}"}),
+            text=json.dumps({"error": f"Connection error: {e!s}"}),
             headers={"Content-Type": "application/json"},
         )
     except httpx.TimeoutException as e:
         return Response(
             status=status.HTTP_504_GATEWAY_TIMEOUT,
-            text=json.dumps({"error": f"Timeout: {str(e)}"}),
+            text=json.dumps({"error": f"Timeout: {e!s}"}),
             headers={"Content-Type": "application/json"},
         )
     except Exception as e:
         return Response(
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            text=json.dumps({"error": f"Request failed: {str(e)}"}),
+            text=json.dumps({"error": f"Request failed: {e!s}"}),
             headers={"Content-Type": "application/json"},
         )
