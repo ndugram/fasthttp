@@ -1,11 +1,12 @@
 import logging
 from typing import Any
-import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from fasthttp.response import Response
+import pytest
+
 from fasthttp.client import HTTPClient
-from fasthttp.middleware import MiddlewareManager as MM
+from fasthttp.middleware import MiddlewareManager as MM  # noqa: N817
+from fasthttp.response import Response
 
 logger = logging.getLogger("test")
 
@@ -35,8 +36,7 @@ def sample_response() -> Response:
 @pytest.fixture
 def mock_httpx_client() -> AsyncMock:
     """Create a mock httpx AsyncClient for testing."""
-    client = AsyncMock()
-    return client
+    return AsyncMock()
 
 
 @pytest.fixture
