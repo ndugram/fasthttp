@@ -1,14 +1,14 @@
 import logging
 from urllib.parse import urlparse
 
-from .ssrf import SSRFProtection, SSRFBlockedError
-from .secrets import SecretsMasking
 from .circuit_breaker import CircuitBreaker, CircuitBreakerConfig
 from .headers import HeaderProtection
-from .response import ResponseProtection, ResponseProtectionConfig
 from .limits import Limits, LimitsConfig
-from .redirect import RedirectProtection, RedirectConfig
+from .redirect import RedirectConfig, RedirectProtection
+from .response import ResponseProtection, ResponseProtectionConfig
+from .secrets import SecretsMasking
 from .signer import RequestSigner
+from .ssrf import SSRFProtection
 
 logger = logging.getLogger("fasthttp.security")
 
@@ -56,12 +56,14 @@ class Security:
         await self._ssrf.validate_request(url)
 
         if not self._limits.validate_url_length(url):
-            raise SecurityError(f"URL too long: {len(url)} chars")
+            msg = f"URL too long: {len(url)} chars"
+            raise SecurityError(msg)
 
         parsed = urlparse(url)
         can_proceed = await self._circuit_breaker.can_proceed(parsed.netloc)
         if not can_proceed:
-            raise CircuitOpenError(f"Circuit breaker open for: {parsed.netloc}")
+            msg = f"Circuit breaker open for: {parsed.netloc}"
+            raise CircuitOpenError(msg)
 
         await self._limits.cooldown()
 
