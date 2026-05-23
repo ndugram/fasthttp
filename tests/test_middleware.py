@@ -2,7 +2,6 @@
 import asyncio
 import time
 from typing import ClassVar
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -16,7 +15,6 @@ from fasthttp.middleware import (
 from fasthttp.response import Response
 from fasthttp.routing import Route
 from fasthttp.types import HTTPMethod
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -270,7 +268,7 @@ class TestMiddlewareManagerSortingFiltering:
         class PostOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["POST"]
+            __methods__: ClassVar[list[str]] = ["POST"]
             __enabled__ = True
 
         mm = MiddlewareManager([PostOnly()])
@@ -281,7 +279,7 @@ class TestMiddlewareManagerSortingFiltering:
         class GetOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["get"]
+            __methods__: ClassVar[list[str]] = ["get"]
             __enabled__ = True
 
         mm = MiddlewareManager([GetOnly()])
@@ -296,7 +294,7 @@ class TestMiddlewareManagerSortingFiltering:
         class PostOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["POST"]
+            __methods__: ClassVar[list[str]] = ["POST"]
             __enabled__ = False
 
         mm = MiddlewareManager([PostOnly()])
@@ -411,7 +409,7 @@ class TestProcessBeforeRequest:
         class PostOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["POST"]
+            __methods__: ClassVar[list[str]] = ["POST"]
             __enabled__ = True
             called = False
 
@@ -477,7 +475,7 @@ class TestProcessAfterResponse:
         class GetOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["GET"]
+            __methods__: ClassVar[list[str]] = ["GET"]
             __enabled__ = True
             called = False
 
@@ -537,7 +535,7 @@ class TestProcessOnError:
         class PostOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["POST"]
+            __methods__: ClassVar[list[str]] = ["POST"]
             __enabled__ = True
             called = False
 
@@ -644,7 +642,7 @@ class TestCacheMiddleware:
         await asyncio.sleep(1.1)
 
         await cache.request("GET", "https://example.com", dict(kwargs))
-        key, cached = cache._state.get()
+        _, cached = cache._state.get()
         assert cached is None
 
         resp2 = make_response(text="refreshed")
@@ -769,8 +767,9 @@ class TestCacheEntry:
 
 class TestHTTPMethod:
     def test_http_method_values(self):
-        from fasthttp.types import HTTPMethod
         from typing import get_args
+
+        from fasthttp.types import HTTPMethod
         args = get_args(HTTPMethod)
         assert "GET" in args
         assert "POST" in args
@@ -779,8 +778,9 @@ class TestHTTPMethod:
         assert "DELETE" in args
 
     def test_http_method_count(self):
-        from fasthttp.types import HTTPMethod
         from typing import get_args
+
+        from fasthttp.types import HTTPMethod
         assert len(get_args(HTTPMethod)) == 7
 
 
