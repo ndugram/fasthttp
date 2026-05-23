@@ -58,7 +58,7 @@ class FastHTTPConnectionError(FastHTTPError):
             ]
             | None
         ) = None,
-        **kwargs,
+        **kwargs: object,
     ) -> None:
         super().__init__(
             message=message,
