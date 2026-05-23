@@ -5,8 +5,10 @@ from urllib.parse import urlparse
 
 try:
     from fasthttp._core import (
-        is_private_ip as _rs_is_private_ip,
         is_local_hostname as _rs_is_local_hostname,
+    )
+    from fasthttp._core import (
+        is_private_ip as _rs_is_private_ip,
     )
     _RUST = True
 except ImportError:
@@ -68,7 +70,7 @@ class SSRFProtection:
                 return False
             if any(hostname_lower.endswith(domain) for domain in LOCAL_DOMAINS):
                 return False
-            if hostname_lower in ("127.0.0.1", "0.0.0.0", "::1", "0"):
+            if hostname_lower in ("127.0.0.1", "0.0.0.0", "::1", "0"):  # noqa: S104
                 return False
 
         try:
@@ -94,7 +96,8 @@ class SSRFProtection:
 
     async def validate_request(self, url: str) -> None:
         if not await self.check_url(url):
-            raise SSRFBlockedError(f"SSRF protection blocked request to: {url}")
+            msg = f"SSRF protection blocked request to: {url}"
+            raise SSRFBlockedError(msg)
 
 
 class SSRFBlockedError(Exception):
