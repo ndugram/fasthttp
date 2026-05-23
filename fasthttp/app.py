@@ -1373,7 +1373,7 @@ class ASGIApp:
                 return route
         return None
 
-    async def _handle_proxy(
+    async def _handle_proxy(  # noqa: C901
         self,
         send: Callable[..., Any],
         method: str,
