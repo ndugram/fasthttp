@@ -107,7 +107,6 @@ class RedirectProtection:
     def should_follow_redirect(
         self, original_scheme: str, redirect_scheme: str
     ) -> tuple[bool, str | None]:
-        if original_scheme == "https" and redirect_scheme == "http":
-            if not self._config.allow_http_downgrade:
-                return False, "HTTPS -> HTTP downgrade blocked"
+        if original_scheme == "https" and redirect_scheme == "http" and not self._config.allow_http_downgrade:
+            return False, "HTTPS -> HTTP downgrade blocked"
         return True, None
