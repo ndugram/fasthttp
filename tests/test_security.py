@@ -1,6 +1,7 @@
 """Tests for security modules."""
-import pytest
 import asyncio
+
+import pytest
 
 from fasthttp.security.circuit_breaker import (
     CircuitBreaker,
