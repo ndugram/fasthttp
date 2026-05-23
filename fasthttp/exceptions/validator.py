@@ -33,7 +33,7 @@ class FastHTTPValidationError(FastHTTPError):
                 """
             ),
         ] = "Validation failed",
-        **kwargs,
+        **kwargs: object,
     ) -> None:
         super().__init__(
             message=message,
