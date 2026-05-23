@@ -88,7 +88,7 @@ class FastHTTPBadStatusError(FastHTTPError):
             ]
             | None
         ) = None,
-        **kwargs,
+        **kwargs: object,
     ) -> None:
         status_msg = message or (f"HTTP {status_code}" if status_code else "Bad status")
         details = {}
