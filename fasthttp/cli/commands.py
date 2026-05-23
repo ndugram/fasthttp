@@ -150,7 +150,7 @@ def delete(
 
 
 @app.command()
-def graphql(
+def graphql(  # noqa: C901
     url: str,
     query: str = typer.Option(..., "-q", "--query", help="GraphQL query (required)"),
     variables: str | None = typer.Option(None, "-v", "--variables", help="GraphQL variables as JSON"),
@@ -218,7 +218,7 @@ def graphql(
         raise typer.Exit(1) from e
 
 
-def _execute_request(
+def _execute_request(  # noqa: C901
     method: str,
     url: str,
     output: str,
