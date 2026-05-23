@@ -71,13 +71,16 @@ class ResponseProtection:
 
         content_type_lower = content_type.lower().split(";")[0].strip()
 
-        if self._config.block_dangerous_content:
-            if content_type_lower in self._dangerous_content_types:
-                if expected_type and expected_type.lower() != content_type_lower:
-                    return (
-                        False,
-                        f"Unexpected content type: expected {expected_type}, got {content_type_lower}",
-                    )
+        if (
+            self._config.block_dangerous_content
+            and content_type_lower in self._dangerous_content_types
+            and expected_type
+            and expected_type.lower() != content_type_lower
+        ):
+            return (
+                False,
+                f"Unexpected content type: expected {expected_type}, got {content_type_lower}",
+            )
 
         if self._config.allowed_content_types:
             allowed = [ct.lower() for ct in self._config.allowed_content_types]
