@@ -170,7 +170,8 @@ def __getattr__(name: str) -> int:
         )
         return __deprecated__[name]
 
-    raise AttributeError(f"module 'fasthttp.status' has no attribute '{name}'")
+    msg = f"module 'fasthttp.status' has no attribute '{name}'"
+    raise AttributeError(msg)
 
 
 def __dir__() -> list:
