@@ -1,5 +1,3 @@
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 from fasthttp.cli import commands
 from fasthttp.cli.client import CLIResponse as ClientResponse
@@ -170,6 +168,7 @@ class TestCLICommands:
     def test_cli_runner_version(self) -> None:
         """Test CLI version command."""
         from typer.testing import CliRunner
+
         from fasthttp.cli.main import app
 
         runner = CliRunner()
