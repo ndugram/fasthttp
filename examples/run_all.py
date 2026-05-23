@@ -53,7 +53,7 @@ def run_example(example_file: Path) -> bool:
         return False
 
 
-def run_all_examples(sequential: bool = True) -> None:
+def run_all_examples(*, sequential: bool = True) -> None:
     example_files = get_example_files()
 
     if not example_files:
