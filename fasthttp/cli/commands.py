@@ -223,6 +223,7 @@ def _execute_request(
     url: str,
     output: str,
     headers_str: str | None,
+    *,
     json_data: dict | None = None,
     data: str | None = None,
     timeout: float = 30.0,
