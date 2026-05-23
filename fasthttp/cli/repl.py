@@ -1,13 +1,13 @@
 import asyncio
+import contextlib
 import json
 import shlex
-from typing import Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import httpx
 
-
 try:
-    import readline
+    import readline  # noqa: F401
     READLINE_AVAILABLE = True
 except ImportError:
     READLINE_AVAILABLE = False
@@ -56,7 +56,7 @@ class FastHTTPRepl:
         self.history: list[str] = []
         self.last_response: dict[str, Any] | None = None
 
-    METHOD_COLORS = {
+    METHOD_COLORS: ClassVar[dict[str, str]] = {
         "get": Colors.BRIGHT_GREEN,
         "post": Colors.BRIGHT_YELLOW,
         "put": Colors.BRIGHT_BLUE,
@@ -174,10 +174,8 @@ class FastHTTPRepl:
                 result["data"] = args[i + 1]
                 i += 2
             elif arg in ("-t", "--timeout") and i + 1 < len(args):
-                try:
+                with contextlib.suppress(ValueError):
                     result["timeout"] = float(args[i + 1])
-                except ValueError:
-                    pass
                 i += 2
             elif arg in ("-o", "--output") and i + 1 < len(args):
                 result["output"] = args[i + 1]
@@ -197,12 +195,11 @@ class FastHTTPRepl:
         """Get color for HTTP status code."""
         if 200 <= status < 300:
             return Colors.STATUS_2XX
-        elif 300 <= status < 400:
+        if 300 <= status < 400:
             return Colors.STATUS_3XX
-        elif 400 <= status < 500:
+        if 400 <= status < 500:
             return Colors.STATUS_4XX
-        else:
-            return Colors.STATUS_5XX
+        return Colors.STATUS_5XX
 
     def format_output(self, resp: httpx.Response, output_format: str) -> str:
         """Format response based on output format."""
@@ -242,17 +239,16 @@ class FastHTTPRepl:
     async def execute_request(self, method: str, url: str, **kwargs) -> httpx.Response | None:
         """Execute HTTP request."""
         proxy = kwargs.get("proxy", self.proxy)
-        
+
         try:
             async with httpx.AsyncClient(proxy=proxy, timeout=kwargs.get("timeout", 30.0)) as client:
-                resp = await client.request(
+                return await client.request(
                     method=method,
                     url=url,
                     headers=kwargs.get("headers"),
                     json=kwargs.get("json"),
                     content=kwargs.get("data"),
                 )
-            return resp
         except httpx.ConnectError as e:
             print(f"{Colors.RED}Connection failed: {e}{Colors.RESET}")
             return None
@@ -351,7 +347,7 @@ class FastHTTPRepl:
 
         while True:
             try:
-                line = input(self.get_prompt()).strip()
+                line = input(self.get_prompt()).strip()  # noqa: ASYNC250
 
                 if not line:
                     continue
