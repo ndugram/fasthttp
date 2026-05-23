@@ -2,8 +2,10 @@ import re
 
 try:
     from fasthttp._core import (
-        sanitize_request_headers as _rs_sanitize_request_headers,
         check_response_headers as _rs_check_response_headers,
+    )
+    from fasthttp._core import (
+        sanitize_request_headers as _rs_sanitize_request_headers,
     )
     _RUST = True
 except ImportError:
@@ -104,7 +106,6 @@ class HeaderProtection:
     ) -> tuple[bool, str | None]:
         parts = cookie.lower().split(";")
         has_secure = any("secure" in p.strip() for p in parts)
-        has_httponly = any("httponly" in p.strip() for p in parts)
         has_samesite = any("samesite" in p.strip() for p in parts)
 
         if has_samesite:
