@@ -196,18 +196,16 @@ def _collect_schemas(routes: list[Route]) -> dict[str, Any]:
                     model = args[0]
 
             try:
-                if isinstance(model, type) and issubclass(model, BaseModel):
-                    if model.__name__ not in schemas:
-                        schemas[model.__name__] = _generate_schema_from_model(model)
+                if isinstance(model, type) and issubclass(model, BaseModel) and model.__name__ not in schemas:
+                    schemas[model.__name__] = _generate_schema_from_model(model)
             except TypeError:
                 pass
 
         if route.request_model:
             model = route.request_model
             try:
-                if isinstance(model, type) and issubclass(model, BaseModel):
-                    if model.__name__ not in schemas:
-                        schemas[model.__name__] = _generate_schema_from_model(model)
+                if isinstance(model, type) and issubclass(model, BaseModel) and model.__name__ not in schemas:
+                    schemas[model.__name__] = _generate_schema_from_model(model)
             except TypeError:
                 pass
 
@@ -215,9 +213,8 @@ def _collect_schemas(routes: list[Route]) -> dict[str, Any]:
             for _, response_config in route.responses.items():
                 model = response_config.get("model")
                 try:
-                    if model and isinstance(model, type) and issubclass(model, BaseModel):
-                        if model.__name__ not in schemas:
-                            schemas[model.__name__] = _generate_schema_from_model(model)
+                    if model and isinstance(model, type) and issubclass(model, BaseModel) and model.__name__ not in schemas:
+                        schemas[model.__name__] = _generate_schema_from_model(model)
                 except TypeError:
                     pass
 
