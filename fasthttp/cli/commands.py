@@ -64,7 +64,7 @@ def get(
     output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     _execute_request("GET", url, output, headers, timeout=timeout, debug=debug, proxy=proxy)
@@ -78,7 +78,7 @@ def post(
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     json_data: dict[str, Any] | None = None
@@ -101,7 +101,7 @@ def put(
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     json_data: dict[str, Any] | None = None
@@ -123,7 +123,7 @@ def patch(
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     json_data: dict[str, Any] | None = None
@@ -143,7 +143,7 @@ def delete(
     output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     _execute_request("DELETE", url, output, headers, timeout=timeout, debug=debug, proxy=proxy)
@@ -158,7 +158,7 @@ def graphql(
     output: str = typer.Argument("json", help="Output: status, headers, json, text, all"),
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     url = _check_https_url(url)
