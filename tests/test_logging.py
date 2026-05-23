@@ -1,8 +1,7 @@
 """Tests for ColorFormatter and setup_logger."""
 import logging
-import pytest
 
-from fasthttp.logging import ColorFormatter, setup_logger, LOGGER_NAME
+from fasthttp.logging import LOGGER_NAME, ColorFormatter, setup_logger
 
 
 class TestColorFormatter:
