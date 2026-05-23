@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import json
 import shlex
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import Any, ClassVar
 
 import httpx
 
