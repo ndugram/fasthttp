@@ -228,7 +228,7 @@ class Response:
     ]:
         return {}
 
-    def json(self) -> Any:
+    def json(self) -> Any:  # noqa: ANN401
         """
         Parse the response body as JSON.
 
