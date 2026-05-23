@@ -1,7 +1,7 @@
 import ipaddress
 import socket
-from urllib.parse import urlparse
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 try:
     from fasthttp._core import is_private_ip as _rs_is_private_ip
@@ -99,7 +99,7 @@ class RedirectProtection:
 
         except socket.gaierror:
             pass
-        except Exception:
+        except Exception:  # noqa: S110
             pass
 
         return True, None
