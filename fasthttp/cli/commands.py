@@ -87,7 +87,7 @@ def post(
             json_data = json.loads(json_body)
         except json.JSONDecodeError as e:
             formatter.error(f"Invalid JSON: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     _execute_request(
         "POST",url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
@@ -110,7 +110,7 @@ def put(
             json_data = json.loads(json_body)
         except json.JSONDecodeError as e:
             formatter.error(f"Invalid JSON: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     _execute_request("PUT", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
 
@@ -132,7 +132,7 @@ def patch(
             json_data = json.loads(json_body)
         except json.JSONDecodeError as e:
             formatter.error(f"Invalid JSON: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     _execute_request("PATCH", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
 
@@ -170,7 +170,7 @@ def graphql(
             json_data["variables"] = json.loads(variables)
         except json.JSONDecodeError as e:
             formatter.error(f"Invalid JSON in variables: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     if debug:
         formatter.info(f"→ GraphQL {operation_type} {url}")
@@ -200,7 +200,7 @@ def graphql(
         formatter.success(f"HTTP {resp.status} in {resp.elapsed_ms:.2f}ms")
 
         if debug:
-            formatter.info(f"← Response headers:")
+            formatter.info("← Response headers:")
             for key, value in resp.headers.items():
                 formatter.info(f"  {key}: {value}")
 
@@ -209,13 +209,13 @@ def graphql(
 
     except httpx.ConnectError as e:
         formatter.error(f"Connection failed: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except httpx.TimeoutException as e:
         formatter.error(f"Request timed out: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         formatter.error(f"Error: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def _execute_request(
@@ -262,7 +262,7 @@ def _execute_request(
         formatter.success(f"HTTP {resp.status} in {resp.elapsed_ms:.2f}ms")
 
         if debug:
-            formatter.info(f"← Response headers:")
+            formatter.info("← Response headers:")
             for key, value in resp.headers.items():
                 formatter.info(f"  {key}: {value}")
 
@@ -271,10 +271,10 @@ def _execute_request(
 
     except httpx.ConnectError as e:
         formatter.error(f"Connection failed: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except httpx.TimeoutException as e:
         formatter.error(f"Request timed out: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         formatter.error(f"Error: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
