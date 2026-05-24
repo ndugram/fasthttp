@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import secrets
 import sys
 import time
@@ -9,6 +8,7 @@ import uuid
 from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args, get_origin
 
 import httpx
+import orjson
 from annotated_doc import Doc
 
 from .client import HTTPClient
@@ -386,7 +386,6 @@ class FastHTTP:
         self.generate_startup_uuid = generate_startup_uuid
         self.startup_uuid_version = startup_uuid_version
 
-
         if middleware is None:
             normalized_middleware: list[BaseMiddleware] | MiddlewareChain = []
         elif isinstance(middleware, (MiddlewareChain, list)):
@@ -430,7 +429,7 @@ class FastHTTP:
             self.logger,
             self.middleware_manager,
             self.security,
-            self.startup_uuid
+            self.startup_uuid,
         )
 
     def _check_annotated_parameters(
@@ -463,7 +462,7 @@ class FastHTTP:
                     ```
                 """
             ),
-        ]
+        ],
     ) -> None:
         check_annotated_parameters(func=func)
 
@@ -497,15 +496,11 @@ class FastHTTP:
                     ```
                 """
             ),
-        ]
+        ],
     ) -> None:
         check_annotated_return(func=func)
 
-    def _check_https_url(
-        self,
-        *,
-        url: str
-    ) -> str:
+    def _check_https_url(self, *, url: str) -> str:
         """
         Ensure URL has a valid scheme (http:// or https://).
 
@@ -914,6 +909,7 @@ class FastHTTP:
                 return {"query": "{ user(id: 1) { name } }"}
         ```
         """
+
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
             validate_handler(func=func)
 
@@ -967,20 +963,13 @@ class FastHTTP:
                     dependencies=dependencies,
                 )
             )
-            self.logger.debug(
-                "Registered GraphQL %s: %s",
-                operation_type,
-                url
-            )
+            self.logger.debug("Registered GraphQL %s: %s", operation_type, url)
             return func
 
         return decorator
 
     def _log_result(
-        self,
-        route: Route,
-        elapsed: float,
-        result: Response | None
+        self, route: Route, elapsed: float, result: Response | None
     ) -> None:
         if result and isinstance(result.status, int):
             self.logger.info(
@@ -1000,8 +989,7 @@ class FastHTTP:
                     if get_origin(route.response_model) is list:
                         item_model = get_args(route.response_model)[0]
                         validated = [
-                            item_model.model_validate(item)
-                            for item in json_data
+                            item_model.model_validate(item) for item in json_data
                         ]
                     else:
                         validated = route.response_model.model_validate(  # type: ignore
@@ -1050,16 +1038,14 @@ class FastHTTP:
                         ]
                     results = [t.result() for t in tg_tasks]
                 else:
-                    results = await asyncio.gather(*[
-                        self._run_route(client, route) for route in routes
-                    ])
+                    results = await asyncio.gather(
+                        *[self._run_route(client, route) for route in routes]
+                    )
 
                 for route, elapsed, result in results:
                     self._log_result(route, elapsed, result)
             else:
-                route, elapsed, result = await self._run_route(
-                    client, routes[0]
-                )
+                route, elapsed, result = await self._run_route(client, routes[0])
                 self._log_result(route, elapsed, result)
 
         total_time = time.perf_counter() - start_all
@@ -1094,12 +1080,10 @@ class FastHTTP:
         routes_to_run = self.routes
         if tags:
             routes_to_run = [
-                route for route in self.routes
-                if any(tag in route.tags for tag in tags)
+                route for route in self.routes if any(tag in route.tags for tag in tags)
             ]
             self.logger.info(
-                "Running %d routes with tags: %s",
-                len(routes_to_run), tags
+                "Running %d routes with tags: %s", len(routes_to_run), tags
             )
 
         if not routes_to_run:
@@ -1176,9 +1160,11 @@ class FastHTTP:
 
             app = FastHTTP()
 
+
             @app.get("https://google.com")
             async def index(resp):
                 return resp.status
+
 
             app.web_run()
             ```
@@ -1191,9 +1177,7 @@ class FastHTTP:
         """
         self.logger.info("FastHTTP started")
 
-        docs_base_url = (
-            base_url if base_url is not None else self.docs_base_url
-        )
+        docs_base_url = base_url if base_url is not None else self.docs_base_url
         app = ASGIApp(self, base_url=docs_base_url)
 
         server_base_url = f"http://{host}:{port}"
@@ -1252,6 +1236,7 @@ class ASGIApp:
         self.fasthttp = app
         self.docs_urls = build_docs_urls(base_url)
         self._shared_client: httpx.AsyncClient | None = None
+        self._openapi_cache: bytes | None = None
 
     async def __call__(
         self,
@@ -1302,7 +1287,9 @@ class ASGIApp:
                     if not message.get("more_body"):
                         break
 
-        if path == self.docs_urls["docs_url"] or path.startswith(f"{self.docs_urls['docs_url']}/"):
+        if path == self.docs_urls["docs_url"] or path.startswith(
+            f"{self.docs_urls['docs_url']}/"
+        ):
             await self._send_html(
                 send,
                 get_swagger_html(
@@ -1311,57 +1298,74 @@ class ASGIApp:
                 ),
             )
         elif path == self.docs_urls["openapi_url"]:
-            schema = generate_openapi_schema(
-                self.fasthttp,
-                server_url=self.docs_urls["request_url"],
-            )
-            await self._send_json(send, schema)
+            if self._openapi_cache is None:
+                schema = generate_openapi_schema(
+                    self.fasthttp,
+                    server_url=self.docs_urls["request_url"],
+                )
+                self._openapi_cache = orjson.dumps(schema, option=orjson.OPT_INDENT_2)
+            await self._send_raw_json(send, self._openapi_cache)
         elif path == self.docs_urls["request_url"]:
             await self._handle_proxy(send, method, body)
         else:
             await self._send_404(send, path)
 
     async def _send_html(self, send: Callable[..., Any], html: str) -> None:
-        await send({
-            "type": "http.response.start",
-            "status": 200,
-            "headers": [[b"content-type", b"text/html; charset=utf-8"]],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": html.encode("utf-8"),
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [[b"content-type", b"text/html; charset=utf-8"]],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": html.encode("utf-8"),
+            }
+        )
 
     async def _send_json(self, send: Callable[..., Any], data: dict) -> None:
-        json_str = json.dumps(data, indent=2, ensure_ascii=False)
-        await send({
-            "type": "http.response.start",
-            "status": 200,
-            "headers": [[b"content-type", b"application/json; charset=utf-8"]],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": json_str.encode("utf-8"),
-        })
+        await self._send_raw_json(send, orjson.dumps(data, option=orjson.OPT_INDENT_2))
+
+    async def _send_raw_json(self, send: Callable[..., Any], body: bytes) -> None:
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [[b"content-type", b"application/json; charset=utf-8"]],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": body,
+            }
+        )
 
     async def _send_404(self, send: Callable[..., Any], _path: str = "/") -> None:
         html = get_not_found_html(
             docs_url=self.docs_urls["docs_url"],
             openapi_url=self.docs_urls["openapi_url"],
         )
-        await send({
-            "type": "http.response.start",
-            "status": 404,
-            "headers": [[b"content-type", b"text/html; charset=utf-8"]],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": html.encode("utf-8"),
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 404,
+                "headers": [[b"content-type", b"text/html; charset=utf-8"]],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": html.encode("utf-8"),
+            }
+        )
 
     def _normalize_url(self, url: str) -> str:
         """Normalize URL for matching."""
         from urllib.parse import urlparse
+
         parsed = urlparse(url)
         return f"{parsed.netloc}{parsed.path}"
 
@@ -1370,7 +1374,10 @@ class ASGIApp:
         normalized_url = self._normalize_url(url)
         for route in self.fasthttp.routes:
             route_normalized = self._normalize_url(route.url)
-            if route.method.upper() == method.upper() and route_normalized == normalized_url:
+            if (
+                route.method.upper() == method.upper()
+                and route_normalized == normalized_url
+            ):
                 return route
         return None
 
@@ -1384,8 +1391,8 @@ class ASGIApp:
             request_data = {}
             if body:
                 try:
-                    request_data = json.loads(body)
-                except json.JSONDecodeError:
+                    request_data = orjson.loads(body)
+                except orjson.JSONDecodeError:
                     await self._send_json(send, {"error": "Invalid JSON"})
                     return
 
@@ -1430,18 +1437,15 @@ class ASGIApp:
                     if get_origin(route.response_model) is list:
                         item_model = get_args(route.response_model)[0]
                         validated = [
-                            item_model.model_validate(item)
-                            for item in json_data
+                            item_model.model_validate(item) for item in json_data
                         ]
-                        result["json"] = [
-                            item.model_dump() for item in validated
-                        ]
+                        result["json"] = [item.model_dump() for item in validated]
                     else:
                         validated = route.response_model.model_validate(  # type: ignore
                             json_data
                         )
                         result["json"] = validated.model_dump()
-                    result["body"] = json.dumps(result["json"], ensure_ascii=False)
+                    result["body"] = orjson.dumps(result["json"]).decode()
                 else:
                     result["json"] = json_data
             except Exception as e:  # noqa: BLE001

@@ -1,6 +1,7 @@
 import asyncio
 import ipaddress
 import socket
+import time
 from urllib.parse import urlparse
 
 try:
@@ -8,6 +9,7 @@ try:
         is_local_hostname as _rs_is_local_hostname,  # type: ignore
     )
     from fasthttp._core import is_private_ip as _rs_is_private_ip  # type: ignore
+
     _RUST = True
 except ImportError:
     _RUST = False
@@ -47,9 +49,23 @@ LOCALHOST_NAMES = [
 ]
 
 
+_DNS_TTL = 300.0
+
+
 class SSRFProtection:
-    def __init__(self) -> None:
-        self._dns_cache = {}
+    def __init__(self, dns_ttl: float = _DNS_TTL) -> None:
+        self._dns_cache: dict[str, tuple[str, float]] = {}
+        self._dns_ttl = dns_ttl
+
+    def _dns_lookup_cached(self, hostname: str) -> str:
+        entry = self._dns_cache.get(hostname)
+        if entry is not None:
+            ip, expiry = entry
+            if time.monotonic() < expiry:
+                return ip
+        ip = socket.gethostbyname(hostname)
+        self._dns_cache[hostname] = (ip, time.monotonic() + self._dns_ttl)
+        return ip
 
     async def check_url(self, url: str) -> bool:  # noqa: C901
         parsed = urlparse(url)
@@ -72,7 +88,7 @@ class SSRFProtection:
                 return False
 
         try:
-            ip_str = await asyncio.to_thread(socket.gethostbyname, hostname)
+            ip_str = await asyncio.to_thread(self._dns_lookup_cached, hostname)
 
             if _RUST:
                 if _rs_is_private_ip(ip_str):

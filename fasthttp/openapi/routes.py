@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import contextlib
-import json
 from typing import TYPE_CHECKING, Annotated, Any
 
 import httpx
+import orjson
 from annotated_doc import Doc
 
 from fasthttp import status
@@ -64,7 +64,7 @@ async def handle_openapi_json(
     """
     urls = build_docs_urls(base_url)
     schema = generate_openapi_schema(app, server_url=urls["request_url"])
-    json_str = json.dumps(schema, indent=2, ensure_ascii=False)
+    json_str = orjson.dumps(schema, option=orjson.OPT_INDENT_2).decode()
     return Response(
         status=status.HTTP_200_OK,
         text=json_str,
@@ -104,7 +104,7 @@ async def handle_request(
     request_data: Annotated[
         dict[str, Any],
         Doc("Request data from Swagger UI"),
-    ]
+    ],
 ) -> Response:
     """
     Execute HTTP request and return results for Swagger UI.
@@ -130,7 +130,7 @@ async def handle_request(
     if not url:
         return Response(
             status=status.HTTP_400_BAD_REQUEST,
-            text=json.dumps({"error": "URL is required"}),
+            text=orjson.dumps({"error": "URL is required"}).decode(),
             headers={"Content-Type": "application/json"},
         )
 
@@ -161,25 +161,25 @@ async def handle_request(
 
             return Response(
                 status=status.HTTP_200_OK,
-                text=json.dumps(result, indent=2, ensure_ascii=False),
+                text=orjson.dumps(result, option=orjson.OPT_INDENT_2).decode(),
                 headers={"Content-Type": "application/json"},
             )
 
     except httpx.ConnectError as e:
         return Response(
             status=status.HTTP_502_BAD_GATEWAY,
-            text=json.dumps({"error": f"Connection error: {e!s}"}),
+            text=orjson.dumps({"error": f"Connection error: {e!s}"}).decode(),
             headers={"Content-Type": "application/json"},
         )
     except httpx.TimeoutException as e:
         return Response(
             status=status.HTTP_504_GATEWAY_TIMEOUT,
-            text=json.dumps({"error": f"Timeout: {e!s}"}),
+            text=orjson.dumps({"error": f"Timeout: {e!s}"}).decode(),
             headers={"Content-Type": "application/json"},
         )
     except Exception as e:  # noqa: BLE001
         return Response(
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            text=json.dumps({"error": f"Request failed: {e!s}"}),
+            text=orjson.dumps({"error": f"Request failed: {e!s}"}).decode(),
             headers={"Content-Type": "application/json"},
         )

@@ -1,6 +1,7 @@
-import json
 import sys
 from typing import Any
+
+import orjson
 
 
 class CLIFormatter:
@@ -42,7 +43,7 @@ class CLIFormatter:
         print(f"{prefix}{self.GRAY}{key}:{self.RESET} {value}")
 
     def json_output(self, data: Any) -> None:  # noqa: ANN401
-        formatted = json.dumps(data, indent=2, ensure_ascii=False)
+        formatted = orjson.dumps(data, option=orjson.OPT_INDENT_2).decode()
         print(f"{self.PURPLE}{formatted}{self.RESET}")
 
 

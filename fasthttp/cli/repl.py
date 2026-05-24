@@ -1,13 +1,14 @@
 import asyncio
 import contextlib
-import json
 import shlex
 from typing import Any, ClassVar
 
 import httpx
+import orjson
 
 try:
     import readline  # noqa: F401
+
     READLINE_AVAILABLE = True
 except ImportError:
     READLINE_AVAILABLE = False
@@ -15,6 +16,7 @@ except ImportError:
 
 class Colors:
     """ANSI color codes for terminal output."""
+
     RESET = "\033[0m"
     BOLD = "\033[1m"
     DIM = "\033[2m"
@@ -79,7 +81,9 @@ class FastHTTPRepl:
 
     def print_banner(self) -> None:
         """Print welcome message."""
-        print(f"{Colors.BRIGHT_CYAN}FastHTTP Interactive{Colors.RESET} - {Colors.DIM}Type help for commands{Colors.RESET}")
+        print(
+            f"{Colors.BRIGHT_CYAN}FastHTTP Interactive{Colors.RESET} - {Colors.DIM}Type help for commands{Colors.RESET}"
+        )
         print()
 
     def get_method_color(self, method: str) -> str:
@@ -166,8 +170,8 @@ class FastHTTPRepl:
                 i += 2
             elif arg in ("-j", "--json") and i + 1 < len(args):
                 try:
-                    result["json"] = json.loads(args[i + 1])
-                except json.JSONDecodeError:
+                    result["json"] = orjson.loads(args[i + 1])
+                except orjson.JSONDecodeError:
                     print(f"{Colors.RED}Invalid JSON: {args[i + 1]}{Colors.RESET}")
                 i += 2
             elif arg in ("-d", "--data") and i + 1 < len(args):
@@ -214,10 +218,14 @@ class FastHTTPRepl:
             case "status":
                 return str(resp.status_code)
             case "headers":
-                return json.dumps(dict(resp.headers), indent=2, ensure_ascii=False)
+                return orjson.dumps(
+                    dict(resp.headers), option=orjson.OPT_INDENT_2
+                ).decode()
             case "json":
                 try:
-                    return json.dumps(resp.json(), indent=2, ensure_ascii=False)
+                    return orjson.dumps(
+                        resp.json(), option=orjson.OPT_INDENT_2
+                    ).decode()
                 except Exception:  # noqa: BLE001
                     return resp.text
             case "text":
@@ -226,23 +234,31 @@ class FastHTTPRepl:
                 return f"""{header}
 
 {Colors.BRIGHT_WHITE}Headers:{Colors.RESET}
-{json.dumps(dict(resp.headers), indent=2, ensure_ascii=False)}
+{orjson.dumps(dict(resp.headers), option=orjson.OPT_INDENT_2).decode()}
 
 {Colors.BRIGHT_WHITE}Body:{Colors.RESET}
 {resp.text[:1000]}"""
             case _:
                 try:
-                    return json.dumps(resp.json(), indent=2, ensure_ascii=False)
+                    return orjson.dumps(
+                        resp.json(), option=orjson.OPT_INDENT_2
+                    ).decode()
                 except Exception:  # noqa: BLE001
                     return resp.text
 
-    async def execute_request(self, method: str, url: str, **kwargs: Any,  # noqa: ANN401
+    async def execute_request(
+        self,
+        method: str,
+        url: str,
+        **kwargs: Any,  # noqa: ANN401
     ) -> httpx.Response | None:
         """Execute HTTP request."""
         proxy = kwargs.get("proxy", self.proxy)
 
         try:
-            async with httpx.AsyncClient(proxy=proxy, timeout=kwargs.get("timeout", 30.0)) as client:
+            async with httpx.AsyncClient(
+                proxy=proxy, timeout=kwargs.get("timeout", 30.0)
+            ) as client:
                 return await client.request(
                     method=method,
                     url=url,
@@ -278,7 +294,11 @@ class FastHTTPRepl:
 
         if method == "last":
             if self.last_response:
-                print(json.dumps(self.last_response, indent=2, ensure_ascii=False))
+                print(
+                    orjson.dumps(
+                        self.last_response, option=orjson.OPT_INDENT_2
+                    ).decode()
+                )
             else:
                 print(f"{Colors.DIM}No previous response{Colors.RESET}")
             return
@@ -326,7 +346,9 @@ class FastHTTPRepl:
         if kwargs["headers"]:
             print(f"  {Colors.DIM}Headers: {kwargs['headers']}{Colors.RESET}")
         if kwargs["json"]:
-            print(f"  {Colors.DIM}JSON: {json.dumps(kwargs['json'], ensure_ascii=False)[:100]}{Colors.RESET}")
+            print(
+                f"  {Colors.DIM}JSON: {orjson.dumps(kwargs['json']).decode()[:100]}{Colors.RESET}"
+            )
         if kwargs.get("proxy"):
             print(f"  {Colors.DIM}Proxy: {kwargs['proxy']}{Colors.RESET}")
 
@@ -358,7 +380,9 @@ class FastHTTPRepl:
                 await self.run_command(line)
 
             except KeyboardInterrupt:
-                print(f"\n{Colors.BRIGHT_YELLOW}Use 'exit' or 'q' to quit{Colors.RESET}")
+                print(
+                    f"\n{Colors.BRIGHT_YELLOW}Use 'exit' or 'q' to quit{Colors.RESET}"
+                )
             except EOFError:
                 print(f"\n{Colors.BRIGHT_YELLOW}Goodbye!{Colors.RESET}")
                 break

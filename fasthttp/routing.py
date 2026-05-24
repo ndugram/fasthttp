@@ -26,6 +26,21 @@ class Route:
     responses in a structured and predictable way.
     """
 
+    __slots__ = (
+        "data",
+        "dependencies",
+        "handler",
+        "json",
+        "method",
+        "params",
+        "request_model",
+        "response_model",
+        "responses",
+        "skip_request",
+        "tags",
+        "url",
+    )
+
     def __init__(
         self,
         *,
@@ -415,6 +430,7 @@ class Router:
         This stores the route in an unresolved form until `build_routes()`
         is called.
         """
+
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
             validate_handler(func=func)
 
@@ -843,9 +859,7 @@ class Router:
             child_tags = merged_tags + inc.tags
             child_deps = merged_deps + inc.dependencies
             child_base_url = (
-                inc.base_url
-                if inc.base_url is not None
-                else merged_base_url
+                inc.base_url if inc.base_url is not None else merged_base_url
             )
             routes.extend(
                 inc.router.build_routes(
