@@ -58,7 +58,7 @@ class TestExtractDocstring:
 
     def test_extract_docstring_basic(self) -> None:
         """Test extracting docstring from function."""
-        def example_func():
+        def example_func():  # noqa: ANN202
             """This is a test function."""
 
         result = _extract_docstring(example_func)
@@ -66,7 +66,7 @@ class TestExtractDocstring:
 
     def test_extract_docstring_none(self) -> None:
         """Test extracting docstring from function without docstring."""
-        def no_doc_func():
+        def no_doc_func():  # noqa: ANN202
             pass
 
         result = _extract_docstring(no_doc_func)
@@ -74,7 +74,7 @@ class TestExtractDocstring:
 
     def test_extract_docstring_multiline(self) -> None:
         """Test extracting multiline docstring."""
-        def multiline_func():
+        def multiline_func():  # noqa: ANN202
             """
             This is a multiline
             docstring for testing.
