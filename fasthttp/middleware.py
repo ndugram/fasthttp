@@ -77,13 +77,13 @@ class BaseMiddleware:
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
 
-    async def request(  # noqa: ARG002
+    async def request(
         self,
-        method: Annotated[
+        method: Annotated[  # noqa: ARG002
             str,
             Doc("HTTP method (GET, POST, etc.)."),
         ],
-        url: Annotated[
+        url: Annotated[  # noqa: ARG002
             str,
             Doc("Resolved request URL."),
         ],
