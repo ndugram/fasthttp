@@ -20,7 +20,7 @@ except ImportError:
         re.IGNORECASE,
     )
 
-    def extract_assets(html: str, base_url: str) -> dict:  # type: ignore
+    def extract_assets(html: str, base_url: str) -> dict:
         css = [_urljoin(base_url, m) for m in _CSS_RE.findall(html)]
         js = [_urljoin(base_url, m) for m in _JS_RE.findall(html)]
         return {"css": css, "js": js}
