@@ -28,7 +28,7 @@ def make_route(
     async def handler(resp: Response) -> Response:
         return resp
 
-    return Route(method=method, url=url, handler=handler, params=params)
+    return Route(method=method, url=url, handler=handler, params=params)  # type: ignore[arg-type]
 
 
 def make_response(status: int = 200, text: str = "ok") -> Response:
@@ -57,7 +57,7 @@ class SimpleMiddleware(BaseMiddleware):
         self.responses.append(response.status)
         return response
 
-    async def on_error(self, error, _route, _config):
+    async def on_error(self, error, route, config):
         self.errors.append(type(error).__name__)
 
 
@@ -65,12 +65,13 @@ class PriorityMiddleware(BaseMiddleware):
     __return_type__: ClassVar = None
     __methods__: ClassVar[list[HTTPMethod] | None] = None
     __enabled__: ClassVar[bool] = True
+    __priority__: ClassVar[int] = 0
 
     def __init__(self, priority: int, order_log: list) -> None:
-        self.__priority__ = priority
+        self.__priority__ = priority  # type: ignore
         self._order = order_log
 
-    async def request(self, _method, _url, kwargs):
+    async def request(self, method, url, kwargs):
         self._order.append(f"req:{self.__priority__}")
         return kwargs
 
@@ -258,7 +259,7 @@ class TestMiddlewareManagerSortingFiltering:
     def test_active_skips_disabled(self):
         a = SimpleMiddleware("a")
         b = SimpleMiddleware("b")
-        b.__enabled__ = False
+        b.__enabled__ = False  # type: ignore
         mm = MiddlewareManager([a, b])
         active = mm._active(mm._sorted(), "GET")  # noqa: SLF001
         assert len(active) == 1
@@ -304,9 +305,9 @@ class TestMiddlewareManagerSortingFiltering:
         mw = SimpleMiddleware()
         mm = MiddlewareManager([mw])
         assert len(mm._active(mm._sorted(), "GET")) == 1  # noqa: SLF001
-        mw.__enabled__ = False
+        mw.__enabled__ = False  # type: ignore
         assert len(mm._active(mm._sorted(), "GET")) == 0  # noqa: SLF001
-        mw.__enabled__ = True
+        mw.__enabled__ = True  # type: ignore
         assert len(mm._active(mm._sorted(), "GET")) == 1  # noqa: SLF001
 
 
@@ -349,7 +350,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, _method, _url, kwargs) -> dict:
+            async def request(self, method, url, kwargs) -> dict:
                 kwargs["params"] = {"injected": "true"}
                 return kwargs
 
@@ -361,7 +362,7 @@ class TestProcessBeforeRequest:
     @pytest.mark.asyncio
     async def test_disabled_middleware_skipped(self):
         mw = SimpleMiddleware("skipped")
-        mw.__enabled__ = False
+        mw.__enabled__ = False  # type: ignore
         mm = MiddlewareManager([mw])
         route = make_route()
         result = await mm.process_before_request(route, {})
@@ -383,7 +384,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, _method, _url, kwargs) -> dict:
+            async def request(self, method, url, kwargs) -> dict:
                 kwargs["headers"] = kwargs.get("headers") or {}
                 kwargs["headers"]["X-Step"] = "1"
                 return kwargs
@@ -394,7 +395,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, _method, _url, kwargs) -> dict:
+            async def request(self, method, url, kwargs) -> dict:
                 kwargs["headers"]["X-Step2"] = "2"
                 return kwargs
 
@@ -413,7 +414,7 @@ class TestProcessBeforeRequest:
             __enabled__ = True
             called = False
 
-            async def request(self, _method, _url, kwargs) -> dict:
+            async def request(self, method, url, kwargs) -> dict:
                 PostOnly.called = True
                 return kwargs
 
@@ -463,7 +464,7 @@ class TestProcessAfterResponse:
     @pytest.mark.asyncio
     async def test_response_disabled_middleware_skipped(self):
         mw = SimpleMiddleware()
-        mw.__enabled__ = False
+        mw.__enabled__ = False  # type: ignore
         mm = MiddlewareManager([mw])
         route = make_route()
         resp = make_response()
@@ -517,7 +518,7 @@ class TestProcessOnError:
     @pytest.mark.asyncio
     async def test_on_error_skips_disabled(self):
         mw = SimpleMiddleware()
-        mw.__enabled__ = False
+        mw.__enabled__ = False  # type: ignore
         mm = MiddlewareManager([mw])
         await mm.process_on_error(ValueError(), make_route(), {})
         assert mw.errors == []
@@ -539,7 +540,7 @@ class TestProcessOnError:
             __enabled__ = True
             called = False
 
-            async def on_error(self, _error, _route, _config) -> None:
+            async def on_error(self, error, route, config) -> None:
                 PostOnly.called = True
 
         mm = MiddlewareManager([PostOnly()])
@@ -823,7 +824,7 @@ class TestMiddlewareIntegration:
             def __init__(self, name) -> None:
                 self.name = name
 
-            async def request(self, _method, _url, kwargs) -> dict:
+            async def request(self, method, url, kwargs) -> dict:
                 order.append(f"req:{self.name}")
                 return kwargs
 
