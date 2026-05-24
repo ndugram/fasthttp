@@ -1006,7 +1006,7 @@ class FastHTTP:
                         validated = route.response_model.model_validate(
                             json_data
                         )
-                    result._handler_result = validated
+                    result._handler_result = validated  # noqa: SLF001
                     self.logger.debug("[RESULT] %s", validated)
                 elif result.text:
                     self.logger.debug("[RESULT] %s", result.text)
