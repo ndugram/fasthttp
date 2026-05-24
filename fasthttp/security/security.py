@@ -50,7 +50,7 @@ class Security:
 
     @property
     def secret_key(self) -> bytes:
-        return self._signer._secret_key
+        return self._signer._secret_key  # noqa: SLF001
 
     async def pre_request(self, url: str, _method: str) -> None:
         await self._ssrf.validate_request(url)
