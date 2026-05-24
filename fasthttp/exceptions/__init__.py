@@ -1,3 +1,4 @@
+from .base import FastHTTPError
 from .connect import FastHTTPConnectionError
 from .request import FastHTTPRequestError
 from .status import FastHTTPBadStatusError
@@ -8,6 +9,7 @@ from .validator import FastHTTPValidationError
 __all__ = (
     "FastHTTPBadStatusError",
     "FastHTTPConnectionError",
+    "FastHTTPError",
     "FastHTTPRequestError",
     "FastHTTPTimeoutError",
     "FastHTTPValidationError",
