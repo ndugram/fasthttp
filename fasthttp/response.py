@@ -6,7 +6,7 @@ import orjson
 from annotated_doc import Doc
 
 try:
-    from fasthttp._core import extract_assets
+    from fasthttp._core import extract_assets  # type: ignore[import-untyped]
 except ImportError:
     import re
     from urllib.parse import urljoin as _urljoin
