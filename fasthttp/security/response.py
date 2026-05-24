@@ -111,7 +111,7 @@ class ResponseProtection:
         self,
         content: bytes,
         content_type: str | None = None,
-        status_code: int = 200,
+        status_code: int = 200,  # noqa: ARG002
     ) -> tuple[bool, str | None]:
         size_check = self.check_size(len(content))
         if not size_check[0]:
