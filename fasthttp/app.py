@@ -1236,6 +1236,7 @@ class ASGIApp:
         self.fasthttp = app
         self.docs_urls = build_docs_urls(base_url)
         self._shared_client: httpx.AsyncClient | None = None
+        self._openapi_cache: bytes | None = None
 
     async def __call__(
         self,
@@ -1297,11 +1298,13 @@ class ASGIApp:
                 ),
             )
         elif path == self.docs_urls["openapi_url"]:
-            schema = generate_openapi_schema(
-                self.fasthttp,
-                server_url=self.docs_urls["request_url"],
-            )
-            await self._send_json(send, schema)
+            if self._openapi_cache is None:
+                schema = generate_openapi_schema(
+                    self.fasthttp,
+                    server_url=self.docs_urls["request_url"],
+                )
+                self._openapi_cache = orjson.dumps(schema, option=orjson.OPT_INDENT_2)
+            await self._send_raw_json(send, self._openapi_cache)
         elif path == self.docs_urls["request_url"]:
             await self._handle_proxy(send, method, body)
         else:
@@ -1323,7 +1326,9 @@ class ASGIApp:
         )
 
     async def _send_json(self, send: Callable[..., Any], data: dict) -> None:
-        json_str = orjson.dumps(data, option=orjson.OPT_INDENT_2).decode()
+        await self._send_raw_json(send, orjson.dumps(data, option=orjson.OPT_INDENT_2))
+
+    async def _send_raw_json(self, send: Callable[..., Any], body: bytes) -> None:
         await send(
             {
                 "type": "http.response.start",
@@ -1334,7 +1339,7 @@ class ASGIApp:
         await send(
             {
                 "type": "http.response.body",
-                "body": json_str.encode("utf-8"),
+                "body": body,
             }
         )
 
