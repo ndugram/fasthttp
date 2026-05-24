@@ -248,7 +248,7 @@ class TestResponseReqText:
     def test_req_text_data_when_no_json(self):
         r = Response(status=200, text="", headers={}, req_data="raw text")
         result = r.req_text()
-        assert "raw text" in result
+        assert result is not None and "raw text" in result
 
     def test_req_text_bytes_data(self):
         r = Response(status=200, text="", headers={}, req_data=b"bytes")
