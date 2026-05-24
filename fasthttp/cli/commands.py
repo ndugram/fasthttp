@@ -1,7 +1,7 @@
-import json
 from typing import Any
 
 import httpx
+import orjson
 import typer
 
 from fasthttp.cli.client import CLIResponse, run_request
@@ -34,24 +34,18 @@ def get_output(resp: CLIResponse, output: str) -> str:
         case "status":
             return str(resp.status)
         case "headers":
-            import json
-
-            return json.dumps(resp.headers, indent=2)
+            return orjson.dumps(resp.headers, option=orjson.OPT_INDENT_2).decode()
         case "json":
             if resp.json_data:
-                import json
-
-                return json.dumps(resp.json_data, indent=2)
+                return orjson.dumps(resp.json_data, option=orjson.OPT_INDENT_2).decode()
             return "(no JSON in response)"
         case "text":
             return resp.text
         case "all":
-            import json
-
             return (
                 f"Status: {resp.status}\n"
                 f"Elapsed: {resp.elapsed_ms:.2f}ms\n"
-                f"Headers:\n{json.dumps(resp.headers, indent=2)}\n"
+                f"Headers:\n{orjson.dumps(resp.headers, option=orjson.OPT_INDENT_2).decode()}\n"
                 f"Body:\n{resp.text[:500]}"
             )
         case _:
@@ -61,105 +55,190 @@ def get_output(resp: CLIResponse, output: str) -> str:
 @app.command()
 def get(
     url: str,
-    output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
-    headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
-    timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    output: str = typer.Argument(
+        "status", help="Output: status, headers, json, text, all"
+    ),
+    headers: str | None = typer.Option(
+        None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"
+    ),
+    timeout: float = typer.Option(
+        30.0, "-t", "--timeout", help="Request timeout in seconds"
+    ),
     debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
-    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
+    proxy: str | None = typer.Option(
+        None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"
+    ),
 ) -> None:
-    _execute_request("GET", url, output, headers, timeout=timeout, debug=debug, proxy=proxy)
+    _execute_request(
+        "GET", url, output, headers, timeout=timeout, debug=debug, proxy=proxy
+    )
 
 
 @app.command()
 def post(
     url: str,
-    output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
-    headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
+    output: str = typer.Argument(
+        "status", help="Output: status, headers, json, text, all"
+    ),
+    headers: str | None = typer.Option(
+        None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"
+    ),
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
-    timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    timeout: float = typer.Option(
+        30.0, "-t", "--timeout", help="Request timeout in seconds"
+    ),
     debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
-    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
+    proxy: str | None = typer.Option(
+        None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"
+    ),
 ) -> None:
     json_data: dict[str, Any] | None = None
     if json_body:
         try:
-            json_data = json.loads(json_body)
-        except json.JSONDecodeError as e:
+            json_data = orjson.loads(json_body)
+        except orjson.JSONDecodeError as e:
             formatter.error(f"Invalid JSON: {e}")
             raise typer.Exit(1) from e
 
     _execute_request(
-        "POST",url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
+        "POST",
+        url,
+        output,
+        headers,
+        json_data=json_data,
+        data=data,
+        timeout=timeout,
+        debug=debug,
+        proxy=proxy,
+    )
 
 
 @app.command()
 def put(
     url: str,
-    output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
-    headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
+    output: str = typer.Argument(
+        "status", help="Output: status, headers, json, text, all"
+    ),
+    headers: str | None = typer.Option(
+        None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"
+    ),
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
-    timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    timeout: float = typer.Option(
+        30.0, "-t", "--timeout", help="Request timeout in seconds"
+    ),
     debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
-    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
+    proxy: str | None = typer.Option(
+        None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"
+    ),
 ) -> None:
     json_data: dict[str, Any] | None = None
     if json_body:
         try:
-            json_data = json.loads(json_body)
-        except json.JSONDecodeError as e:
+            json_data = orjson.loads(json_body)
+        except orjson.JSONDecodeError as e:
             formatter.error(f"Invalid JSON: {e}")
             raise typer.Exit(1) from e
 
-    _execute_request("PUT", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
+    _execute_request(
+        "PUT",
+        url,
+        output,
+        headers,
+        json_data=json_data,
+        data=data,
+        timeout=timeout,
+        debug=debug,
+        proxy=proxy,
+    )
 
 
 @app.command()
 def patch(
     url: str,
-    output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
-    headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
+    output: str = typer.Argument(
+        "status", help="Output: status, headers, json, text, all"
+    ),
+    headers: str | None = typer.Option(
+        None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"
+    ),
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
-    timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    timeout: float = typer.Option(
+        30.0, "-t", "--timeout", help="Request timeout in seconds"
+    ),
     debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
-    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
+    proxy: str | None = typer.Option(
+        None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"
+    ),
 ) -> None:
     json_data: dict[str, Any] | None = None
     if json_body:
         try:
-            json_data = json.loads(json_body)
-        except json.JSONDecodeError as e:
+            json_data = orjson.loads(json_body)
+        except orjson.JSONDecodeError as e:
             formatter.error(f"Invalid JSON: {e}")
             raise typer.Exit(1) from e
 
-    _execute_request("PATCH", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
+    _execute_request(
+        "PATCH",
+        url,
+        output,
+        headers,
+        json_data=json_data,
+        data=data,
+        timeout=timeout,
+        debug=debug,
+        proxy=proxy,
+    )
 
 
 @app.command()
 def delete(
     url: str,
-    output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
-    headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
-    timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    output: str = typer.Argument(
+        "status", help="Output: status, headers, json, text, all"
+    ),
+    headers: str | None = typer.Option(
+        None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"
+    ),
+    timeout: float = typer.Option(
+        30.0, "-t", "--timeout", help="Request timeout in seconds"
+    ),
     debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
-    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
+    proxy: str | None = typer.Option(
+        None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"
+    ),
 ) -> None:
-    _execute_request("DELETE", url, output, headers, timeout=timeout, debug=debug, proxy=proxy)
+    _execute_request(
+        "DELETE", url, output, headers, timeout=timeout, debug=debug, proxy=proxy
+    )
 
 
 @app.command()
 def graphql(  # noqa: C901
     url: str,
     query: str = typer.Option(..., "-q", "--query", help="GraphQL query (required)"),
-    variables: str | None = typer.Option(None, "-v", "--variables", help="GraphQL variables as JSON"),
-    operation_type: str = typer.Option("query", "-o", "--operation", help="Operation type: query or mutation"),
-    output: str = typer.Argument("json", help="Output: status, headers, json, text, all"),
-    headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
-    timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
+    variables: str | None = typer.Option(
+        None, "-v", "--variables", help="GraphQL variables as JSON"
+    ),
+    operation_type: str = typer.Option(
+        "query", "-o", "--operation", help="Operation type: query or mutation"
+    ),
+    output: str = typer.Argument(
+        "json", help="Output: status, headers, json, text, all"
+    ),
+    headers: str | None = typer.Option(
+        None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"
+    ),
+    timeout: float = typer.Option(
+        30.0, "-t", "--timeout", help="Request timeout in seconds"
+    ),
     debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
-    proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
+    proxy: str | None = typer.Option(
+        None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"
+    ),
 ) -> None:
     url = _check_https_url(url)
     parsed_headers = parse_headers(headers_str=headers)
@@ -167,15 +246,17 @@ def graphql(  # noqa: C901
     json_data: dict[str, Any] = {"query": query}
     if variables:
         try:
-            json_data["variables"] = json.loads(variables)
-        except json.JSONDecodeError as e:
+            json_data["variables"] = orjson.loads(variables)
+        except orjson.JSONDecodeError as e:
             formatter.error(f"Invalid JSON in variables: {e}")
             raise typer.Exit(1) from e
 
     if debug:
         formatter.info(f"→ GraphQL {operation_type} {url}")
         if parsed_headers:
-            formatter.info(f"  Headers: {json.dumps(parsed_headers, indent=2)}")
+            formatter.info(
+                f"  Headers: {orjson.dumps(parsed_headers, option=orjson.OPT_INDENT_2).decode()}"
+            )
         formatter.info(f"  Query: {query}")
         if variables:
             formatter.info(f"  Variables: {variables}")
@@ -236,9 +317,13 @@ def _execute_request(
     if debug:
         formatter.info(f"→ {method} {url}")
         if headers:
-            formatter.info(f"  Headers: {json.dumps(headers, indent=2)}")
+            formatter.info(
+                f"  Headers: {orjson.dumps(headers, option=orjson.OPT_INDENT_2).decode()}"
+            )
         if json_data:
-            formatter.info(f"  JSON: {json.dumps(json_data, indent=2)}")
+            formatter.info(
+                f"  JSON: {orjson.dumps(json_data, option=orjson.OPT_INDENT_2).decode()}"
+            )
         if data:
             formatter.info(f"  Data: {data}")
         if proxy:
