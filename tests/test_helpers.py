@@ -88,12 +88,12 @@ class TestCheckAnnotatedReturn:
 
 class TestValidateHandler:
     def test_valid_handler_passes(self):
-        def fn(x: int, y: str) -> bool:
+        def fn(_x: int, _y: str) -> bool:
             return True
         validate_handler(fn)
 
     def test_missing_param_annotation_raises(self):
-        def fn(x) -> bool:
+        def fn(_x) -> bool:
             return True
         with pytest.raises(TypeError):
             validate_handler(fn)
