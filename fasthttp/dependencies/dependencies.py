@@ -12,6 +12,7 @@ class Dependency:
             Callable,
             Doc("Async function that modifies request config"),
         ],
+        *,
         use_cache: Annotated[
             bool,
             Doc(
@@ -37,10 +38,10 @@ class Dependency:
         self.func = func
         self.use_cache = use_cache
         self.scope = scope
-        self.__name__ = func.__name__
+        self.__name__ = func.__name__  # type: ignore
         self._is_async = iscoroutinefunction(func)
 
-    async def __call__(self, route: Any, config: dict) -> dict:
+    async def __call__(self, route: Any, config: dict) -> dict:  # noqa: ANN401
         if self._is_async:
             return await self.func(route, config)
         return self.func(route, config)
@@ -51,6 +52,7 @@ def Depends(  # noqa: N802
         Callable,
         Doc("Dependency async function that modifies request config"),
     ],
+    *,
     use_cache: Annotated[
         bool,
         Doc(

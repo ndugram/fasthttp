@@ -123,7 +123,7 @@ async def test_middleware_before_request() -> None:
         handler=_noop_handler,
     )
     config = {"headers": {"Authorization": "Bearer token"}, "timeout": 30.0}
-    await manager.process_before_request(route, config)
+    await manager.process_before_request(route, config)  # type: ignore
 
 
 @pytest.mark.benchmark
@@ -137,7 +137,7 @@ async def test_middleware_after_response() -> None:
     )
     resp = _make_response()
     config = {"headers": {}, "timeout": 30.0}
-    await manager.process_after_response(resp, route, config)
+    await manager.process_after_response(resp, route, config)  # type: ignore
 
 
 @pytest.mark.benchmark
@@ -151,4 +151,4 @@ async def test_middleware_on_error() -> None:
     )
     config = {"headers": {}, "timeout": 30.0}
     error = ConnectionError("test error")
-    await manager.process_on_error(error, route, config)
+    await manager.process_on_error(error, route, config)  # type: ignore

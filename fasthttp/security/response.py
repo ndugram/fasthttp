@@ -2,10 +2,8 @@ import re
 from dataclasses import dataclass
 
 try:
-    from fasthttp._core import (
-        detect_xss as _rs_detect_xss,
-        sanitize_html as _rs_sanitize_html,
-    )
+    from fasthttp._core import detect_xss as _rs_detect_xss  # type: ignore
+    from fasthttp._core import sanitize_html as _rs_sanitize_html  # type: ignore
     _RUST = True
 except ImportError:
     _RUST = False
@@ -69,13 +67,16 @@ class ResponseProtection:
 
         content_type_lower = content_type.lower().split(";")[0].strip()
 
-        if self._config.block_dangerous_content:
-            if content_type_lower in self._dangerous_content_types:
-                if expected_type and expected_type.lower() != content_type_lower:
-                    return (
-                        False,
-                        f"Unexpected content type: expected {expected_type}, got {content_type_lower}",
-                    )
+        if (
+            self._config.block_dangerous_content
+            and content_type_lower in self._dangerous_content_types
+            and expected_type
+            and expected_type.lower() != content_type_lower
+        ):
+            return (
+                False,
+                f"Unexpected content type: expected {expected_type}, got {content_type_lower}",
+            )
 
         if self._config.allowed_content_types:
             allowed = [ct.lower() for ct in self._config.allowed_content_types]
@@ -90,8 +91,7 @@ class ResponseProtection:
         if _RUST:
             return _rs_sanitize_html(content)
         result = SCRIPT_TAG_PATTERN.sub("", content)
-        result = HTML_TAG_PATTERN.sub("", result)
-        return result
+        return HTML_TAG_PATTERN.sub("", result)
 
     def detect_xss(self, content: str) -> tuple[bool, str | None]:
         if _RUST:
@@ -107,7 +107,7 @@ class ResponseProtection:
         self,
         content: bytes,
         content_type: str | None = None,
-        status_code: int = 200,
+        status_code: int = 200,  # noqa: ARG002
     ) -> tuple[bool, str | None]:
         size_check = self.check_size(len(content))
         if not size_check[0]:
@@ -124,7 +124,7 @@ class ResponseProtection:
                 xss_check = self.detect_xss(text)
                 if xss_check[0]:
                     return False, xss_check[1]
-            except Exception:
+            except Exception:  # noqa: S110, BLE001
                 pass
 
         return True, None

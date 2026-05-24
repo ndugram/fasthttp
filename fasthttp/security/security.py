@@ -1,14 +1,14 @@
 import logging
 from urllib.parse import urlparse
 
-from .ssrf import SSRFProtection, SSRFBlockedError
-from .secrets import SecretsMasking
-from .circuit_breaker import CircuitBreaker, CircuitBreakerConfig
+from .circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitState
 from .headers import HeaderProtection
-from .response import ResponseProtection, ResponseProtectionConfig
 from .limits import Limits, LimitsConfig
-from .redirect import RedirectProtection, RedirectConfig
+from .redirect import RedirectConfig, RedirectProtection
+from .response import ResponseProtection, ResponseProtectionConfig
+from .secrets import SecretsMasking
 from .signer import RequestSigner
+from .ssrf import SSRFProtection
 
 logger = logging.getLogger("fasthttp.security")
 
@@ -45,23 +45,25 @@ class Security:
         headers.update(signature_headers)
         return headers
 
-    def enable_signing(self, enabled: bool) -> None:
+    def enable_signing(self, *, enabled: bool) -> None:
         self._sign_requests = enabled
 
     @property
     def secret_key(self) -> bytes:
-        return self._signer._secret_key
+        return self._signer._secret_key  # noqa: SLF001
 
-    async def pre_request(self, url: str, method: str) -> None:
+    async def pre_request(self, url: str, _method: str) -> None:
         await self._ssrf.validate_request(url)
 
         if not self._limits.validate_url_length(url):
-            raise SecurityError(f"URL too long: {len(url)} chars")
+            msg = f"URL too long: {len(url)} chars"
+            raise SecurityError(msg)
 
         parsed = urlparse(url)
         can_proceed = await self._circuit_breaker.can_proceed(parsed.netloc)
         if not can_proceed:
-            raise CircuitOpenError(f"Circuit breaker open for: {parsed.netloc}")
+            msg = f"Circuit breaker open for: {parsed.netloc}"
+            raise CircuitOpenError(msg)
 
         await self._limits.cooldown()
 
@@ -69,7 +71,7 @@ class Security:
         return self._headers.sanitize_request_headers(headers)
 
     async def post_request(
-        self, url: str, method: str, success: bool, error: Exception | None = None
+        self, url: str, _method: str, *, success: bool, error: Exception | None = None  # noqa: ARG002
     ) -> None:
         parsed = urlparse(url)
         host = parsed.netloc
@@ -136,7 +138,7 @@ class Security:
     def release_slot(self) -> None:
         self._limits.release()
 
-    def get_circuit_state(self, host: str):
+    def get_circuit_state(self, host: str) -> CircuitState | None:
         return self._circuit_breaker.get_state(host)
 
 

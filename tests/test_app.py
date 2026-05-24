@@ -1,8 +1,8 @@
 """Tests for FastHTTP application core functionality."""
-import logging
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from contextlib import asynccontextmanager
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from fasthttp import FastHTTP
 from fasthttp.response import Response
@@ -51,8 +51,8 @@ class TestFastHTTPApp:
         app = FastHTTP()
 
         @app.get(url="https://example.com/api")
-        async def handler(resp: Response) -> dict:
-            return resp.json()
+        async def handler(_resp: Response) -> dict:
+            return _resp.json()
 
         assert len(app.routes) == 1
         assert app.routes[0].method == "GET"
@@ -213,7 +213,7 @@ class TestFastHTTPApp:
 
         with pytest.raises(TypeError, match="must have a type annotation"):
             @app.get(url="https://example.com/api")
-            async def handler(resp) -> dict:  # Missing type annotation
+            async def handler(_resp) -> dict:  # Missing type annotation
                 return {}
 
     def test_app_missing_return_annotation_raises_error(self) -> None:
@@ -222,7 +222,7 @@ class TestFastHTTPApp:
 
         with pytest.raises(TypeError, match="must explicitly define return type"):
             @app.get(url="https://example.com/api")
-            async def handler(resp: Response):  # Missing return annotation
+            async def handler(_resp: Response):  # Missing return annotation
                 return {}
 
     def test_app_run_with_tags_filtering(self) -> None:
@@ -230,29 +230,29 @@ class TestFastHTTPApp:
         app = FastHTTP()
 
         @app.get(url="https://example.com/api1", tags=["users"])
-        async def handler1(resp: Response) -> dict:
+        async def handler1(_resp: Response) -> dict:
             return {}
 
         @app.get(url="https://example.com/api2", tags=["admin"])
-        async def handler2(resp: Response) -> dict:
+        async def handler2(_resp: Response) -> dict:
             return {}
 
         @app.get(url="https://example.com/api3", tags=["users", "public"])
-        async def handler3(resp: Response) -> dict:
+        async def handler3(_resp: Response) -> dict:
             return {}
 
         # Mock the actual execution
-        with patch.object(app, '_run') as mock_run:
+        with patch.object(app, "_run") as mock_run:
             app.run(tags=["users"])
             # Should only run routes with "users" tag
             assert mock_run.called
 
-    def test_app_run_no_routes_warning(self, caplog) -> None:
+    def test_app_run_no_routes_warning(self) -> None:
         """Test that run() warns when no routes to run."""
         app = FastHTTP()
-        
+
         # Mock asyncio.run to avoid actual execution
-        with patch('asyncio.run'):
+        with patch("asyncio.run"):
             app.run()
 
         # Check that warning was logged (using caplog.text for custom logger)
@@ -269,10 +269,10 @@ class TestFastHTTPLifespan:
         shutdown_called = False
 
         @asynccontextmanager
-        async def lifespan(app: FastHTTP):
+        async def lifespan(_app: FastHTTP):
             nonlocal startup_called, shutdown_called
             startup_called = True
-            app.test_value = "initialized"
+            app.test_value = "initialized"  # type: ignore
             yield
             shutdown_called = True
 
@@ -286,7 +286,7 @@ class TestFastHTTPLifespan:
         shutdown_called = False
 
         @asynccontextmanager
-        async def lifespan(app: FastHTTP):
+        async def lifespan(_app: FastHTTP):
             nonlocal startup_called, shutdown_called
             startup_called = True
             yield
@@ -295,11 +295,11 @@ class TestFastHTTPLifespan:
         app = FastHTTP(lifespan=lifespan)
 
         @app.get(url="https://example.com/api")
-        async def handler(resp: Response) -> dict:
+        async def handler(_resp: Response) -> dict:
             return {}
 
         # Mock the actual HTTP client to avoid real requests
-        with patch('asyncio.run') as mock_run:
+        with patch("asyncio.run"):
             app.run()
             # The lifespan should be integrated into the run cycle
 
@@ -364,7 +364,7 @@ class TestFastHTTPASGI:
         asgi_app = ASGIApp(app)
 
         @app.get(url="https://example.com/api")
-        async def handler(resp: Response) -> dict:
+        async def handler(_resp: Response) -> dict:
             return {}
 
         scope = {"type": "http", "path": "/openapi.json", "method": "GET"}
@@ -386,7 +386,7 @@ class TestFastHTTPASGI:
         asgi_app = ASGIApp(app, base_url="api")
 
         @app.get(url="https://example.com/api")
-        async def handler(resp: Response) -> dict:
+        async def handler(_resp: Response) -> dict:
             return {}
 
         scope = {"type": "http", "path": "/api/openapi.json", "method": "GET"}
@@ -439,8 +439,9 @@ class TestFastHTTPASGI:
     @pytest.mark.asyncio
     async def test_asgi_handle_proxy_request(self) -> None:
         """Test ASGI handling /request proxy endpoint."""
-        from fasthttp.app import ASGIApp
         import json
+
+        from fasthttp.app import ASGIApp
 
         app = FastHTTP()
         asgi_app = ASGIApp(app)
@@ -451,8 +452,8 @@ class TestFastHTTPASGI:
         }).encode()
 
         scope = {"type": "http", "path": "/request", "method": "POST"}
-        
-        async def receive():
+
+        async def receive() -> dict:
             return {
                 "type": "http.request",
                 "body": request_body,
@@ -462,7 +463,7 @@ class TestFastHTTPASGI:
         send = AsyncMock()
 
         # Mock httpx.AsyncClient to avoid real HTTP requests
-        with patch('httpx.AsyncClient') as mock_client:
+        with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -497,33 +498,33 @@ class TestFastHTTPASGI:
 class TestFastHTTPErrorHandling:
     """Tests for error handling in FastHTTP."""
 
-    def test_run_with_import_error_http2(self, caplog) -> None:
+    def test_run_with_import_error_http2(self) -> None:
         """Test run handles ImportError for HTTP2 gracefully."""
         app = FastHTTP(http2=True)
 
         @app.get(url="https://example.com/api")
-        async def handler(resp: Response) -> dict:
+        async def handler(_resp: Response) -> dict:
             return {}
 
         # Mock asyncio.run to raise ImportError
-        with patch('asyncio.run', side_effect=ImportError("http2 not found")):
+        with patch("asyncio.run", side_effect=ImportError("http2 not found")):
             app.run()
 
         # Should log error about HTTP2 (just verify it doesn't crash)
         assert True
 
-    def test_run_with_connect_error(self, caplog) -> None:
+    def test_run_with_connect_error(self) -> None:
         """Test run handles ConnectError gracefully."""
         import httpx
 
         app = FastHTTP()
 
         @app.get(url="https://example.com/api")
-        async def handler(resp: Response) -> dict:
+        async def handler(_resp: Response) -> dict:
             return {}
 
         # Mock asyncio.run to raise ConnectError
-        with patch('asyncio.run', side_effect=httpx.ConnectError("Connection failed")):
+        with patch("asyncio.run", side_effect=httpx.ConnectError("Connection failed")):
             app.run()
 
         # Should log connection error (just verify it doesn't crash)
@@ -533,7 +534,7 @@ class TestFastHTTPErrorHandling:
 class TestFastHTTPLogResult:
     """Tests for _log_result method."""
 
-    def test_log_result_with_response(self, caplog) -> None:
+    def test_log_result_with_response(self) -> None:
         """Test _log_result with successful response."""
         app = FastHTTP(debug=True)
 
@@ -546,10 +547,10 @@ class TestFastHTTPLogResult:
         response = Response(status=200, text="OK", headers={})
 
         # Just verify it doesn't crash
-        app._log_result(route, 100.5, response)
+        app._log_result(route, 100.5, response)  # noqa: SLF001
         assert True
 
-    def test_log_result_with_none(self, caplog) -> None:
+    def test_log_result_with_none(self) -> None:
         """Test _log_result with None response (error)."""
         app = FastHTTP(debug=True)
 
@@ -560,5 +561,5 @@ class TestFastHTTPLogResult:
         )
 
         # Just verify it doesn't crash
-        app._log_result(route, 100.5, None)
+        app._log_result(route, 100.5, None)  # noqa: SLF001
         assert True

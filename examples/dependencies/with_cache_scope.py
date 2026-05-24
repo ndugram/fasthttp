@@ -1,10 +1,10 @@
-from fasthttp import FastHTTP, Depends
+from fasthttp import Depends, FastHTTP
 from fasthttp.response import Response
 
 app = FastHTTP(debug=True)
 
 
-async def expensive_operation(route, config):
+async def expensive_operation(_route: object, config: dict) -> dict:
     import uuid
     config.setdefault("headers", {})["X-Request-ID"] = str(uuid.uuid4())
     return config

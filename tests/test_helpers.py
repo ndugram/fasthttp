@@ -1,16 +1,14 @@
 """Tests for helpers/route_inspect.py."""
-import inspect
 import pytest
 from pydantic import BaseModel
 
 from fasthttp.helpers.route_inspect import (
+    COMMON_PARAMS,
     check_annotated_parameters,
     check_annotated_return,
-    validate_handler,
     create_route_params,
-    COMMON_PARAMS,
+    validate_handler,
 )
-
 
 # ---------------------------------------------------------------------------
 # check_annotated_parameters
@@ -52,7 +50,7 @@ class TestCheckAnnotatedParameters:
 
 
 # ---------------------------------------------------------------------------
-# check_annotated_return
+# check_annotated_return  # noqa: ERA001
 # ---------------------------------------------------------------------------
 
 class TestCheckAnnotatedReturn:
@@ -90,12 +88,12 @@ class TestCheckAnnotatedReturn:
 
 class TestValidateHandler:
     def test_valid_handler_passes(self):
-        def fn(x: int, y: str) -> bool:
+        def fn(_x: int, _y: str) -> bool:
             return True
         validate_handler(fn)
 
     def test_missing_param_annotation_raises(self):
-        def fn(x) -> bool:
+        def fn(_x) -> bool:
             return True
         with pytest.raises(TypeError):
             validate_handler(fn)
@@ -187,7 +185,7 @@ class TestCreateRouteParams:
 
     def test_all_http_methods(self):
         for m in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
-            result = create_route_params(method=m, url="u")
+            result = create_route_params(method=m, url="u")  # type: ignore
             assert result["method"] == m
 
 

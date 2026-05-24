@@ -1,5 +1,6 @@
-import pytest
 import logging
+
+import pytest
 
 from fasthttp.exceptions import (
     FastHTTPBadStatusError,
@@ -176,8 +177,9 @@ class TestFastHTTPErrorBase:
         err.log(level=logging.WARNING)
 
     def test_can_be_raised_and_caught(self):
+        msg = "test raise"
         with pytest.raises(FastHTTPError):
-            raise FastHTTPError("test raise")
+            raise FastHTTPError(msg)
 
 
 class TestFastHTTPBadStatusErrorExtended:
@@ -252,8 +254,9 @@ class TestFastHTTPRequestErrorExtended:
         assert issubclass(FastHTTPRequestError, FastHTTPError)
 
     def test_can_be_raised(self):
+        msg = "bad request"
         with pytest.raises(FastHTTPRequestError):
-            raise FastHTTPRequestError("bad request")
+            raise FastHTTPRequestError(msg)
 
 
 class TestColorize:

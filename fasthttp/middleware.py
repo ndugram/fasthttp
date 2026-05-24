@@ -10,21 +10,19 @@ from typing import TYPE_CHECKING, Annotated, Any, ClassVar
 import orjson
 
 try:
-    from fasthttp._core import cache_key as _rs_cache_key
+    from fasthttp._core import cache_key as _rs_cache_key  # type: ignore
     _HAVE_RUST_CACHE_KEY = True
 except ImportError:
     _HAVE_RUST_CACHE_KEY = False
 
 from annotated_doc import Doc
 
-from .types import HTTPMethod
-
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from .response import Response
     from .routing import Route
-    from .types import RequestsOptinal
+    from .types import HTTPMethod, RequestsOptinal
 
 
 class BaseMiddleware:
@@ -81,11 +79,11 @@ class BaseMiddleware:
 
     async def request(
         self,
-        method: Annotated[
+        method: Annotated[  # noqa: ARG002
             str,
             Doc("HTTP method (GET, POST, etc.)."),
         ],
-        url: Annotated[
+        url: Annotated[  # noqa: ARG002
             str,
             Doc("Resolved request URL."),
         ],
@@ -110,11 +108,11 @@ class BaseMiddleware:
     async def response(
         self,
         response: Annotated[
-            "Response",
+            Response,
             Doc("Wrapped Response object."),
         ],
     ) -> Annotated[
-        "Response",
+        Response,
         Doc("Modified or replaced response passed back up the chain."),
     ]:
         """Called after the HTTP response is received."""
@@ -127,11 +125,11 @@ class BaseMiddleware:
             Doc("The exception that occurred."),
         ],
         route: Annotated[
-            "Route",
+            Route,
             Doc("The route that failed."),
         ],
         config: Annotated[
-            "RequestsOptinal",
+            RequestsOptinal,
             Doc("Request configuration that was used."),
         ],
     ) -> Annotated[
@@ -222,11 +220,11 @@ class MiddlewareManager:
     async def process_before_request(
         self,
         route: Annotated[
-            "Route",
+            Route,
             Doc("The route being executed."),
         ],
         config: Annotated[
-            "RequestsOptinal",
+            RequestsOptinal,
             Doc("Initial request configuration."),
         ],
     ) -> Annotated[
@@ -245,19 +243,19 @@ class MiddlewareManager:
     async def process_after_response(
         self,
         response: Annotated[
-            "Response",
+            Response,
             Doc("The HTTP response object."),
         ],
         route: Annotated[
-            "Route",
+            Route,
             Doc("The route that was executed."),
         ],
-        config: Annotated[
-            "RequestsOptinal",
+        config: Annotated[  # noqa: ARG002
+            RequestsOptinal,
             Doc("Request configuration that was used."),
         ],
     ) -> Annotated[
-        "Response",
+        Response,
         Doc("Final response after middleware processing."),
     ]:
         """Execute all response middleware hooks in reverse priority order."""
@@ -273,11 +271,11 @@ class MiddlewareManager:
             Doc("The exception that occurred."),
         ],
         route: Annotated[
-            "Route",
+            Route,
             Doc("The route that failed."),
         ],
         config: Annotated[
-            "RequestsOptinal",
+            RequestsOptinal,
             Doc("Request configuration that was used."),
         ],
     ) -> Annotated[
@@ -294,7 +292,7 @@ class CacheEntry:
 
     def __init__(
         self,
-        response: Annotated["Response", Doc("The HTTP response to cache.")],
+        response: Annotated[Response, Doc("The HTTP response to cache.")],
         ttl: Annotated[int, Doc("Time to live in seconds.")],
     ) -> None:
         self.response = response
@@ -352,7 +350,7 @@ class CacheMiddleware(BaseMiddleware):
             f"cache_state_{id(self)}", default=(None, None)
         )
 
-    def _generate_key(self, method: str, url: str, params: Any) -> str:
+    def _generate_key(self, method: str, url: str, params: Any) -> str:  # noqa: ANN401
         params_json = orjson.dumps(params or {}, option=orjson.OPT_SORT_KEYS).decode()
         if _HAVE_RUST_CACHE_KEY:
             return _rs_cache_key(method, url, params_json)
@@ -378,7 +376,7 @@ class CacheMiddleware(BaseMiddleware):
         self._state.set((key, None))
         return kwargs
 
-    async def response(self, response: "Response") -> "Response":
+    async def response(self, response: Response) -> Response:
         key, cached = self._state.get()
 
         if cached is not None:
@@ -392,7 +390,7 @@ class CacheMiddleware(BaseMiddleware):
 
         return response
 
-    async def on_error(self, error: Exception, route: "Route", config: "RequestsOptinal") -> None:
+    async def on_error(self, error: Exception, route: Route, config: RequestsOptinal) -> None:  # noqa: ARG002
         key, _ = self._state.get()
         if key is not None:
             async with self._lock:
@@ -501,7 +499,7 @@ class DummyCookieJar(CookieJar):
     ```
     """
 
-    def set(self, name: str, value: str) -> None:
+    def set(self, name: str, value: str) -> None:  # noqa: ARG002
         return
 
     def __repr__(self) -> str:
@@ -564,29 +562,29 @@ class SessionMiddleware(BaseMiddleware):
 
     @property
     def cookies(self) -> dict[str, str]:
-        return self._jar._cookies
+        return self._jar._cookies  # noqa: SLF001
 
     def __repr__(self) -> str:
-        return f"<SessionMiddleware cookies={list(self._jar._cookies.keys())}>"
+        return f"<SessionMiddleware cookies={list(self._jar._cookies.keys())}>"  # noqa: SLF001
 
     async def request(
         self,
-        method: Annotated[str, Doc("HTTP method.")],
-        url: Annotated[str, Doc("Request URL.")],
+        method: Annotated[str, Doc("HTTP method.")],  # noqa: ARG002
+        url: Annotated[str, Doc("Request URL.")],  # noqa: ARG002
         kwargs: Annotated[dict[str, Any], Doc("Request kwargs passed to httpx.")],
     ) -> dict[str, Any]:
-        if self._jar._cookies:
+        if self._jar._cookies:  # noqa: SLF001
             headers = dict(kwargs.get("headers") or {})
             headers["Cookie"] = "; ".join(
-                f"{k}={v}" for k, v in self._jar._cookies.items()
+                f"{k}={v}" for k, v in self._jar._cookies.items()  # noqa: SLF001
             )
             kwargs["headers"] = headers
         return kwargs
 
     async def response(
         self,
-        response: Annotated["Response", Doc("Wrapped response object.")],
-    ) -> "Response":
+        response: Annotated[Response, Doc("Wrapped response object.")],
+    ) -> Response:
         raw = response.headers.get("set-cookie", "")
         if raw:
             for cookie_str in raw.split(","):
@@ -600,4 +598,4 @@ class SessionMiddleware(BaseMiddleware):
         self._jar.clear()
 
     def get_cookies(self) -> dict[str, str]:
-        return dict(self._jar._cookies)
+        return dict(self._jar._cookies)  # noqa: SLF001

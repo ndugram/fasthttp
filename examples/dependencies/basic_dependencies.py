@@ -1,21 +1,21 @@
-from fasthttp import FastHTTP, Depends
+from fasthttp import Depends, FastHTTP
 from fasthttp.response import Response
 
 app = FastHTTP(debug=True)
 
 
-async def add_bearer_token(route, config):
+async def add_bearer_token(_route: object, config: dict) -> dict:
     config.setdefault("headers", {})["Authorization"] = "Bearer my-secret-token"
     return config
 
 
-async def add_trace_id(route, config):
+async def add_trace_id(_route: object, config: dict) -> dict:
     import uuid
     config.setdefault("headers", {})["X-Trace-ID"] = str(uuid.uuid4())
     return config
 
 
-async def add_custom_header(route, config):
+async def add_custom_header(_route: object, config: dict) -> dict:
     config.setdefault("headers", {})["X-Custom-Header"] = "CustomValue"
     return config
 

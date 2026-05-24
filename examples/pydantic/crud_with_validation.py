@@ -20,7 +20,7 @@ async def get_all_posts(resp: Response) -> list[Post]:
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1", response_model=Post)
-async def get_post(resp) -> Post:
+async def get_post(resp: Response) -> Post:
     return resp.json()
 
 
@@ -29,7 +29,7 @@ async def get_post(resp) -> Post:
     json={"title": "New Post", "body": "Post body", "userId": 1},
     response_model=Post,
 )
-async def create_post(resp) -> Post:
+async def create_post(resp: Response) -> Post:
     return resp.json()
 
 
@@ -38,7 +38,7 @@ async def create_post(resp) -> Post:
     json={"title": "Updated Post", "body": "Updated body", "userId": 1},
     response_model=Post,
 )
-async def update_post(resp) -> Post:
+async def update_post(resp: Response) -> Post:
     return resp.json()
 
 
@@ -47,14 +47,14 @@ async def update_post(resp) -> Post:
     json={"title": "Patched Title"},
     response_model=Post,
 )
-async def patch_post(resp) -> Post:
+async def patch_post(resp: Response) -> Post:
     return resp.json()
 
 
 @app.delete(
     url="https://jsonplaceholder.typicode.com/posts/1",
 )
-async def delete_post(resp) -> None:
+async def delete_post(_resp: Response) -> None:
     return None
 
 

@@ -15,10 +15,10 @@ class RequestSigner:
         self._secret_key = secret_key or secrets.token_bytes(32)
         self._max_age = 300
 
-    def _serialize_body(self, body: Any) -> bytes:
+    def _serialize_body(self, body: Any) -> bytes:  # noqa: ANN401
         if body is None:
             return b""
-        if isinstance(body, dict) or isinstance(body, list):
+        if isinstance(body, (dict, list)):
             if ORJSON_AVAILABLE:
                 return orjson.dumps(body, option=orjson.OPT_SORT_KEYS)
             import json
@@ -32,9 +32,9 @@ class RequestSigner:
     def _create_payload(self, method: str, url: str, timestamp: int, body: bytes) -> bytes:
         url_str = str(url)
         body_str = body.decode("utf-8") if body else ""
-        return f"{method}\n{url_str}\n{timestamp}\n{body_str}".encode("utf-8")
+        return f"{method}\n{url_str}\n{timestamp}\n{body_str}".encode()
 
-    def sign(self, method: str, url: str | Any, body: Any) -> dict[str, str]:
+    def sign(self, method: str, url: str | Any, body: Any) -> dict[str, str]:  # noqa: ANN401
         timestamp = int(time.time())
         nonce = secrets.token_hex(16)
         body_bytes = self._serialize_body(body)
@@ -46,7 +46,7 @@ class RequestSigner:
             "X-Nonce": nonce
         }
 
-    def verify(self, method: str, url: str, timestamp: int, body: Any, signature: str) -> bool:
+    def verify(self, method: str, url: str, timestamp: int, body: Any, signature: str) -> bool:  # noqa: ANN401
         if abs(time.time() - timestamp) > self._max_age:
             return False
         body_bytes = self._serialize_body(body)

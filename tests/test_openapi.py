@@ -1,18 +1,17 @@
 """Tests for OpenAPI schema generation."""
-import pytest
 from pydantic import BaseModel
 
 from fasthttp import FastHTTP
-from fasthttp.response import Response
 from fasthttp.openapi.generator import (
-    generate_openapi_schema,
-    _get_type_string,
     _extract_docstring,
-    _generate_schema_from_model,
     _generate_parameter_schema,
     _generate_response_schema,
+    _generate_schema_from_model,
+    _get_type_string,
     _normalize_path,
+    generate_openapi_schema,
 )
+from fasthttp.response import Response
 
 
 class TestGetTypeString:
@@ -61,7 +60,6 @@ class TestExtractDocstring:
         """Test extracting docstring from function."""
         def example_func():
             """This is a test function."""
-            pass
 
         result = _extract_docstring(example_func)
         assert "test function" in result
@@ -81,7 +79,6 @@ class TestExtractDocstring:
             This is a multiline
             docstring for testing.
             """
-            pass
 
         result = _extract_docstring(multiline_func)
         assert "multiline" in result
@@ -107,11 +104,10 @@ class TestGenerateSchemaFromModel:
 
     def test_generate_schema_with_optional_fields(self) -> None:
         """Test generating schema with optional fields."""
-        from typing import Optional
 
         class OptionalModel(BaseModel):
             required_field: str
-            optional_field: Optional[str] = None
+            optional_field: str | None = None
 
         result = _generate_schema_from_model(OptionalModel)
 
@@ -223,7 +219,7 @@ class TestGenerateOpenAPISchema:
         # Find the path and check tags
         paths = schema["paths"]
         assert len(paths) > 0
-        for path_key, path_item in paths.items():
+        for _, path_item in paths.items():
             if "get" in path_item:
                 assert path_item["get"]["tags"] == ["users"]
 
@@ -239,7 +235,7 @@ class TestGenerateOpenAPISchema:
 
         # Check that parameters are included
         paths = schema["paths"]
-        for path_key, path_item in paths.items():
+        for _, path_item in paths.items():
             if "get" in path_item:
                 assert "parameters" in path_item["get"]
                 assert len(path_item["get"]["parameters"]) > 0
@@ -317,7 +313,7 @@ class TestGenerateOpenAPISchema:
         app = FastHTTP()
 
         @app.get(url="https://example.com/api")
-        async def handler(resp: Response) -> dict:
+        async def handler(_resp: Response) -> dict:
             return {}
 
         schema = generate_openapi_schema(app)
@@ -342,7 +338,7 @@ class TestGenerateOpenAPISchema:
         app = FastHTTP()
 
         @app.get(url="https://example.com/api")
-        async def handler(resp: Response) -> dict:
+        async def handler(_resp: Response) -> dict:
             return {}
 
         schema = generate_openapi_schema(app, server_url="/api/request")

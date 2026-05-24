@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Annotated
+from typing import Annotated, Any
 
 import httpx
 from annotated_doc import Doc
@@ -18,6 +18,7 @@ from .__meta__ import __version__
 from .exceptions import (
     FastHTTPBadStatusError,
     FastHTTPConnectionError,
+    FastHTTPError,
     FastHTTPRequestError,
     FastHTTPTimeoutError,
     log_success,
@@ -120,11 +121,11 @@ class HTTPClient:
         if self.security:
             body = route.json or route.data
             config["headers"] = self.security.sign_request(
-                route.method, route.url, body, config["headers"]
+                route.method, route.url, body, config["headers"]  # type: ignore
             )
 
         if self.middleware_manager:
-            config = await self.middleware_manager.process_before_request(route, config)
+            config = await self.middleware_manager.process_before_request(route, config)  # type: ignore
 
         for dep in route.dependencies:
             config = await dep(route, config)
@@ -191,7 +192,7 @@ class HTTPClient:
             content_type=response.headers.get("content-type"),
             status_code=response.status_code,
         )
-        await self.security.post_request(route.url, route.method, True)
+        await self.security.post_request(route.url, route.method, success=True)
 
     async def _handle_bad_status(
         self,
@@ -209,19 +210,19 @@ class HTTPClient:
         error.log()
 
         if self.middleware_manager:
-            await self.middleware_manager.process_on_error(error, route, config)
+            await self.middleware_manager.process_on_error(error, route, config)  # type: ignore
 
     async def _handle_error(
         self,
         route: Route,
         config: dict,
         error: Exception,
-        error_class: type[FastHTTPRequestError],
-        **kwargs
+        error_class: type[FastHTTPError],
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         if self.security:
             self.security.release_slot()
-            await self.security.post_request(route.url, route.method, False, error)
+            await self.security.post_request(route.url, route.method, success=False, error=error)
 
         exc = error_class(
             message=str(error) or "Request failed",
@@ -232,7 +233,7 @@ class HTTPClient:
         exc.log()
 
         if self.middleware_manager:
-            await self.middleware_manager.process_on_error(exc, route, config)
+            await self.middleware_manager.process_on_error(exc, route, config)  # type: ignore
 
     def _build_response(
         self,
@@ -250,7 +251,7 @@ class HTTPClient:
             req_json=route.json,
             req_data=route.data,
         )
-        resp._set_url(route.url)
+        resp._set_url(route.url)  # noqa: SLF001
         return resp
 
     async def _process_handler_result(
@@ -262,7 +263,7 @@ class HTTPClient:
             return handler_result
         if isinstance(handler_result, str):
             response.text = handler_result
-        response._handler_result = handler_result
+        response._handler_result = handler_result  # noqa: SLF001
         return response
 
     async def _execute_request(
@@ -284,7 +285,7 @@ class HTTPClient:
                 headers=config.get("headers"),
                 params=config.get("params", route.params),
                 json=route.json,
-                content=route.data,
+                content=route.data,  # type: ignore
                 timeout=timeout_config,
                 follow_redirects=False,
             )
@@ -300,9 +301,9 @@ class HTTPClient:
         except SecurityError as e:
             if self.security:
                 self.security.release_slot()
-                await self.security.post_request(route.url, route.method, False, e)
+                await self.security.post_request(route.url, route.method, success=False, error=e)
             self.logger.error("Security error: %s", e)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             await self._handle_error(route, config, e, FastHTTPRequestError)
 
         return None
@@ -337,7 +338,7 @@ class HTTPClient:
                 headers={},
                 method=route.method,
             )
-            empty_response._set_url(route.url)
+            empty_response._set_url(route.url)  # noqa: SLF001
             handler_result = await route.handler(empty_response)
             return await self._process_handler_result(
                 empty_response,
@@ -360,10 +361,10 @@ class HTTPClient:
                     try:
                         error_data = response.json()
                         validated = error_model.model_validate(error_data)
-                        response._handler_result = validated
+                        response._handler_result = validated  # noqa: SLF001
                         handler_result = await route.handler(response)
                         return await self._process_handler_result(response, handler_result)
-                    except Exception:
+                    except Exception:  # noqa: S110, BLE001
                         pass
             await self._handle_bad_status(route, config, resp)
             return None
@@ -374,7 +375,7 @@ class HTTPClient:
 
         if self.middleware_manager:
             response = await self.middleware_manager.process_after_response(
-                response, route, config
+                response, route, config  # type: ignore
             )
 
         handler_result = await route.handler(response)

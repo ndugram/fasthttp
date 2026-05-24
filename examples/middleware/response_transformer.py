@@ -33,7 +33,7 @@ class ResponseTransformerMiddleware(BaseMiddleware):
             response.text = json.dumps(json_data)
             print(f"Transformed response from {self._url.get()}")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Could not transform response: {e}")
 
         return response

@@ -20,7 +20,14 @@ from .helpers.route_inspect import (
 )
 from .helpers.routing import apply_base_url, check_https_url
 from .logging import setup_logger
-from .middleware import BaseMiddleware, CookieJar, DummyCookieJar, MiddlewareChain, MiddlewareManager, SessionMiddleware
+from .middleware import (
+    BaseMiddleware,
+    CookieJar,
+    DummyCookieJar,
+    MiddlewareChain,
+    MiddlewareManager,
+    SessionMiddleware,
+)
 from .openapi.generator import generate_openapi_schema
 from .openapi.swagger import get_not_found_html, get_swagger_html
 from .openapi.urls import build_docs_urls
@@ -87,12 +94,12 @@ class FastHTTP:
             ),
         ] = False,
         middleware: Annotated[
-            list[BaseMiddleware] | BaseMiddleware | None,
+            list[BaseMiddleware] | BaseMiddleware | MiddlewareChain | None,
             Doc(
                 """
                 Middleware to apply to all requests.
 
-                Can be a single middleware instance or a list of middleware.
+                Can be a single middleware instance, a list, or a MiddlewareChain.
                 Middleware will be executed in the order they are provided.
                 """
             ),
@@ -382,9 +389,7 @@ class FastHTTP:
 
         if middleware is None:
             normalized_middleware: list[BaseMiddleware] | MiddlewareChain = []
-        elif isinstance(middleware, MiddlewareChain):
-            normalized_middleware = middleware
-        elif isinstance(middleware, list):
+        elif isinstance(middleware, (MiddlewareChain, list)):
             normalized_middleware = middleware
         else:
             normalized_middleware = [middleware]
@@ -393,9 +398,9 @@ class FastHTTP:
         if cookie_jar is not None and not isinstance(cookie_jar, DummyCookieJar):
             session_mw = SessionMiddleware(jar=cookie_jar)
             if isinstance(normalized_middleware, list):
-                normalized_middleware = [session_mw, *normalized_middleware]
+                normalized_middleware = [session_mw, *normalized_middleware]  # type: ignore
 
-        self.middleware_manager = MiddlewareManager(normalized_middleware)
+        self.middleware_manager = MiddlewareManager(normalized_middleware)  # type: ignore
 
         self.request_configs = {
             "GET": get_request or {},
@@ -534,7 +539,7 @@ class FastHTTP:
         params: dict | None = None,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -661,7 +666,7 @@ class FastHTTP:
         url: str,
         *,
         params: dict | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -684,7 +689,7 @@ class FastHTTP:
         *,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -708,7 +713,7 @@ class FastHTTP:
         *,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -732,7 +737,7 @@ class FastHTTP:
         *,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -756,7 +761,7 @@ class FastHTTP:
         *,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -779,7 +784,7 @@ class FastHTTP:
         url: str,
         *,
         params: dict | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -801,7 +806,7 @@ class FastHTTP:
         url: str,
         *,
         params: dict | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -921,9 +926,10 @@ class FastHTTP:
                     handler_result = func(response)
 
                 if isinstance(handler_result, dict):
-                    query = handler_result.get("query")
-                    variables = handler_result.get("variables")
-                    operation_name = handler_result.get("operation_name")
+                    d: dict[str, Any] = handler_result  # type: ignore
+                    query = d.get("query")
+                    variables = d.get("variables")
+                    operation_name = d.get("operation_name")
                 else:
                     query = handler_result
                     variables = None
@@ -937,13 +943,13 @@ class FastHTTP:
 
                 if operation_type == "mutation":
                     result = await client.mutation(
-                        mutation=query,
+                        mutation=query,  # type: ignore
                         variables=variables,
                         operation_name=operation_name,
                     )
                 else:
                     result = await client.query(
-                        query=query,
+                        query=query,  # type: ignore
                         variables=variables,
                         operation_name=operation_name,
                     )
@@ -988,7 +994,7 @@ class FastHTTP:
             if route.response_model:
                 try:
                     json_data = result.json()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     json_data = None
                 if json_data is not None:
                     if get_origin(route.response_model) is list:
@@ -998,10 +1004,10 @@ class FastHTTP:
                             for item in json_data
                         ]
                     else:
-                        validated = route.response_model.model_validate(
+                        validated = route.response_model.model_validate(  # type: ignore
                             json_data
                         )
-                    result._handler_result = validated
+                    result._handler_result = validated  # noqa: SLF001
                     self.logger.debug("[RESULT] %s", validated)
                 elif result.text:
                     self.logger.debug("[RESULT] %s", result.text)
@@ -1193,11 +1199,8 @@ class FastHTTP:
         server_base_url = f"http://{host}:{port}"
         docs_urls = build_docs_urls(docs_base_url)
 
-        print(f"\n\033[92mfasthttp\033[0m running on \033[94m{server_base_url}\033[0m")
-        print(
-            f"\033[93mdocs\033[0m: "
-            f"\033[94m{server_base_url}{docs_urls['docs_url']}\033[0m\n"
-        )
+        self.logger.info("fasthttp running on %s", server_base_url)
+        self.logger.info("docs: %s%s", server_base_url, docs_urls["docs_url"])
 
         try:
             import uvicorn
@@ -1217,7 +1220,7 @@ class FastHTTP:
         port: int,
     ) -> None:
         server = await asyncio.start_server(
-            app.handle_request,
+            app.handle_request,  # type: ignore
             host,
             port,
         )
@@ -1341,7 +1344,7 @@ class ASGIApp:
             "body": json_str.encode("utf-8"),
         })
 
-    async def _send_404(self, send: Callable[..., Any], path: str = "/") -> None:
+    async def _send_404(self, send: Callable[..., Any], _path: str = "/") -> None:
         html = get_not_found_html(
             docs_url=self.docs_urls["docs_url"],
             openapi_url=self.docs_urls["openapi_url"],
@@ -1371,10 +1374,10 @@ class ASGIApp:
                 return route
         return None
 
-    async def _handle_proxy(
+    async def _handle_proxy(  # noqa: C901
         self,
         send: Callable[..., Any],
-        method: str,
+        _method: str,
         body: bytes,
     ) -> None:
         try:
@@ -1434,14 +1437,14 @@ class ASGIApp:
                             item.model_dump() for item in validated
                         ]
                     else:
-                        validated = route.response_model.model_validate(
+                        validated = route.response_model.model_validate(  # type: ignore
                             json_data
                         )
                         result["json"] = validated.model_dump()
                     result["body"] = json.dumps(result["json"], ensure_ascii=False)
                 else:
                     result["json"] = json_data
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.fasthttp.logger.debug("validation error=%s", e)
 
             await self._send_json(send, result)
@@ -1450,5 +1453,5 @@ class ASGIApp:
             await self._send_json(send, {"error": f"Connection error: {e!s}"})
         except httpx.TimeoutException as e:
             await self._send_json(send, {"error": f"Timeout: {e!s}"})
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             await self._send_json(send, {"error": f"Request failed: {e!s}"})

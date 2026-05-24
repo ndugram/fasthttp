@@ -48,12 +48,12 @@ def run_example(example_file: Path) -> bool:
     except subprocess.TimeoutExpired:
         print(f"⏱️  Timeout: {example_file.name}")
         return False
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"❌ Error: {example_file.name} - {e}")
         return False
 
 
-def run_all_examples(sequential: bool = True) -> None:
+def run_all_examples(*, sequential: bool = True) -> None:
     example_files = get_example_files()
 
     if not example_files:
@@ -104,7 +104,7 @@ def run_all_examples(sequential: bool = True) -> None:
                         successes += 1
                     else:
                         failures += 1
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     print(f"❌ Error running {example_file}: {e}")
                     failures += 1
 

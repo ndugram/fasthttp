@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from annotated_doc import Doc
 
@@ -57,7 +57,7 @@ class FastHTTPRequestError(FastHTTPError):
             ]
             | None
         ) = None,
-        **kwargs,
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         super().__init__(
             message=message,

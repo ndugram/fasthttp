@@ -1,6 +1,7 @@
+from pydantic import BaseModel, Field
+
 from fasthttp import FastHTTP
 from fasthttp.response import Response
-from pydantic import BaseModel, Field
 
 
 # Define Pydantic models

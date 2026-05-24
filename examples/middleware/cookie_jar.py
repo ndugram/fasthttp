@@ -1,7 +1,6 @@
 from fasthttp import CookieJar, FastHTTP
 from fasthttp.response import Response
 
-
 jar = CookieJar()
 app = FastHTTP(cookie_jar=jar)
 

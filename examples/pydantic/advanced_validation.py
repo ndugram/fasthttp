@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 
 class Post(BaseModel):
@@ -31,12 +32,12 @@ app = FastHTTP()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1", response_model=Post)
-async def get_validated_post(resp) -> Post:
+async def get_validated_post(resp: Response) -> Post:
     return resp.json()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/todos/1", response_model=Todo)
-async def get_todo(resp) -> Todo:
+async def get_todo(resp: Response) -> Todo:
     return resp.json()
 
 

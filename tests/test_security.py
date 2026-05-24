@@ -1,6 +1,7 @@
 """Tests for security modules."""
-import pytest
 import asyncio
+
+import pytest
 
 from fasthttp.security.circuit_breaker import (
     CircuitBreaker,
@@ -92,16 +93,16 @@ class TestCircuitBreaker:
         """Test CircuitBreaker creation with default config."""
         cb = CircuitBreaker()
 
-        assert cb._config is not None
-        assert cb._config.failure_threshold == 5
-        assert cb._hosts == {}
+        assert cb._config is not None  # noqa: SLF001
+        assert cb._config.failure_threshold == 5  # noqa: SLF001
+        assert cb._hosts == {}  # noqa: SLF001
 
     def test_circuit_breaker_creation_custom_config(self) -> None:
         """Test CircuitBreaker creation with custom config."""
         config = CircuitBreakerConfig(failure_threshold=10)
         cb = CircuitBreaker(config=config)
 
-        assert cb._config.failure_threshold == 10
+        assert cb._config.failure_threshold == 10  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_can_proceed_new_host(self) -> None:
@@ -111,14 +112,14 @@ class TestCircuitBreaker:
         result = await cb.can_proceed("example.com")
 
         assert result is True
-        assert "example.com" in cb._hosts
-        assert cb._hosts["example.com"].state == CircuitState.CLOSED
+        assert cb._hosts.get("example.com") is not None  # noqa: SLF001
+        assert cb._hosts["example.com"].state == CircuitState.CLOSED  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_can_proceed_closed_state(self) -> None:
         """Test can_proceed when circuit is CLOSED."""
         cb = CircuitBreaker()
-        cb._hosts["example.com"] = HostState(state=CircuitState.CLOSED)
+        cb._hosts["example.com"] = HostState(state=CircuitState.CLOSED)  # noqa: SLF001
 
         result = await cb.can_proceed("example.com")
 
@@ -128,7 +129,7 @@ class TestCircuitBreaker:
     async def test_can_proceed_open_state_within_timeout(self) -> None:
         """Test can_proceed when circuit is OPEN within timeout."""
         cb = CircuitBreaker()
-        cb._hosts["example.com"] = HostState(
+        cb._hosts["example.com"] = HostState(  # noqa: SLF001
             state=CircuitState.OPEN,
             last_failure_time=9999999999.0,  # Far future time
         )
@@ -142,7 +143,7 @@ class TestCircuitBreaker:
         """Test can_proceed when circuit is OPEN after timeout (should transition to HALF_OPEN)."""
         cb = CircuitBreakerConfig(timeout=0.1)
         circuit_breaker = CircuitBreaker(cb)
-        circuit_breaker._hosts["example.com"] = HostState(
+        circuit_breaker._hosts["example.com"] = HostState(  # noqa: SLF001
             state=CircuitState.OPEN,
             last_failure_time=0.0,  # Past time
         )
@@ -150,14 +151,14 @@ class TestCircuitBreaker:
         result = await circuit_breaker.can_proceed("example.com")
 
         assert result is True
-        assert circuit_breaker._hosts["example.com"].state == CircuitState.HALF_OPEN
+        assert circuit_breaker._hosts["example.com"].state == CircuitState.HALF_OPEN  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_can_proceed_half_open_within_limit(self) -> None:
         """Test can_proceed when circuit is HALF_OPEN within call limit."""
         config = CircuitBreakerConfig(half_open_max_calls=3)
         cb = CircuitBreaker(config)
-        cb._hosts["example.com"] = HostState(
+        cb._hosts["example.com"] = HostState(  # noqa: SLF001
             state=CircuitState.HALF_OPEN,
             half_open_calls=1,
         )
@@ -165,14 +166,14 @@ class TestCircuitBreaker:
         result = await cb.can_proceed("example.com")
 
         assert result is True
-        assert cb._hosts["example.com"].half_open_calls == 2
+        assert cb._hosts["example.com"].half_open_calls == 2  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_can_proceed_half_open_at_limit(self) -> None:
         """Test can_proceed when circuit is HALF_OPEN at call limit."""
         config = CircuitBreakerConfig(half_open_max_calls=3)
         cb = CircuitBreaker(config)
-        cb._hosts["example.com"] = HostState(
+        cb._hosts["example.com"] = HostState(  # noqa: SLF001
             state=CircuitState.HALF_OPEN,
             half_open_calls=3,
         )
@@ -185,45 +186,45 @@ class TestCircuitBreaker:
     async def test_record_success_closed_state(self) -> None:
         """Test record_success when circuit is CLOSED."""
         cb = CircuitBreaker()
-        cb._hosts["example.com"] = HostState(
+        cb._hosts["example.com"] = HostState(  # noqa: SLF001
             state=CircuitState.CLOSED,
             failure_count=3,
         )
 
         await cb.record_success("example.com")
 
-        assert cb._hosts["example.com"].failure_count == 0
+        assert cb._hosts["example.com"].failure_count == 0  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_record_success_half_open_below_threshold(self) -> None:
         """Test record_success in HALF_OPEN below success threshold."""
         config = CircuitBreakerConfig(success_threshold=2)
         cb = CircuitBreaker(config)
-        cb._hosts["example.com"] = HostState(
+        cb._hosts["example.com"] = HostState(  # noqa: SLF001
             state=CircuitState.HALF_OPEN,
             success_count=0,
         )
 
         await cb.record_success("example.com")
 
-        assert cb._hosts["example.com"].success_count == 1
-        assert cb._hosts["example.com"].state == CircuitState.HALF_OPEN
+        assert cb._hosts["example.com"].success_count == 1  # noqa: SLF001
+        assert cb._hosts["example.com"].state == CircuitState.HALF_OPEN  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_record_success_half_open_at_threshold(self) -> None:
         """Test record_success in HALF_OPEN reaching success threshold (should transition to CLOSED)."""
         config = CircuitBreakerConfig(success_threshold=2)
         cb = CircuitBreaker(config)
-        cb._hosts["example.com"] = HostState(
+        cb._hosts["example.com"] = HostState(  # noqa: SLF001
             state=CircuitState.HALF_OPEN,
             success_count=1,
         )
 
         await cb.record_success("example.com")
 
-        assert cb._hosts["example.com"].state == CircuitState.CLOSED
-        assert cb._hosts["example.com"].failure_count == 0
-        assert cb._hosts["example.com"].success_count == 0
+        assert cb._hosts["example.com"].state == CircuitState.CLOSED  # noqa: SLF001
+        assert cb._hosts["example.com"].failure_count == 0  # noqa: SLF001
+        assert cb._hosts["example.com"].success_count == 0  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_record_success_unknown_host(self) -> None:
@@ -233,7 +234,7 @@ class TestCircuitBreaker:
         # Should not raise error
         await cb.record_success("unknown.com")
 
-        assert "unknown.com" not in cb._hosts
+        assert "unknown.com" not in cb._hosts  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_record_failure_new_host(self) -> None:
@@ -242,57 +243,57 @@ class TestCircuitBreaker:
 
         await cb.record_failure("example.com")
 
-        assert "example.com" in cb._hosts
-        assert cb._hosts["example.com"].failure_count == 1
+        assert cb._hosts.get("example.com") is not None  # noqa: SLF001
+        assert cb._hosts["example.com"].failure_count == 1  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_record_failure_closed_below_threshold(self) -> None:
         """Test record_failure in CLOSED below failure threshold."""
         config = CircuitBreakerConfig(failure_threshold=5)
         cb = CircuitBreaker(config)
-        cb._hosts["example.com"] = HostState(
+        cb._hosts["example.com"] = HostState(  # noqa: SLF001
             state=CircuitState.CLOSED,
             failure_count=2,
         )
 
         await cb.record_failure("example.com")
 
-        assert cb._hosts["example.com"].failure_count == 3
-        assert cb._hosts["example.com"].state == CircuitState.CLOSED
+        assert cb._hosts["example.com"].failure_count == 3  # noqa: SLF001
+        assert cb._hosts["example.com"].state == CircuitState.CLOSED  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_record_failure_closed_at_threshold(self) -> None:
         """Test record_failure in CLOSED reaching failure threshold (should transition to OPEN)."""
         config = CircuitBreakerConfig(failure_threshold=3)
         cb = CircuitBreaker(config)
-        cb._hosts["example.com"] = HostState(
+        cb._hosts["example.com"] = HostState(  # noqa: SLF001
             state=CircuitState.CLOSED,
             failure_count=2,
         )
 
         await cb.record_failure("example.com")
 
-        assert cb._hosts["example.com"].state == CircuitState.OPEN
-        assert cb._hosts["example.com"].failure_count == 3
+        assert cb._hosts["example.com"].state == CircuitState.OPEN  # noqa: SLF001
+        assert cb._hosts["example.com"].failure_count == 3  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_record_failure_half_open(self) -> None:
         """Test record_failure in HALF_OPEN (should transition to OPEN)."""
         cb = CircuitBreaker()
-        cb._hosts["example.com"] = HostState(
+        cb._hosts["example.com"] = HostState(  # noqa: SLF001
             state=CircuitState.HALF_OPEN,
             half_open_calls=2,
         )
 
         await cb.record_failure("example.com")
 
-        assert cb._hosts["example.com"].state == CircuitState.OPEN
-        assert cb._hosts["example.com"].half_open_calls == 0
+        assert cb._hosts["example.com"].state == CircuitState.OPEN  # noqa: SLF001
+        assert cb._hosts["example.com"].half_open_calls == 0  # noqa: SLF001
 
     def test_get_state_existing_host(self) -> None:
         """Test get_state for existing host."""
         cb = CircuitBreaker()
-        cb._hosts["example.com"] = HostState(state=CircuitState.OPEN)
+        cb._hosts["example.com"] = HostState(state=CircuitState.OPEN)  # noqa: SLF001
 
         result = cb.get_state("example.com")
 

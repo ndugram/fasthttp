@@ -2,7 +2,6 @@
 import asyncio
 import time
 from typing import ClassVar
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -17,7 +16,6 @@ from fasthttp.response import Response
 from fasthttp.routing import Route
 from fasthttp.types import HTTPMethod
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -30,7 +28,7 @@ def make_route(
     async def handler(resp: Response) -> Response:
         return resp
 
-    return Route(method=method, url=url, handler=handler, params=params)
+    return Route(method=method, url=url, handler=handler, params=params)  # type: ignore
 
 
 def make_response(status: int = 200, text: str = "ok") -> Response:
@@ -67,9 +65,10 @@ class PriorityMiddleware(BaseMiddleware):
     __return_type__: ClassVar = None
     __methods__: ClassVar[list[HTTPMethod] | None] = None
     __enabled__: ClassVar[bool] = True
+    __priority__: ClassVar[int] = 0
 
     def __init__(self, priority: int, order_log: list) -> None:
-        self.__priority__ = priority
+        self.__priority__ = priority  # type: ignore
         self._order = order_log
 
     async def request(self, method, url, kwargs):
@@ -139,7 +138,7 @@ class TestBaseMiddleware:
         called = []
 
         class Base(BaseMiddleware):
-            def __init_subclass__(cls, **kwargs):
+            def __init_subclass__(cls, **kwargs: object) -> None:
                 super().__init_subclass__(**kwargs)
                 called.append(cls.__name__)
 
@@ -245,7 +244,7 @@ class TestMiddlewareManagerSortingFiltering:
         low = PriorityMiddleware(0, order)
         high = PriorityMiddleware(10, order)
         mm = MiddlewareManager([high, low])
-        sorted_mws = mm._sorted()
+        sorted_mws = mm._sorted()  # noqa: SLF001
         assert sorted_mws[0].__priority__ == 0
         assert sorted_mws[1].__priority__ == 10
 
@@ -253,16 +252,16 @@ class TestMiddlewareManagerSortingFiltering:
         a = SimpleMiddleware("a")
         b = SimpleMiddleware("b")
         mm = MiddlewareManager([a, b])
-        result = mm._sorted()
+        result = mm._sorted()  # noqa: SLF001
         assert result[0] is a
         assert result[1] is b
 
     def test_active_skips_disabled(self):
         a = SimpleMiddleware("a")
         b = SimpleMiddleware("b")
-        b.__enabled__ = False
+        b.__enabled__ = False  # type: ignore
         mm = MiddlewareManager([a, b])
-        active = mm._active(mm._sorted(), "GET")
+        active = mm._active(mm._sorted(), "GET")  # noqa: SLF001
         assert len(active) == 1
         assert active[0] is a
 
@@ -270,46 +269,46 @@ class TestMiddlewareManagerSortingFiltering:
         class PostOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["POST"]
+            __methods__: ClassVar[list[str]] = ["POST"]
             __enabled__ = True
 
         mm = MiddlewareManager([PostOnly()])
-        assert len(mm._active(mm._sorted(), "POST")) == 1
-        assert len(mm._active(mm._sorted(), "GET")) == 0
+        assert len(mm._active(mm._sorted(), "POST")) == 1  # noqa: SLF001
+        assert len(mm._active(mm._sorted(), "GET")) == 0  # noqa: SLF001
 
     def test_active_method_filter_case_insensitive(self):
         class GetOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["get"]
+            __methods__: ClassVar[list[str]] = ["get"]
             __enabled__ = True
 
         mm = MiddlewareManager([GetOnly()])
-        assert len(mm._active(mm._sorted(), "GET")) == 1
+        assert len(mm._active(mm._sorted(), "GET")) == 1  # noqa: SLF001
 
     def test_active_none_methods_matches_all(self):
         mm = MiddlewareManager([SimpleMiddleware()])
         for method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
-            assert len(mm._active(mm._sorted(), method)) == 1
+            assert len(mm._active(mm._sorted(), method)) == 1  # noqa: SLF001
 
     def test_active_disabled_and_method_filter(self):
         class PostOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["POST"]
+            __methods__: ClassVar[list[str]] = ["POST"]
             __enabled__ = False
 
         mm = MiddlewareManager([PostOnly()])
-        assert mm._active(mm._sorted(), "POST") == []
+        assert mm._active(mm._sorted(), "POST") == []  # noqa: SLF001
 
     def test_runtime_toggle_enabled(self):
         mw = SimpleMiddleware()
         mm = MiddlewareManager([mw])
-        assert len(mm._active(mm._sorted(), "GET")) == 1
-        mw.__enabled__ = False
-        assert len(mm._active(mm._sorted(), "GET")) == 0
-        mw.__enabled__ = True
-        assert len(mm._active(mm._sorted(), "GET")) == 1
+        assert len(mm._active(mm._sorted(), "GET")) == 1  # noqa: SLF001
+        mw.__enabled__ = False  # type: ignore
+        assert len(mm._active(mm._sorted(), "GET")) == 0  # noqa: SLF001
+        mw.__enabled__ = True  # type: ignore
+        assert len(mm._active(mm._sorted(), "GET")) == 1  # noqa: SLF001
 
 
 # ---------------------------------------------------------------------------
@@ -351,7 +350,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, method, url, kwargs):
+            async def request(self, method, url, kwargs) -> dict:
                 kwargs["params"] = {"injected": "true"}
                 return kwargs
 
@@ -363,7 +362,7 @@ class TestProcessBeforeRequest:
     @pytest.mark.asyncio
     async def test_disabled_middleware_skipped(self):
         mw = SimpleMiddleware("skipped")
-        mw.__enabled__ = False
+        mw.__enabled__ = False  # type: ignore
         mm = MiddlewareManager([mw])
         route = make_route()
         result = await mm.process_before_request(route, {})
@@ -374,7 +373,7 @@ class TestProcessBeforeRequest:
         mm = MiddlewareManager()
         route = make_route()
         config = {"headers": {"X-Existing": "yes"}, "timeout": 10.0}
-        result = await mm.process_before_request(route, config)
+        result = await mm.process_before_request(route, config)  # type: ignore
         assert result["headers"]["X-Existing"] == "yes"
 
     @pytest.mark.asyncio
@@ -385,7 +384,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, method, url, kwargs):
+            async def request(self, method, url, kwargs) -> dict:
                 kwargs["headers"] = kwargs.get("headers") or {}
                 kwargs["headers"]["X-Step"] = "1"
                 return kwargs
@@ -396,7 +395,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, method, url, kwargs):
+            async def request(self, method, url, kwargs) -> dict:
                 kwargs["headers"]["X-Step2"] = "2"
                 return kwargs
 
@@ -411,11 +410,11 @@ class TestProcessBeforeRequest:
         class PostOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["POST"]
+            __methods__: ClassVar[list[str]] = ["POST"]
             __enabled__ = True
             called = False
 
-            async def request(self, method, url, kwargs):
+            async def request(self, method, url, kwargs) -> dict:
                 PostOnly.called = True
                 return kwargs
 
@@ -452,7 +451,7 @@ class TestProcessAfterResponse:
             __methods__ = None
             __enabled__ = True
 
-            async def response(self, response):
+            async def response(self, response) -> Response:
                 response.text = "modified"
                 return response
 
@@ -465,7 +464,7 @@ class TestProcessAfterResponse:
     @pytest.mark.asyncio
     async def test_response_disabled_middleware_skipped(self):
         mw = SimpleMiddleware()
-        mw.__enabled__ = False
+        mw.__enabled__ = False  # type: ignore
         mm = MiddlewareManager([mw])
         route = make_route()
         resp = make_response()
@@ -477,11 +476,11 @@ class TestProcessAfterResponse:
         class GetOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["GET"]
+            __methods__: ClassVar[list[str]] = ["GET"]
             __enabled__ = True
             called = False
 
-            async def response(self, response):
+            async def response(self, response) -> Response:
                 GetOnly.called = True
                 return response
 
@@ -519,7 +518,7 @@ class TestProcessOnError:
     @pytest.mark.asyncio
     async def test_on_error_skips_disabled(self):
         mw = SimpleMiddleware()
-        mw.__enabled__ = False
+        mw.__enabled__ = False  # type: ignore
         mm = MiddlewareManager([mw])
         await mm.process_on_error(ValueError(), make_route(), {})
         assert mw.errors == []
@@ -537,11 +536,11 @@ class TestProcessOnError:
         class PostOnly(BaseMiddleware):
             __return_type__ = None
             __priority__ = 0
-            __methods__ = ["POST"]
+            __methods__: ClassVar[list[str]] = ["POST"]
             __enabled__ = True
             called = False
 
-            async def on_error(self, error, route, config):
+            async def on_error(self, error, route, config) -> None:
                 PostOnly.called = True
 
         mm = MiddlewareManager([PostOnly()])
@@ -565,7 +564,7 @@ class TestCacheMiddleware:
         result = await cache.response(resp)
 
         assert result.text == "fresh"
-        assert len(cache._cache) == 1
+        assert len(cache._cache) == 1  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_cache_hit_returns_cached(self):
@@ -593,7 +592,7 @@ class TestCacheMiddleware:
         await cache.request("GET", "https://b.com", dict(kwargs))
         await cache.response(make_response(text="b"))
 
-        assert len(cache._cache) == 2
+        assert len(cache._cache) == 2  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_cache_different_params_separate_entries(self):
@@ -606,7 +605,7 @@ class TestCacheMiddleware:
         await cache.request("GET", url, {"params": {"q": "bar"}})
         await cache.response(make_response(text="bar"))
 
-        assert len(cache._cache) == 2
+        assert len(cache._cache) == 2  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_cache_post_not_cached_by_default(self):
@@ -616,7 +615,7 @@ class TestCacheMiddleware:
         await cache.request("POST", "https://example.com", dict(kwargs))
         await cache.response(make_response(text="post"))
 
-        assert len(cache._cache) == 0
+        assert len(cache._cache) == 0  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_cache_custom_methods(self):
@@ -626,12 +625,12 @@ class TestCacheMiddleware:
         await cache.request("POST", "https://example.com", dict(kwargs))
         await cache.response(make_response(text="posted"))
 
-        assert len(cache._cache) == 1
+        assert len(cache._cache) == 1  # noqa: SLF001
 
         await cache.request("GET", "https://example.com", dict(kwargs))
         await cache.response(make_response(text="got"))
 
-        assert len(cache._cache) == 1
+        assert len(cache._cache) == 1  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_cache_ttl_expiry(self):
@@ -644,7 +643,7 @@ class TestCacheMiddleware:
         await asyncio.sleep(1.1)
 
         await cache.request("GET", "https://example.com", dict(kwargs))
-        key, cached = cache._state.get()
+        _, cached = cache._state.get()  # noqa: SLF001
         assert cached is None
 
         resp2 = make_response(text="refreshed")
@@ -660,8 +659,8 @@ class TestCacheMiddleware:
             await cache.request("GET", url, dict(kwargs))
             await cache.response(make_response(text=url))
 
-        assert len(cache._cache) == 2
-        urls_in_cache = [e.response.text for e in cache._cache.values()]
+        assert len(cache._cache) == 2  # noqa: SLF001
+        urls_in_cache = [e.response.text for e in cache._cache.values()]  # noqa: SLF001
         assert "https://a.com" not in urls_in_cache
 
     @pytest.mark.asyncio
@@ -672,9 +671,9 @@ class TestCacheMiddleware:
         await cache.request("GET", "https://example.com", dict(kwargs))
         await cache.response(make_response())
 
-        assert len(cache._cache) == 1
+        assert len(cache._cache) == 1  # noqa: SLF001
         cache.clear()
-        assert len(cache._cache) == 0
+        assert len(cache._cache) == 0  # noqa: SLF001
 
     def test_cache_get_stats(self):
         cache = CacheMiddleware(ttl=120, max_size=50, cache_methods=["GET", "POST"])
@@ -691,11 +690,11 @@ class TestCacheMiddleware:
 
         await cache.request("GET", "https://example.com", dict(kwargs))
         await cache.response(make_response(text="cached"))
-        assert len(cache._cache) == 1
+        assert len(cache._cache) == 1  # noqa: SLF001
 
         await cache.request("GET", "https://example.com", dict(kwargs))
         await cache.on_error(ConnectionError(), make_route(), {})
-        assert len(cache._cache) == 0
+        assert len(cache._cache) == 0  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_cache_context_isolation(self):
@@ -716,7 +715,7 @@ class TestCacheMiddleware:
         )
 
         assert len(results) == 2
-        assert len(cache._cache) == 2
+        assert len(cache._cache) == 2  # noqa: SLF001
 
     @pytest.mark.asyncio
     async def test_cache_lru_move_to_end_on_hit(self):
@@ -737,7 +736,7 @@ class TestCacheMiddleware:
         await cache.request("GET", "https://c.com", dict(kwargs))
         await cache.response(make_response(text="c"))
 
-        texts = [e.response.text for e in cache._cache.values()]
+        texts = [e.response.text for e in cache._cache.values()]  # noqa: SLF001
         assert "b" not in texts
         assert "a" in texts
 
@@ -769,8 +768,9 @@ class TestCacheEntry:
 
 class TestHTTPMethod:
     def test_http_method_values(self):
-        from fasthttp.types import HTTPMethod
         from typing import get_args
+
+        from fasthttp.types import HTTPMethod
         args = get_args(HTTPMethod)
         assert "GET" in args
         assert "POST" in args
@@ -779,8 +779,9 @@ class TestHTTPMethod:
         assert "DELETE" in args
 
     def test_http_method_count(self):
-        from fasthttp.types import HTTPMethod
         from typing import get_args
+
+        from fasthttp.types import HTTPMethod
         assert len(get_args(HTTPMethod)) == 7
 
 
@@ -820,14 +821,14 @@ class TestMiddlewareIntegration:
             __methods__ = None
             __enabled__ = True
 
-            def __init__(self, name):
+            def __init__(self, name) -> None:
                 self.name = name
 
-            async def request(self, method, url, kwargs):
+            async def request(self, method, url, kwargs) -> dict:
                 order.append(f"req:{self.name}")
                 return kwargs
 
-            async def response(self, response):
+            async def response(self, response) -> Response:
                 order.append(f"res:{self.name}")
                 return response
 
@@ -849,11 +850,11 @@ class TestMiddlewareIntegration:
 
         config1 = await mm.process_before_request(route, {})
         resp1 = make_response(text="data")
-        result1 = await mm.process_after_response(resp1, route, config1)
+        result1 = await mm.process_after_response(resp1, route, config1)  # type: ignore
         assert result1.text == "data"
         assert cache.get_stats()["size"] == 1
 
         config2 = await mm.process_before_request(route, {})
         resp2 = make_response(text="new-data")
-        result2 = await mm.process_after_response(resp2, route, config2)
+        result2 = await mm.process_after_response(resp2, route, config2)  # type: ignore
         assert result2.text == "data"

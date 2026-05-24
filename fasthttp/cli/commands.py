@@ -64,7 +64,7 @@ def get(
     output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     _execute_request("GET", url, output, headers, timeout=timeout, debug=debug, proxy=proxy)
@@ -78,7 +78,7 @@ def post(
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     json_data: dict[str, Any] | None = None
@@ -87,7 +87,7 @@ def post(
             json_data = json.loads(json_body)
         except json.JSONDecodeError as e:
             formatter.error(f"Invalid JSON: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     _execute_request(
         "POST",url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
@@ -101,7 +101,7 @@ def put(
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     json_data: dict[str, Any] | None = None
@@ -110,7 +110,7 @@ def put(
             json_data = json.loads(json_body)
         except json.JSONDecodeError as e:
             formatter.error(f"Invalid JSON: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     _execute_request("PUT", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
 
@@ -123,7 +123,7 @@ def patch(
     json_body: str | None = typer.Option(None, "-j", "--json", help="JSON body"),
     data: str | None = typer.Option(None, "-d", "--data", help="Form data"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     json_data: dict[str, Any] | None = None
@@ -132,7 +132,7 @@ def patch(
             json_data = json.loads(json_body)
         except json.JSONDecodeError as e:
             formatter.error(f"Invalid JSON: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     _execute_request("PATCH", url, output, headers, json_data=json_data, data=data, timeout=timeout, debug=debug, proxy=proxy)
 
@@ -143,14 +143,14 @@ def delete(
     output: str = typer.Argument("status", help="Output: status, headers, json, text, all"),
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     _execute_request("DELETE", url, output, headers, timeout=timeout, debug=debug, proxy=proxy)
 
 
 @app.command()
-def graphql(
+def graphql(  # noqa: C901
     url: str,
     query: str = typer.Option(..., "-q", "--query", help="GraphQL query (required)"),
     variables: str | None = typer.Option(None, "-v", "--variables", help="GraphQL variables as JSON"),
@@ -158,11 +158,11 @@ def graphql(
     output: str = typer.Argument("json", help="Output: status, headers, json, text, all"),
     headers: str | None = typer.Option(None, "-H", "--header", help="Headers (Key:Value,Key2:Value2)"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Request timeout in seconds"),
-    debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
+    debug: bool = typer.Option(default=False, help="Enable debug output"),  # noqa: FBT001
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     url = _check_https_url(url)
-    headers = parse_headers(headers_str=headers)
+    parsed_headers = parse_headers(headers_str=headers)
 
     json_data: dict[str, Any] = {"query": query}
     if variables:
@@ -170,12 +170,12 @@ def graphql(
             json_data["variables"] = json.loads(variables)
         except json.JSONDecodeError as e:
             formatter.error(f"Invalid JSON in variables: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     if debug:
         formatter.info(f"→ GraphQL {operation_type} {url}")
-        if headers:
-            formatter.info(f"  Headers: {json.dumps(headers, indent=2)}")
+        if parsed_headers:
+            formatter.info(f"  Headers: {json.dumps(parsed_headers, indent=2)}")
         formatter.info(f"  Query: {query}")
         if variables:
             formatter.info(f"  Variables: {variables}")
@@ -186,7 +186,7 @@ def graphql(
         resp = run_request(
             method="POST",
             url=url,
-            headers=headers,
+            headers=parsed_headers,
             json_data=json_data,
             timeout=timeout,
             proxy=proxy,
@@ -200,7 +200,7 @@ def graphql(
         formatter.success(f"HTTP {resp.status} in {resp.elapsed_ms:.2f}ms")
 
         if debug:
-            formatter.info(f"← Response headers:")
+            formatter.info("← Response headers:")
             for key, value in resp.headers.items():
                 formatter.info(f"  {key}: {value}")
 
@@ -209,13 +209,13 @@ def graphql(
 
     except httpx.ConnectError as e:
         formatter.error(f"Connection failed: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except httpx.TimeoutException as e:
         formatter.error(f"Request timed out: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         formatter.error(f"Error: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def _execute_request(
@@ -223,6 +223,7 @@ def _execute_request(
     url: str,
     output: str,
     headers_str: str | None,
+    *,
     json_data: dict | None = None,
     data: str | None = None,
     timeout: float = 30.0,
@@ -262,7 +263,7 @@ def _execute_request(
         formatter.success(f"HTTP {resp.status} in {resp.elapsed_ms:.2f}ms")
 
         if debug:
-            formatter.info(f"← Response headers:")
+            formatter.info("← Response headers:")
             for key, value in resp.headers.items():
                 formatter.info(f"  {key}: {value}")
 
@@ -271,10 +272,10 @@ def _execute_request(
 
     except httpx.ConnectError as e:
         formatter.error(f"Connection failed: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except httpx.TimeoutException as e:
         formatter.error(f"Request timed out: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         formatter.error(f"Error: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

@@ -1,6 +1,7 @@
+from pydantic import BaseModel
+
 from fasthttp import FastHTTP
 from fasthttp.response import Response
-from pydantic import BaseModel
 
 
 class Error404(BaseModel):

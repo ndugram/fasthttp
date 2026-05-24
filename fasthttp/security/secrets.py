@@ -1,11 +1,11 @@
 import re
 
 try:
+    from fasthttp._core import mask_cookie as _rs_mask_cookie  # type: ignore
+    from fasthttp._core import mask_headers as _rs_mask_headers  # type: ignore
+    from fasthttp._core import mask_log_message as _rs_mask_log_message  # type: ignore
     from fasthttp._core import (
-        mask_cookie as _rs_mask_cookie,
-        mask_headers as _rs_mask_headers,
-        mask_log_message as _rs_mask_log_message,
-        should_mask_value as _rs_should_mask_value,
+        should_mask_value as _rs_should_mask_value,  # type: ignore
     )
     _RUST = True
 except ImportError:
@@ -56,9 +56,7 @@ class SecretsMasking:
         for key, value in headers.items():
             key_lower = key.lower()
             if key_lower in SECRET_HEADERS:
-                if key_lower == "cookie":
-                    masked[key] = self._mask_cookie(value)
-                elif key_lower == "set-cookie":
+                if key_lower == "cookie" or key_lower == "set-cookie":
                     masked[key] = self._mask_cookie(value)
                 else:
                     masked[key] = "*****"
@@ -73,7 +71,7 @@ class SecretsMasking:
         masked_parts = []
         for part in parts:
             if "=" in part:
-                name, value = part.split("=", 1)
+                name, _ = part.split("=", 1)
                 name = name.strip()
                 if any(
                     pattern in name.lower()
@@ -87,7 +85,6 @@ class SecretsMasking:
         return "; ".join(masked_parts)
 
     def mask_url(self, url: str) -> str:
-        parsed = list(url)
         return url
 
     def mask_log_message(self, message: str) -> str:

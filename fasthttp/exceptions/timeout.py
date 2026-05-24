@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from annotated_doc import Doc
 
@@ -58,7 +58,7 @@ class FastHTTPTimeoutError(FastHTTPError):
         ) = None,
         timeout: (
             Annotated[
-                int,
+                int | float,
                 Doc(
                     """
                 Timeout value in seconds that was exceeded.
@@ -70,7 +70,7 @@ class FastHTTPTimeoutError(FastHTTPError):
             ]
             | None
         ) = None,
-        **kwargs,
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         timeout_msg = message or "Request timed out"
         details = {"timeout": timeout} if timeout else {}

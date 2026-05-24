@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from fasthttp.routing import Route
 
 
-def _get_type_string(annotation: Any) -> str | None:
+def _get_type_string(annotation: Any) -> dict[str, Any] | None:  # noqa: ANN401
     """Convert Python type annotation to OpenAPI type string."""
     if annotation is None:
         return {"type": "string", "nullable": True}
@@ -49,7 +49,7 @@ def _get_type_string(annotation: Any) -> str | None:
     return None
 
 
-def _extract_docstring(func: Any) -> str:
+def _extract_docstring(func: Any) -> str:  # noqa: ANN401
     """Extract docstring from a function."""
     if func and hasattr(func, "__doc__") and func.__doc__:
         doc = inspect.getdoc(func)
@@ -75,7 +75,7 @@ def _generate_schema_from_model(model: type[BaseModel]) -> dict[str, Any]:
             annotations = get_args(field_info)
             for ann in annotations:
                 if isinstance(ann, Doc):
-                    description = ann._doc
+                    description = ann._doc  # noqa: SLF001
 
         type_schema = _get_type_string(field.annotation)
         if type_schema:
@@ -137,15 +137,14 @@ def _generate_response_schema(
                     }
                 },
             }
-        else:
-            return {
-                "description": "Successful response",
-                "content": {
-                    "application/json": {
-                        "schema": {"type": "array"}
-                    }
-                },
-            }
+        return {
+            "description": "Successful response",
+            "content": {
+                "application/json": {
+                    "schema": {"type": "array"}
+                }
+            },
+        }
 
     try:
         if isinstance(response_model, type) and issubclass(response_model, BaseModel):
@@ -183,7 +182,7 @@ def _generate_error_response_schema(
     }
 
 
-def _collect_schemas(routes: list[Route]) -> dict[str, Any]:
+def _collect_schemas(routes: list[Route]) -> dict[str, Any]:  # noqa: C901
     """Collect all Pydantic schemas from routes."""
     schemas: dict[str, Any] = {}
 
@@ -197,28 +196,25 @@ def _collect_schemas(routes: list[Route]) -> dict[str, Any]:
                     model = args[0]
 
             try:
-                if isinstance(model, type) and issubclass(model, BaseModel):
-                    if model.__name__ not in schemas:
-                        schemas[model.__name__] = _generate_schema_from_model(model)
+                if isinstance(model, type) and issubclass(model, BaseModel) and model.__name__ not in schemas:
+                    schemas[model.__name__] = _generate_schema_from_model(model)
             except TypeError:
                 pass
 
         if route.request_model:
             model = route.request_model
             try:
-                if isinstance(model, type) and issubclass(model, BaseModel):
-                    if model.__name__ not in schemas:
-                        schemas[model.__name__] = _generate_schema_from_model(model)
+                if isinstance(model, type) and issubclass(model, BaseModel) and model.__name__ not in schemas:
+                    schemas[model.__name__] = _generate_schema_from_model(model)
             except TypeError:
                 pass
 
         if route.responses:
-            for status_code, response_config in route.responses.items():
+            for _, response_config in route.responses.items():
                 model = response_config.get("model")
                 try:
-                    if model and isinstance(model, type) and issubclass(model, BaseModel):
-                        if model.__name__ not in schemas:
-                            schemas[model.__name__] = _generate_schema_from_model(model)
+                    if model and isinstance(model, type) and issubclass(model, BaseModel) and model.__name__ not in schemas:
+                        schemas[model.__name__] = _generate_schema_from_model(model)
                 except TypeError:
                     pass
 
@@ -235,7 +231,7 @@ def _normalize_path(url: str) -> str:
     from urllib.parse import urlparse
 
     parsed = urlparse(url)
-    host = parsed.netloc.replace(':', '_')
+    host = parsed.netloc.replace(":", "_")
     path = parsed.path
 
     if not path:
@@ -249,7 +245,7 @@ def _normalize_path(url: str) -> str:
     return api_path
 
 
-def generate_openapi_schema(
+def generate_openapi_schema(  # noqa: C901
     app: Annotated[
         FastHTTP,
         Doc("FastHTTP application instance."),
@@ -346,7 +342,7 @@ def generate_openapi_schema(
 
         if route.response_model:
             operation["responses"]["200"] = _generate_response_schema(
-                route.response_model
+                route.response_model  # type: ignore
             )
         else:
             operation["responses"]["200"] = {

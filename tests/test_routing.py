@@ -2,7 +2,6 @@
 import pytest
 from pydantic import BaseModel
 
-from fasthttp.routing import Route, Router
 from fasthttp.helpers.routing import (
     apply_base_url,
     check_https_url,
@@ -10,7 +9,7 @@ from fasthttp.helpers.routing import (
     resolve_url,
 )
 from fasthttp.response import Response
-
+from fasthttp.routing import Route, Router
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -215,7 +214,7 @@ class TestRoute:
 
     def test_route_all_http_methods(self):
         for method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
-            route = Route(method=method, url="https://example.com", handler=dummy_handler)
+            route = Route(method=method, url="https://example.com", handler=dummy_handler)  # type: ignore
             assert route.method == method
 
     def test_route_with_response_model(self):
@@ -286,86 +285,86 @@ class TestRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.get(url="/users")
-        async def get_users(resp: Response) -> list:
+        async def get_users(_resp: Response) -> list:
             return []
 
-        assert len(router._route_defs) == 1
-        assert router._route_defs[0].method == "GET"
+        assert len(router._route_defs) == 1  # noqa: SLF001
+        assert router._route_defs[0].method == "GET"  # noqa: SLF001
 
     def test_router_post_decorator(self):
         router = Router(base_url="https://api.example.com")
 
         @router.post(url="/users")
-        async def create_user(resp: Response) -> dict:
+        async def create_user(_resp: Response) -> dict:
             return {}
 
-        assert router._route_defs[0].method == "POST"
+        assert router._route_defs[0].method == "POST"  # noqa: SLF001
 
     def test_router_put_decorator(self):
         router = Router(base_url="https://api.example.com")
 
         @router.put(url="/users/1")
-        async def update_user(resp: Response) -> dict:
+        async def update_user(_resp: Response) -> dict:
             return {}
 
-        assert router._route_defs[0].method == "PUT"
+        assert router._route_defs[0].method == "PUT"  # noqa: SLF001
 
     def test_router_patch_decorator(self):
         router = Router(base_url="https://api.example.com")
 
         @router.patch(url="/users/1")
-        async def partial_update(resp: Response) -> dict:
+        async def partial_update(_resp: Response) -> dict:
             return {}
 
-        assert router._route_defs[0].method == "PATCH"
+        assert router._route_defs[0].method == "PATCH"  # noqa: SLF001
 
     def test_router_delete_decorator(self):
         router = Router(base_url="https://api.example.com")
 
         @router.delete(url="/users/1")
-        async def delete_user(resp: Response) -> None:
+        async def delete_user(_resp: Response) -> None:
             pass
 
-        assert router._route_defs[0].method == "DELETE"
+        assert router._route_defs[0].method == "DELETE"  # noqa: SLF001
 
     def test_router_multiple_routes(self):
         router = Router(base_url="https://api.example.com")
 
         @router.get(url="/users")
-        async def get_users(resp: Response) -> list:
+        async def get_users(_resp: Response) -> list:
             return []
 
         @router.post(url="/users")
-        async def create_user(resp: Response) -> dict:
+        async def create_user(_resp: Response) -> dict:
             return {}
 
         @router.delete(url="/users/1")
-        async def delete_user(resp: Response) -> None:
+        async def delete_user(_resp: Response) -> None:
             pass
 
-        assert len(router._route_defs) == 3
+        assert len(router._route_defs) == 3  # noqa: SLF001
 
     def test_router_include_router(self):
         parent = Router(base_url="https://api.example.com", prefix="/v1")
         child = Router()
 
         parent.include_router(child, prefix="/admin")
-        assert len(parent._include_defs) == 1
-        assert parent._include_defs[0].prefix == "/admin"
+        assert len(parent._include_defs) == 1  # noqa: SLF001
+        assert parent._include_defs[0].prefix == "/admin"  # noqa: SLF001
 
     def test_router_include_router_with_tags(self):
         parent = Router(base_url="https://api.example.com")
         child = Router()
 
         parent.include_router(child, tags=["admin"])
-        assert parent._include_defs[0].tags == ["admin"]
+        assert parent._include_defs[0].tags == ["admin"]  # noqa: SLF001
 
     def test_router_include_router_with_base_url(self):
         parent = Router()
         child = Router()
 
         parent.include_router(child, base_url="https://other.example.com")
-        assert parent._include_defs[0].base_url == "https://other.example.com"
+        assert parent._include_defs[0].base_url == "https://other.example.com"  # noqa: SLF001
 
     def test_router_tags_none_becomes_empty(self):
         router = Router(tags=None)
@@ -379,28 +378,28 @@ class TestRouter:
         router = Router(base_url="https://api.example.com", tags=["shared"])
 
         @router.get(url="/users")
-        async def get_users(resp: Response) -> list:
+        async def get_users(_resp: Response) -> list:
             return []
 
-        assert router._route_defs[0].tags == []
+        assert router._route_defs[0].tags == []  # noqa: SLF001
 
     def test_router_route_with_params(self):
         router = Router(base_url="https://api.example.com")
 
         @router.get(url="/search", params={"limit": "10"})
-        async def search(resp: Response) -> list:
+        async def search(_resp: Response) -> list:
             return []
 
-        assert router._route_defs[0].params == {"limit": "10"}
+        assert router._route_defs[0].params == {"limit": "10"}  # noqa: SLF001
 
     def test_router_route_with_json(self):
         router = Router(base_url="https://api.example.com")
 
         @router.post(url="/users", json={"role": "admin"})
-        async def create(resp: Response) -> dict:
+        async def create(_resp: Response) -> dict:
             return {}
 
-        assert router._route_defs[0].json == {"role": "admin"}
+        assert router._route_defs[0].json == {"role": "admin"}  # noqa: SLF001
 
 
 # ---------------------------------------------------------------------------
@@ -414,7 +413,7 @@ class TestFastHTTPIncludeRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.get(url="/users")
-        async def get_users(resp: Response) -> list:
+        async def get_users(_resp: Response) -> list:
             return []
 
         app = FastHTTP()
@@ -427,7 +426,7 @@ class TestFastHTTPIncludeRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.get(url="/items")
-        async def get_items(resp: Response) -> list:
+        async def get_items(_resp: Response) -> list:
             return []
 
         app = FastHTTP()
@@ -440,7 +439,7 @@ class TestFastHTTPIncludeRouter:
         child = Router(base_url="https://api.example.com")
 
         @child.get(url="/child-route")
-        async def child_handler(resp: Response) -> dict:
+        async def child_handler(_resp: Response) -> dict:
             return {}
 
         parent = Router(base_url="https://api.example.com")

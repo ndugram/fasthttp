@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from annotated_doc import Doc
 
@@ -88,7 +88,7 @@ class FastHTTPBadStatusError(FastHTTPError):
             ]
             | None
         ) = None,
-        **kwargs,
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         status_msg = message or (f"HTTP {status_code}" if status_code else "Bad status")
         details = {}

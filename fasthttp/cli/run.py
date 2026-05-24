@@ -8,7 +8,7 @@ from fasthttp.cli.output import formatter
 run_app = typer.Typer(help="Run FastHTTP application from file")
 
 
-def _load_app_from_file(file_path: Path) -> Any:
+def _load_app_from_file(file_path: Path) -> Any:  # noqa: ANN401
     """
     Load FastHTTP app instance from Python file.
 
@@ -46,7 +46,7 @@ def _load_app_from_file(file_path: Path) -> Any:
         spec.loader.exec_module(module)
     except Exception as e:
         formatter.error(f"Failed to execute {file_path.name}: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     app = None
     for name in dir(module):
@@ -69,7 +69,7 @@ def _load_app_from_file(file_path: Path) -> Any:
 
 @run_app.command(name="run")
 def run_command(
-    file: Path = typer.Argument(
+    file: Path = typer.Argument(  # noqa: B008
         ...,
         help="Path to Python file with FastHTTP app",
         exists=True,
@@ -82,10 +82,8 @@ def run_command(
         "--tags",
         help="Run only routes with specific tags (comma-separated)",
     ),
-    debug: bool = typer.Option(
-        False,
-        "-d",
-        "--debug",
+    debug: bool = typer.Option(  # noqa: FBT001
+        default=False,
         help="Enable debug mode",
     ),
 ) -> None:
@@ -121,7 +119,7 @@ def run_command(
 
 @run_app.command(name="dev")
 def dev_command(
-    file: Path = typer.Argument(
+    file: Path = typer.Argument(  # noqa: B008
         ...,
         help="Path to Python file with FastHTTP app",
         exists=True,
@@ -146,10 +144,8 @@ def dev_command(
         "--base-url",
         help="Base URL prefix for documentation endpoints",
     ),
-    debug: bool = typer.Option(
-        False,
-        "-d",
-        "--debug",
+    debug: bool = typer.Option(  # noqa: FBT001
+        default=False,
         help="Enable debug mode",
     ),
 ) -> None:
@@ -176,9 +172,9 @@ def dev_command(
     server_url = f"http://{host}:{port}"
     docs_url = f"{server_url}{base_url or ''}/docs"
 
-    print(f"\n\033[92m\033[1m▲ FastHTTP\033[0m \033[90mdev server\033[0m")
+    print("\n\033[92m\033[1m▲ FastHTTP\033[0m \033[90mdev server\033[0m")
     print(f"\033[94m➜\033[0m  Server:   \033[1m{server_url}\033[0m")
     print(f"\033[94m➜\033[0m  Docs:     \033[1m{docs_url}\033[0m")
-    print(f"\033[90m─────────────────────────────────\033[0m\n")
+    print("\033[90m─────────────────────────────────\033[0m\n")
 
     app.web_run(host=host, port=port, base_url=base_url)

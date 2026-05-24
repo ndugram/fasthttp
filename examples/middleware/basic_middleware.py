@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from fasthttp import FastHTTP
 from fasthttp.middleware import BaseMiddleware
 from fasthttp.response import Response
@@ -6,7 +8,7 @@ from fasthttp.response import Response
 class LoggingMiddleware(BaseMiddleware):
     __return_type__ = None
     __priority__ = 99
-    __methods__ = ["GET"]
+    __methods__: ClassVar[list[str]] = ["GET"]
     __enabled__ = True
 
     async def request(self, method: str, url: str, kwargs: dict) -> dict:

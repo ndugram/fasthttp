@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 from fasthttp import FastHTTP
+from fasthttp.response import Response
 
 
 class Address(BaseModel):
@@ -43,12 +44,12 @@ app = FastHTTP()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/users/1", response_model=User)
-async def get_user_with_details(resp) -> User:
+async def get_user_with_details(resp: Response) -> User:
     return resp.json()
 
 
 @app.get(url="https://jsonplaceholder.typicode.com/posts/1", response_model=Post)
-async def get_post(resp) -> Post:
+async def get_post(resp: Response) -> Post:
     return resp.json()
 
 

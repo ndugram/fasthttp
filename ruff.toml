@@ -1,0 +1,78 @@
+line-length = 88
+target-version = "py310"
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "C90",  # mccabe complexity
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "YTT",  # flake8-2020
+    "ANN",  # flake8-annotations
+    "ASYNC", # flake8-async
+    "S",    # flake8-bandit
+    "BLE",  # flake8-blind-except
+    "FBT",  # flake8-boolean-trap
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "COM",  # flake8-commas
+    "DTZ",  # flake8-datetimez
+    "T10",  # flake8-debugger
+    "DJ",   # flake8-django
+    "EM",   # flake8-errmsg
+    "EXE",  # flake8-executable
+    "FA",   # flake8-future-annotations
+    "ISC",  # flake8-implicit-str-concat
+    "ICN",  # flake8-import-conventions
+    "G",    # flake8-logging-format
+    "INP",  # flake8-no-pep420
+    "PIE",  # flake8-pie
+    "T20",  # flake8-print
+    "PYI",  # flake8-pyi
+    "PT",   # flake8-pytest-style
+    "Q",    # flake8-quotes
+    "RSE",  # flake8-raise
+    "RET",  # flake8-return
+    "SLF",  # flake8-self
+    "SLOT", # flake8-slots
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+    "TCH",  # flake8-type-checking
+    "INT",  # flake8-gettext
+    "ARG",  # flake8-unused-arguments
+    "PTH",  # flake8-use-pathlib
+    "TD",   # flake8-todos
+    "FIX",  # flake8-fixme
+    "ERA",  # eradicate
+    "RUF",  # ruff-specific rules
+]
+
+ignore = [
+    "COM812", # trailing comma (conflicts with formatter)
+    "E501",   # line too long (handled by formatter)
+    "ISC001", # implicit str concat (conflicts with formatter)
+    "S101",   # assert (ok for tests)
+    "TD002",  # missing TODO author
+    "TD003",  # missing TODO link
+    "FIX002", # line contains TODO
+]
+
+[lint.per-file-ignores]
+"__init__.py"  = ["F401", "E501"]
+"tests/*"      = ["S101", "D103", "D104", "ANN001", "ANN201", "ANN202", "ARG001", "ARG002"]
+"examples/*"   = ["T201", "S602", "S603", "N815", "ARG001", "ARG002"]
+"fasthttp/cli/*" = ["T201"]
+
+[lint.mccabe]
+max-complexity = 12
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"

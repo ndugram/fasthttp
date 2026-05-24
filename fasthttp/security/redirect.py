@@ -1,10 +1,10 @@
 import ipaddress
 import socket
-from urllib.parse import urlparse
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 try:
-    from fasthttp._core import is_private_ip as _rs_is_private_ip
+    from fasthttp._core import is_private_ip as _rs_is_private_ip  # type: ignore
     _RUST = True
 except ImportError:
     _RUST = False
@@ -44,7 +44,7 @@ class RedirectProtection:
         self,
         original_url: str,
         redirect_url: str,
-        original_method: str = "GET"
+        original_method: str = "GET",  # noqa: ARG002
     ) -> tuple[bool, str | None]:
         self._redirect_count += 1
 
@@ -99,7 +99,7 @@ class RedirectProtection:
 
         except socket.gaierror:
             pass
-        except Exception:
+        except Exception:  # noqa: S110, BLE001
             pass
 
         return True, None
@@ -107,7 +107,6 @@ class RedirectProtection:
     def should_follow_redirect(
         self, original_scheme: str, redirect_scheme: str
     ) -> tuple[bool, str | None]:
-        if original_scheme == "https" and redirect_scheme == "http":
-            if not self._config.allow_http_downgrade:
-                return False, "HTTPS -> HTTP downgrade blocked"
+        if original_scheme == "https" and redirect_scheme == "http" and not self._config.allow_http_downgrade:
+            return False, "HTTPS -> HTTP downgrade blocked"
         return True, None

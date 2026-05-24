@@ -1,5 +1,4 @@
 """Tests for HTTP status code constants."""
-import pytest
 from fasthttp import status
 
 

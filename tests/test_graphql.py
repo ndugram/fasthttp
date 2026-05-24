@@ -1,6 +1,7 @@
 """Tests for GraphQL functionality."""
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 from fasthttp.graphql.types import GraphQLRequest, GraphQLResponse
 
@@ -165,7 +166,7 @@ class TestGraphQLClient:
 
             client = create_graphql_client(url="https://api.example.com/graphql")
             result = await client.mutation(
-                mutation="mutation { createUser(name: \"John\") { id name } }",
+                mutation='mutation { createUser(name: "John") { id name } }',
             )
 
             assert result.data == {"createUser": {"id": 1, "name": "John"}}
@@ -210,7 +211,7 @@ class TestGraphQLClient:
                 url="https://api.example.com/graphql",
                 headers={"Authorization": "Bearer token"},
             )
-            result = await client.query(query="{ test }")
+            await client.query(query="{ test }")
 
             mock_http_client.post.assert_called_once()
             call_kwargs = mock_http_client.post.call_args.kwargs
@@ -229,7 +230,7 @@ class TestFastHTTPGraphQL:
         app = FastHTTP()
 
         @app.graphql(url="https://api.example.com/graphql")
-        async def get_user(resp: Response) -> dict:
+        async def get_user(_resp: Response) -> dict:
             return {"query": "{ user { name } }"}
 
         assert len(app.routes) == 1
@@ -244,7 +245,7 @@ class TestFastHTTPGraphQL:
         app = FastHTTP()
 
         @app.graphql(url="https://api.example.com/graphql", operation_type="mutation")
-        async def create_user(resp: Response) -> dict:
+        async def create_user(_resp: Response) -> dict:
             return {"query": "mutation { test }"}
 
         assert len(app.routes) == 1
@@ -257,7 +258,7 @@ class TestFastHTTPGraphQL:
         app = FastHTTP()
 
         @app.graphql(url="https://api.example.com/graphql", tags=["users"])
-        async def get_user(resp: Response) -> dict:
+        async def get_user(_resp: Response) -> dict:
             return {"query": "{ user { name } }"}
 
         assert app.routes[0].tags == ["users"]
@@ -270,11 +271,11 @@ class TestFastHTTPGraphQL:
         app = FastHTTP()
 
         @app.graphql(url="https://api.example.com/graphql")
-        async def get_user(resp: Response) -> dict:
+        async def get_user(_resp: Response) -> dict:
             return {"query": "{ user { name } }"}
 
         @app.graphql(url="https://api.example.com/graphql", operation_type="mutation")
-        async def create_user(resp: Response) -> dict:
+        async def create_user(_resp: Response) -> dict:
             return {"query": "mutation { test }"}
 
         assert len(app.routes) == 2
@@ -288,7 +289,7 @@ class TestFastHTTPGraphQL:
         app = FastHTTP()
 
         @app.graphql(url="https://api.example.com/graphql")
-        async def get_user(resp: Response) -> dict:
+        async def get_user(_resp: Response) -> dict:
             return {"query": "{ user { name } }"}
 
         # Mock the GraphQL client to avoid real HTTP requests
