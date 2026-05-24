@@ -313,7 +313,7 @@ class TestGenerateOpenAPISchema:
         app = FastHTTP()
 
         @app.get(url="https://example.com/api")
-        async def handler(resp: Response) -> dict:
+        async def handler(_resp: Response) -> dict:
             return {}
 
         schema = generate_openapi_schema(app)
@@ -338,7 +338,7 @@ class TestGenerateOpenAPISchema:
         app = FastHTTP()
 
         @app.get(url="https://example.com/api")
-        async def handler(resp: Response) -> dict:
+        async def handler(_resp: Response) -> dict:
             return {}
 
         schema = generate_openapi_schema(app, server_url="/api/request")
