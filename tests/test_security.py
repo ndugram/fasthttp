@@ -112,7 +112,7 @@ class TestCircuitBreaker:
         result = await cb.can_proceed("example.com")
 
         assert result is True
-        assert "example.com" in cb._hosts  # noqa: SLF001
+        assert cb._hosts.get("example.com") is not None  # noqa: SLF001
         assert cb._hosts["example.com"].state == CircuitState.CLOSED  # noqa: SLF001
 
     @pytest.mark.asyncio
@@ -243,7 +243,7 @@ class TestCircuitBreaker:
 
         await cb.record_failure("example.com")
 
-        assert "example.com" in cb._hosts  # noqa: SLF001
+        assert cb._hosts.get("example.com") is not None  # noqa: SLF001
         assert cb._hosts["example.com"].failure_count == 1  # noqa: SLF001
 
     @pytest.mark.asyncio
