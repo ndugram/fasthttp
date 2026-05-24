@@ -1,8 +1,12 @@
 import re
 
 try:
-    from fasthttp._core import check_response_headers as _rs_check_response_headers  # type: ignore
-    from fasthttp._core import sanitize_request_headers as _rs_sanitize_request_headers  # type: ignore
+    from fasthttp._core import (
+        check_response_headers as _rs_check_response_headers,  # type: ignore
+    )
+    from fasthttp._core import (
+        sanitize_request_headers as _rs_sanitize_request_headers,  # type: ignore
+    )
     _RUST = True
 except ImportError:
     _RUST = False
