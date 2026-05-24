@@ -128,7 +128,7 @@ class ResponseProtection:
                 xss_check = self.detect_xss(text)
                 if xss_check[0]:
                     return False, xss_check[1]
-            except Exception:  # noqa: S110
+            except Exception:  # noqa: S110, BLE001
                 pass
 
         return True, None
