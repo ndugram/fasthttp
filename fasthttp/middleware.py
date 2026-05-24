@@ -562,10 +562,10 @@ class SessionMiddleware(BaseMiddleware):
 
     @property
     def cookies(self) -> dict[str, str]:
-        return self._jar._cookies
+        return self._jar._cookies  # noqa: SLF001
 
     def __repr__(self) -> str:
-        return f"<SessionMiddleware cookies={list(self._jar._cookies.keys())}>"
+        return f"<SessionMiddleware cookies={list(self._jar._cookies.keys())}>"  # noqa: SLF001
 
     async def request(
         self,
@@ -573,10 +573,10 @@ class SessionMiddleware(BaseMiddleware):
         _url: Annotated[str, Doc("Request URL.")],
         kwargs: Annotated[dict[str, Any], Doc("Request kwargs passed to httpx.")],
     ) -> dict[str, Any]:
-        if self._jar._cookies:
+        if self._jar._cookies:  # noqa: SLF001
             headers = dict(kwargs.get("headers") or {})
             headers["Cookie"] = "; ".join(
-                f"{k}={v}" for k, v in self._jar._cookies.items()
+                f"{k}={v}" for k, v in self._jar._cookies.items()  # noqa: SLF001
             )
             kwargs["headers"] = headers
         return kwargs
@@ -598,4 +598,4 @@ class SessionMiddleware(BaseMiddleware):
         self._jar.clear()
 
     def get_cookies(self) -> dict[str, str]:
-        return dict(self._jar._cookies)
+        return dict(self._jar._cookies)  # noqa: SLF001
