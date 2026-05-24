@@ -109,7 +109,7 @@ class _GraphQLClient:
         # Parse response
         try:
             data = response.json()
-        except Exception:
+        except Exception:  # noqa: BLE001
             data = {}
 
         return GraphQLResponse(
