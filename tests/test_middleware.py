@@ -850,11 +850,11 @@ class TestMiddlewareIntegration:
 
         config1 = await mm.process_before_request(route, {})
         resp1 = make_response(text="data")
-        result1 = await mm.process_after_response(resp1, route, config1)
+        result1 = await mm.process_after_response(resp1, route, config1)  # type: ignore
         assert result1.text == "data"
         assert cache.get_stats()["size"] == 1
 
-        config2 = await mm.process_before_request(route, {})
+        config2 = await mm.process_before_request(route, {})  # type: ignore
         resp2 = make_response(text="new-data")
-        result2 = await mm.process_after_response(resp2, route, config2)
+        result2 = await mm.process_after_response(resp2, route, config2)  # type: ignore
         assert result2.text == "data"
