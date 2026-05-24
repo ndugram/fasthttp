@@ -236,7 +236,8 @@ class FastHTTPRepl:
                 except Exception:  # noqa: BLE001
                     return resp.text
 
-    async def execute_request(self, method: str, url: str, **kwargs: object) -> httpx.Response | None:
+    async def execute_request(self, method: str, url: str, **kwargs: Any,  # noqa: ANN401
+    ) -> httpx.Response | None:
         """Execute HTTP request."""
         proxy = kwargs.get("proxy", self.proxy)
 
