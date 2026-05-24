@@ -214,7 +214,7 @@ class TestRoute:
 
     def test_route_all_http_methods(self):
         for method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
-            route = Route(method=method, url="https://example.com", handler=dummy_handler)
+            route = Route(method=method, url="https://example.com", handler=dummy_handler)  # type: ignore[arg-type]
             assert route.method == method
 
     def test_route_with_response_model(self):
