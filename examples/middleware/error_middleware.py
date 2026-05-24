@@ -15,7 +15,7 @@ class ErrorTrackingMiddleware(BaseMiddleware):
         self.error_count = 0
 
     async def on_error(
-        self, error: Exception, route: Route, _config: RequestsOptinal
+        self, error: Exception, route: Route, config: RequestsOptinal
     ) -> None:
         self.error_count += 1
         print(f"Error #{self.error_count}: {error.__class__.__name__}")
