@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from fasthttp.routing import Route
 
 
-def _get_type_string(annotation: Any) -> str | None:  # noqa: ANN401
+def _get_type_string(annotation: Any) -> dict[str, Any] | None:  # noqa: ANN401
     """Convert Python type annotation to OpenAPI type string."""
     if annotation is None:
         return {"type": "string", "nullable": True}
