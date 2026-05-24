@@ -151,4 +151,4 @@ async def test_middleware_on_error() -> None:
     )
     config = {"headers": {}, "timeout": 30.0}
     error = ConnectionError("test error")
-    await manager.process_on_error(error, route, config)
+    await manager.process_on_error(error, route, config)  # type: ignore
