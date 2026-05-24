@@ -99,7 +99,7 @@ class RedirectProtection:
 
         except socket.gaierror:
             pass
-        except Exception:  # noqa: S110
+        except Exception:  # noqa: S110, BLE001
             pass
 
         return True, None
