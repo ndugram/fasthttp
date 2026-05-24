@@ -222,7 +222,7 @@ class TestFastHTTPApp:
 
         with pytest.raises(TypeError, match="must explicitly define return type"):
             @app.get(url="https://example.com/api")
-            async def handler(_resp: Response):  # Missing return annotation
+            async def handler(_resp: Response):  # noqa: ANN202  # Missing return annotation
                 return {}
 
     def test_app_run_with_tags_filtering(self) -> None:
@@ -269,7 +269,7 @@ class TestFastHTTPLifespan:
         shutdown_called = False
 
         @asynccontextmanager
-        async def lifespan(_app: FastHTTP):
+        async def lifespan(_app: FastHTTP):  # noqa: ANN202
             nonlocal startup_called, shutdown_called
             startup_called = True
             app.test_value = "initialized"
@@ -286,7 +286,7 @@ class TestFastHTTPLifespan:
         shutdown_called = False
 
         @asynccontextmanager
-        async def lifespan(_app: FastHTTP):
+        async def lifespan(_app: FastHTTP):  # noqa: ANN202
             nonlocal startup_called, shutdown_called
             startup_called = True
             yield
@@ -453,7 +453,7 @@ class TestFastHTTPASGI:
 
         scope = {"type": "http", "path": "/request", "method": "POST"}
 
-        async def receive():
+        async def receive() -> dict:
             return {
                 "type": "http.request",
                 "body": request_body,
