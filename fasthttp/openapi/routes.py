@@ -177,7 +177,7 @@ async def handle_request(
             text=json.dumps({"error": f"Timeout: {e!s}"}),
             headers={"Content-Type": "application/json"},
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return Response(
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             text=json.dumps({"error": f"Request failed: {e!s}"}),
