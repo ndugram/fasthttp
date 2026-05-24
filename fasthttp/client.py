@@ -250,7 +250,7 @@ class HTTPClient:
             req_json=route.json,
             req_data=route.data,
         )
-        resp._set_url(route.url)
+        resp._set_url(route.url)  # noqa: SLF001
         return resp
 
     async def _process_handler_result(
@@ -262,7 +262,7 @@ class HTTPClient:
             return handler_result
         if isinstance(handler_result, str):
             response.text = handler_result
-        response._handler_result = handler_result
+        response._handler_result = handler_result  # noqa: SLF001
         return response
 
     async def _execute_request(
@@ -337,7 +337,7 @@ class HTTPClient:
                 headers={},
                 method=route.method,
             )
-            empty_response._set_url(route.url)
+            empty_response._set_url(route.url)  # noqa: SLF001
             handler_result = await route.handler(empty_response)
             return await self._process_handler_result(
                 empty_response,
@@ -360,7 +360,7 @@ class HTTPClient:
                     try:
                         error_data = response.json()
                         validated = error_model.model_validate(error_data)
-                        response._handler_result = validated
+                        response._handler_result = validated  # noqa: SLF001
                         handler_result = await route.handler(response)
                         return await self._process_handler_result(response, handler_result)
                     except Exception:  # noqa: S110, BLE001
