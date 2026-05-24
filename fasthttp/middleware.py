@@ -10,9 +10,7 @@ from typing import TYPE_CHECKING, Annotated, Any, ClassVar
 import orjson
 
 try:
-    from fasthttp._core import (
-        cache_key as _rs_cache_key,  # type: ignore[import-untyped]
-    )
+    from fasthttp._core import cache_key as _rs_cache_key  # type: ignore
     _HAVE_RUST_CACHE_KEY = True
 except ImportError:
     _HAVE_RUST_CACHE_KEY = False
