@@ -1,7 +1,7 @@
 import logging
 from urllib.parse import urlparse
 
-from .circuit_breaker import CircuitBreaker, CircuitBreakerConfig
+from .circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitState
 from .headers import HeaderProtection
 from .limits import Limits, LimitsConfig
 from .redirect import RedirectConfig, RedirectProtection
@@ -138,7 +138,7 @@ class Security:
     def release_slot(self) -> None:
         self._limits.release()
 
-    def get_circuit_state(self, host: str):
+    def get_circuit_state(self, host: str) -> CircuitState | None:
         return self._circuit_breaker.get_state(host)
 
 
