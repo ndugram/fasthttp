@@ -302,7 +302,7 @@ class HTTPClient:
                 self.security.release_slot()
                 await self.security.post_request(route.url, route.method, success=False, error=e)
             self.logger.error("Security error: %s", e)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             await self._handle_error(route, config, e, FastHTTPRequestError)
 
         return None
@@ -363,7 +363,7 @@ class HTTPClient:
                         response._handler_result = validated
                         handler_result = await route.handler(response)
                         return await self._process_handler_result(response, handler_result)
-                    except Exception:  # noqa: S110
+                    except Exception:  # noqa: S110, BLE001
                         pass
             await self._handle_bad_status(route, config, resp)
             return None
