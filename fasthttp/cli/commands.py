@@ -162,7 +162,7 @@ def graphql(  # noqa: C901
     proxy: str | None = typer.Option(None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"),
 ) -> None:
     url = _check_https_url(url)
-    headers = parse_headers(headers_str=headers)
+    parsed_headers = parse_headers(headers_str=headers)
 
     json_data: dict[str, Any] = {"query": query}
     if variables:
@@ -174,8 +174,8 @@ def graphql(  # noqa: C901
 
     if debug:
         formatter.info(f"→ GraphQL {operation_type} {url}")
-        if headers:
-            formatter.info(f"  Headers: {json.dumps(headers, indent=2)}")
+        if parsed_headers:
+            formatter.info(f"  Headers: {json.dumps(parsed_headers, indent=2)}")
         formatter.info(f"  Query: {query}")
         if variables:
             formatter.info(f"  Variables: {variables}")
@@ -186,7 +186,7 @@ def graphql(  # noqa: C901
         resp = run_request(
             method="POST",
             url=url,
-            headers=headers,
+            headers=parsed_headers,
             json_data=json_data,
             timeout=timeout,
             proxy=proxy,
