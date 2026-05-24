@@ -2,11 +2,11 @@ import re
 from dataclasses import dataclass
 
 try:
-    from fasthttp._core import (
-        detect_xss as _rs_detect_xss,
+    from fasthttp._core import (  # type: ignore[import-untyped]
+        detect_xss as _rs_detect_xss,  # type: ignore[unresolved-import]
     )
-    from fasthttp._core import (
-        sanitize_html as _rs_sanitize_html,
+    from fasthttp._core import (  # type: ignore[import-untyped]
+        sanitize_html as _rs_sanitize_html,  # type: ignore[unresolved-import]
     )
     _RUST = True
 except ImportError:
