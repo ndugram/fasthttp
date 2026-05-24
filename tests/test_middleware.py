@@ -349,7 +349,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, _method, _url, kwargs):
+            async def request(self, _method, _url, kwargs) -> dict:
                 kwargs["params"] = {"injected": "true"}
                 return kwargs
 
@@ -383,7 +383,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, _method, _url, kwargs):
+            async def request(self, _method, _url, kwargs) -> dict:
                 kwargs["headers"] = kwargs.get("headers") or {}
                 kwargs["headers"]["X-Step"] = "1"
                 return kwargs
@@ -394,7 +394,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, _method, _url, kwargs):
+            async def request(self, _method, _url, kwargs) -> dict:
                 kwargs["headers"]["X-Step2"] = "2"
                 return kwargs
 
@@ -413,7 +413,7 @@ class TestProcessBeforeRequest:
             __enabled__ = True
             called = False
 
-            async def request(self, _method, _url, kwargs):
+            async def request(self, _method, _url, kwargs) -> dict:
                 PostOnly.called = True
                 return kwargs
 
@@ -450,7 +450,7 @@ class TestProcessAfterResponse:
             __methods__ = None
             __enabled__ = True
 
-            async def response(self, response):
+            async def response(self, response) -> Response:
                 response.text = "modified"
                 return response
 
@@ -479,7 +479,7 @@ class TestProcessAfterResponse:
             __enabled__ = True
             called = False
 
-            async def response(self, response):
+            async def response(self, response) -> Response:
                 GetOnly.called = True
                 return response
 
@@ -539,7 +539,7 @@ class TestProcessOnError:
             __enabled__ = True
             called = False
 
-            async def on_error(self, _error, _route, _config):
+            async def on_error(self, _error, _route, _config) -> None:
                 PostOnly.called = True
 
         mm = MiddlewareManager([PostOnly()])
@@ -823,11 +823,11 @@ class TestMiddlewareIntegration:
             def __init__(self, name) -> None:
                 self.name = name
 
-            async def request(self, _method, _url, kwargs):
+            async def request(self, _method, _url, kwargs) -> dict:
                 order.append(f"req:{self.name}")
                 return kwargs
 
-            async def response(self, response):
+            async def response(self, response) -> Response:
                 order.append(f"res:{self.name}")
                 return response
 
