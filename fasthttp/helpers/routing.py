@@ -1,18 +1,10 @@
 from __future__ import annotations
 
 try:
-    from fasthttp._core import (  # type: ignore[import-untyped]
-        apply_base_url as _rs_apply_base_url,  # type: ignore[unresolved-import]
-    )
-    from fasthttp._core import (  # type: ignore[import-untyped]
-        check_https_url as _rs_check_https_url,  # type: ignore[unresolved-import]
-    )
-    from fasthttp._core import (  # type: ignore[import-untyped]
-        join_prefix as _rs_join_prefix,  # type: ignore[unresolved-import]
-    )
-    from fasthttp._core import (  # type: ignore[import-untyped]
-        resolve_url as _rs_resolve_url,  # type: ignore[unresolved-import]
-    )
+    from fasthttp._core import apply_base_url as _rs_apply_base_url  # type: ignore
+    from fasthttp._core import check_https_url as _rs_check_https_url  # type: ignore
+    from fasthttp._core import join_prefix as _rs_join_prefix  # type: ignore
+    from fasthttp._core import resolve_url as _rs_resolve_url  # type: ignore
 
     def check_https_url(*, url: str) -> str:
         return _rs_check_https_url(url)
