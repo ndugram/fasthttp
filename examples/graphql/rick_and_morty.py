@@ -11,7 +11,7 @@ app = FastHTTP()
 
 
 @app.graphql(url="https://rickandmortyapi.com/graphql")
-async def get_characters(resp: Response) -> dict:
+async def get_characters(_resp: Response) -> dict:
     """
     Get list of characters.
     """
@@ -45,7 +45,7 @@ async def get_characters(resp: Response) -> dict:
 
 
 @app.graphql(url="https://rickandmortyapi.com/graphql")
-async def get_character_by_id(resp: Response) -> dict:
+async def get_character_by_id(_resp: Response) -> dict:
     """
     Get character by ID.
     """
@@ -79,7 +79,7 @@ async def get_character_by_id(resp: Response) -> dict:
 
 
 @app.graphql(url="https://rickandmortyapi.com/graphql", operation_type="mutation")
-async def create_character(resp: Response) -> dict:
+async def create_character(_resp: Response) -> dict:
     """
     Note: This API is read-only, mutation will return error.
     This is just for demonstration of mutation syntax.
@@ -106,7 +106,7 @@ async def create_character(resp: Response) -> dict:
 
 
 @app.graphql(url="https://rickandmortyapi.com/graphql")
-async def get_episodes(resp: Response) -> dict:
+async def get_episodes(_resp: Response) -> dict:
     """
     Get list of episodes.
     """
