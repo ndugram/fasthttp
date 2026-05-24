@@ -54,7 +54,7 @@ async def patch_post(resp) -> Post:
 @app.delete(
     url="https://jsonplaceholder.typicode.com/posts/1",
 )
-async def delete_post(resp) -> None:
+async def delete_post(_resp) -> None:
     return None
 
 
