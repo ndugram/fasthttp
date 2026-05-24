@@ -57,7 +57,7 @@ class SimpleMiddleware(BaseMiddleware):
         self.responses.append(response.status)
         return response
 
-    async def on_error(self, error, route, config):
+    async def on_error(self, error, _route, _config):
         self.errors.append(type(error).__name__)
 
 
@@ -70,7 +70,7 @@ class PriorityMiddleware(BaseMiddleware):
         self.__priority__ = priority
         self._order = order_log
 
-    async def request(self, method, url, kwargs):
+    async def request(self, _method, _url, kwargs):
         self._order.append(f"req:{self.__priority__}")
         return kwargs
 
@@ -349,7 +349,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, method, url, kwargs):
+            async def request(self, _method, _url, kwargs):
                 kwargs["params"] = {"injected": "true"}
                 return kwargs
 
@@ -383,7 +383,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, method, url, kwargs):
+            async def request(self, _method, _url, kwargs):
                 kwargs["headers"] = kwargs.get("headers") or {}
                 kwargs["headers"]["X-Step"] = "1"
                 return kwargs
@@ -394,7 +394,7 @@ class TestProcessBeforeRequest:
             __methods__ = None
             __enabled__ = True
 
-            async def request(self, method, url, kwargs):
+            async def request(self, _method, _url, kwargs):
                 kwargs["headers"]["X-Step2"] = "2"
                 return kwargs
 
@@ -413,7 +413,7 @@ class TestProcessBeforeRequest:
             __enabled__ = True
             called = False
 
-            async def request(self, method, url, kwargs):
+            async def request(self, _method, _url, kwargs):
                 PostOnly.called = True
                 return kwargs
 
@@ -539,7 +539,7 @@ class TestProcessOnError:
             __enabled__ = True
             called = False
 
-            async def on_error(self, error, route, config):
+            async def on_error(self, _error, _route, _config):
                 PostOnly.called = True
 
         mm = MiddlewareManager([PostOnly()])
@@ -823,7 +823,7 @@ class TestMiddlewareIntegration:
             def __init__(self, name) -> None:
                 self.name = name
 
-            async def request(self, method, url, kwargs):
+            async def request(self, _method, _url, kwargs):
                 order.append(f"req:{self.name}")
                 return kwargs
 
