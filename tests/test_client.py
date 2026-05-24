@@ -44,7 +44,7 @@ class TestHTTPClient:
 
         mock_httpx_client.request = AsyncMock(return_value=mock_response)
 
-        async def handler(response):
+        async def handler(response) -> Response:
             return response
 
         route = Route(
@@ -69,7 +69,7 @@ class TestHTTPClient:
 
         mock_httpx_client.request = AsyncMock(return_value=mock_response)
 
-        async def handler(response):
+        async def handler(response) -> Response:
             return response
 
         route = Route(
@@ -94,7 +94,7 @@ class TestHTTPClient:
 
         mock_httpx_client.request = AsyncMock(return_value=mock_response)
 
-        async def handler(response):
+        async def handler(response) -> Response:
             return response
 
         route = Route(
@@ -120,7 +120,7 @@ class TestHTTPClient:
 
         mock_httpx_client.request = AsyncMock(return_value=mock_response)
 
-        async def handler(response):
+        async def handler(response) -> Response:
             return response
 
         route = Route(
@@ -140,7 +140,7 @@ class TestHTTPClient:
 
         mock_httpx_client.request = AsyncMock(side_effect=httpx.ConnectError("Connection failed"))
 
-        async def handler(response):
+        async def handler(response) -> Response:
             return response
 
         route = Route(
@@ -160,7 +160,7 @@ class TestHTTPClient:
 
         mock_httpx_client.request = AsyncMock(side_effect=httpx.TimeoutException("Timeout"))
 
-        async def handler(response):
+        async def handler(response) -> Response:
             return response
 
         route = Route(
@@ -183,7 +183,7 @@ class TestHTTPClient:
 
         mock_httpx_client.request = AsyncMock(return_value=mock_response)
 
-        async def handler(response):
+        async def handler(response) -> Response:
             return response
 
         route = Route(
@@ -210,7 +210,7 @@ class TestHTTPClient:
 
         http_client.request_configs["GET"]["timeout"] = 60.0
 
-        async def handler(response):
+        async def handler(response) -> Response:
             return response
 
         route = Route(
@@ -231,7 +231,7 @@ class TestHTTPClient:
 
         mock_httpx_client.request = AsyncMock(return_value=mock_response)
 
-        async def handler(_response):
+        async def handler(_response) -> str:
             return "modified"
 
         route = Route(
@@ -260,7 +260,7 @@ class TestHTTPClient:
             headers={"X-Custom": "true"},
         )
 
-        async def handler(_response):
+        async def handler(_response) -> Response:
             return custom_response
 
         route = Route(
