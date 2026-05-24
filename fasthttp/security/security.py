@@ -52,7 +52,7 @@ class Security:
     def secret_key(self) -> bytes:
         return self._signer._secret_key
 
-    async def pre_request(self, url: str, method: str) -> None:
+    async def pre_request(self, url: str, _method: str) -> None:
         await self._ssrf.validate_request(url)
 
         if not self._limits.validate_url_length(url):
@@ -71,7 +71,7 @@ class Security:
         return self._headers.sanitize_request_headers(headers)
 
     async def post_request(
-        self, url: str, method: str, *, success: bool, error: Exception | None = None
+        self, url: str, _method: str, *, success: bool, error: Exception | None = None  # noqa: ARG002
     ) -> None:
         parsed = urlparse(url)
         host = parsed.netloc
