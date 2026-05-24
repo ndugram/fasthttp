@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 try:
-    from fasthttp._core import is_private_ip as _rs_is_private_ip
+    from fasthttp._core import is_private_ip as _rs_is_private_ip  # type: ignore[import-untyped]
     _RUST = True
 except ImportError:
     _RUST = False
