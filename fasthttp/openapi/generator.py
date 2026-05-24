@@ -75,7 +75,7 @@ def _generate_schema_from_model(model: type[BaseModel]) -> dict[str, Any]:
             annotations = get_args(field_info)
             for ann in annotations:
                 if isinstance(ann, Doc):
-                    description = ann._doc
+                    description = ann._doc  # noqa: SLF001
 
         type_schema = _get_type_string(field.annotation)
         if type_schema:
