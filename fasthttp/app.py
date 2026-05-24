@@ -1440,7 +1440,7 @@ class ASGIApp:
                         validated = route.response_model.model_validate(  # type: ignore
                             json_data
                         )
-                        result["json"] = validated.model_dump()  # type: ignore
+                        result["json"] = validated.model_dump()
                     result["body"] = json.dumps(result["json"], ensure_ascii=False)
                 else:
                     result["json"] = json_data
