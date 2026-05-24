@@ -398,9 +398,9 @@ class FastHTTP:
         if cookie_jar is not None and not isinstance(cookie_jar, DummyCookieJar):
             session_mw = SessionMiddleware(jar=cookie_jar)
             if isinstance(normalized_middleware, list):
-                normalized_middleware = [session_mw, *normalized_middleware]  # type: ignore[list-item]
+                normalized_middleware = [session_mw, *normalized_middleware]  # type: ignore
 
-        self.middleware_manager = MiddlewareManager(normalized_middleware)  # type: ignore[arg-type]
+        self.middleware_manager = MiddlewareManager(normalized_middleware)  # type: ignore
 
         self.request_configs = {
             "GET": get_request or {},
@@ -926,7 +926,7 @@ class FastHTTP:
                     handler_result = func(response)
 
                 if isinstance(handler_result, dict):
-                    d: dict[str, Any] = handler_result  # type: ignore[assignment]
+                    d: dict[str, Any] = handler_result  # type: ignore
                     query = d.get("query")
                     variables = d.get("variables")
                     operation_name = d.get("operation_name")
@@ -943,13 +943,13 @@ class FastHTTP:
 
                 if operation_type == "mutation":
                     result = await client.mutation(
-                        mutation=query,  # type: ignore[arg-type]
+                        mutation=query,  # type: ignore
                         variables=variables,
                         operation_name=operation_name,
                     )
                 else:
                     result = await client.query(
-                        query=query,  # type: ignore[arg-type]
+                        query=query,  # type: ignore
                         variables=variables,
                         operation_name=operation_name,
                     )
@@ -1220,7 +1220,7 @@ class FastHTTP:
         port: int,
     ) -> None:
         server = await asyncio.start_server(
-            app.handle_request,  # type: ignore[arg-type]
+            app.handle_request,  # type: ignore
             host,
             port,
         )
