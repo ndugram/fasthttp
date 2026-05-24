@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Annotated
+from typing import Annotated, Any
 
 import httpx
 from annotated_doc import Doc
@@ -18,6 +18,7 @@ from .__meta__ import __version__
 from .exceptions import (
     FastHTTPBadStatusError,
     FastHTTPConnectionError,
+    FastHTTPError,
     FastHTTPRequestError,
     FastHTTPTimeoutError,
     log_success,
@@ -120,7 +121,7 @@ class HTTPClient:
         if self.security:
             body = route.json or route.data
             config["headers"] = self.security.sign_request(
-                route.method, route.url, body, config["headers"]
+                route.method, route.url, body, config["headers"]  # type: ignore[arg-type]
             )
 
         if self.middleware_manager:
@@ -216,8 +217,8 @@ class HTTPClient:
         route: Route,
         config: dict,
         error: Exception,
-        error_class: type[FastHTTPRequestError],
-        **kwargs: object,
+        error_class: type[FastHTTPError],
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         if self.security:
             self.security.release_slot()
@@ -284,7 +285,7 @@ class HTTPClient:
                 headers=config.get("headers"),
                 params=config.get("params", route.params),
                 json=route.json,
-                content=route.data,
+                content=route.data,  # type: ignore[arg-type]
                 timeout=timeout_config,
                 follow_redirects=False,
             )
