@@ -77,7 +77,7 @@ class BaseMiddleware:
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
 
-    async def request(
+    async def request(  # noqa: ARG002
         self,
         method: Annotated[
             str,
@@ -250,7 +250,7 @@ class MiddlewareManager:
             Route,
             Doc("The route that was executed."),
         ],
-        config: Annotated[
+        config: Annotated[  # noqa: ARG002
             RequestsOptinal,
             Doc("Request configuration that was used."),
         ],
@@ -390,7 +390,7 @@ class CacheMiddleware(BaseMiddleware):
 
         return response
 
-    async def on_error(self, error: Exception, route: Route, config: RequestsOptinal) -> None:
+    async def on_error(self, _error: Exception, _route: Route, _config: RequestsOptinal) -> None:
         key, _ = self._state.get()
         if key is not None:
             async with self._lock:
@@ -499,7 +499,7 @@ class DummyCookieJar(CookieJar):
     ```
     """
 
-    def set(self, name: str, value: str) -> None:
+    def set(self, _name: str, _value: str) -> None:
         return
 
     def __repr__(self) -> str:
@@ -569,8 +569,8 @@ class SessionMiddleware(BaseMiddleware):
 
     async def request(
         self,
-        method: Annotated[str, Doc("HTTP method.")],
-        url: Annotated[str, Doc("Request URL.")],
+        _method: Annotated[str, Doc("HTTP method.")],
+        _url: Annotated[str, Doc("Request URL.")],
         kwargs: Annotated[dict[str, Any], Doc("Request kwargs passed to httpx.")],
     ) -> dict[str, Any]:
         if self._jar._cookies:
