@@ -218,7 +218,7 @@ def graphql(  # noqa: C901
         raise typer.Exit(1) from e
 
 
-def _execute_request(  # noqa: C901
+def _execute_request(
     method: str,
     url: str,
     output: str,
