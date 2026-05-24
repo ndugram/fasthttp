@@ -105,7 +105,7 @@ class Route:
             ),
         ] = None,
         response_model: Annotated[
-            type[BaseModel] | None,
+            type | None,
             Doc(
                 """
                 Optional Pydantic model for validating handler results.
