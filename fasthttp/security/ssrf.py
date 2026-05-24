@@ -4,7 +4,9 @@ import socket
 from urllib.parse import urlparse
 
 try:
-    from fasthttp._core import is_local_hostname as _rs_is_local_hostname  # type: ignore
+    from fasthttp._core import (
+        is_local_hostname as _rs_is_local_hostname,  # type: ignore
+    )
     from fasthttp._core import is_private_ip as _rs_is_private_ip  # type: ignore
     _RUST = True
 except ImportError:
