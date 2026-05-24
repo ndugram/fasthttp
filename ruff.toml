@@ -51,8 +51,6 @@ select = [
 ]
 
 ignore = [
-    "ANN101", # self annotation removed in modern ruff
-    "ANN102", # cls annotation removed in modern ruff
     "COM812", # trailing comma (conflicts with formatter)
     "E501",   # line too long (handled by formatter)
     "ISC001", # implicit str concat (conflicts with formatter)
