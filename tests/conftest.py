@@ -12,7 +12,7 @@ logger = logging.getLogger("test")
 
 
 @pytest.fixture
-def mock_logger() -> logger:
+def mock_logger() -> logging.Logger:
     """Create a mock logger for testing."""
     logger.setLevel(logging.DEBUG)
     return logger
