@@ -94,12 +94,12 @@ class FastHTTP:
             ),
         ] = False,
         middleware: Annotated[
-            list[BaseMiddleware] | BaseMiddleware | None,
+            list[BaseMiddleware] | BaseMiddleware | MiddlewareChain | None,
             Doc(
                 """
                 Middleware to apply to all requests.
 
-                Can be a single middleware instance or a list of middleware.
+                Can be a single middleware instance, a list, or a MiddlewareChain.
                 Middleware will be executed in the order they are provided.
                 """
             ),
@@ -398,9 +398,9 @@ class FastHTTP:
         if cookie_jar is not None and not isinstance(cookie_jar, DummyCookieJar):
             session_mw = SessionMiddleware(jar=cookie_jar)
             if isinstance(normalized_middleware, list):
-                normalized_middleware = [session_mw, *normalized_middleware]
+                normalized_middleware = [session_mw, *normalized_middleware]  # type: ignore[list-item]
 
-        self.middleware_manager = MiddlewareManager(normalized_middleware)
+        self.middleware_manager = MiddlewareManager(normalized_middleware)  # type: ignore[arg-type]
 
         self.request_configs = {
             "GET": get_request or {},
@@ -539,7 +539,7 @@ class FastHTTP:
         params: dict | None = None,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -666,7 +666,7 @@ class FastHTTP:
         url: str,
         *,
         params: dict | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -689,7 +689,7 @@ class FastHTTP:
         *,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -713,7 +713,7 @@ class FastHTTP:
         *,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -737,7 +737,7 @@ class FastHTTP:
         *,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -761,7 +761,7 @@ class FastHTTP:
         *,
         json: dict | None = None,
         data: object | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -784,7 +784,7 @@ class FastHTTP:
         url: str,
         *,
         params: dict | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -806,7 +806,7 @@ class FastHTTP:
         url: str,
         *,
         params: dict | None = None,
-        response_model: type[BaseModel] | None = None,
+        response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list | None = None,
@@ -926,9 +926,10 @@ class FastHTTP:
                     handler_result = func(response)
 
                 if isinstance(handler_result, dict):
-                    query = handler_result.get("query")
-                    variables = handler_result.get("variables")
-                    operation_name = handler_result.get("operation_name")
+                    d: dict[str, Any] = handler_result  # type: ignore[assignment]
+                    query = d.get("query")
+                    variables = d.get("variables")
+                    operation_name = d.get("operation_name")
                 else:
                     query = handler_result
                     variables = None
@@ -942,13 +943,13 @@ class FastHTTP:
 
                 if operation_type == "mutation":
                     result = await client.mutation(
-                        mutation=query,
+                        mutation=query,  # type: ignore[arg-type]
                         variables=variables,
                         operation_name=operation_name,
                     )
                 else:
                     result = await client.query(
-                        query=query,
+                        query=query,  # type: ignore[arg-type]
                         variables=variables,
                         operation_name=operation_name,
                     )
@@ -1219,7 +1220,7 @@ class FastHTTP:
         port: int,
     ) -> None:
         server = await asyncio.start_server(
-            app.handle_request,
+            app.handle_request,  # type: ignore[arg-type]
             host,
             port,
         )
