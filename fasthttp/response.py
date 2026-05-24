@@ -6,7 +6,7 @@ import orjson
 from annotated_doc import Doc
 
 try:
-    from fasthttp._core import extract_assets  # type: ignore[import-untyped]
+    from fasthttp._core import extract_assets  # type: ignore
 except ImportError:
     import re
     from urllib.parse import urljoin as _urljoin
@@ -20,7 +20,7 @@ except ImportError:
         re.IGNORECASE,
     )
 
-    def extract_assets(html: str, base_url: str) -> dict:  # type: ignore[misc]
+    def extract_assets(html: str, base_url: str) -> dict:  # type: ignore
         css = [_urljoin(base_url, m) for m in _CSS_RE.findall(html)]
         js = [_urljoin(base_url, m) for m in _JS_RE.findall(html)]
         return {"css": css, "js": js}
