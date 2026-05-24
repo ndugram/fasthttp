@@ -185,7 +185,7 @@ class TestCreateRouteParams:
 
     def test_all_http_methods(self):
         for m in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
-            result = create_route_params(method=m, url="u")  # type: ignore[arg-type]
+            result = create_route_params(method=m, url="u")  # type: ignore
             assert result["method"] == m
 
 
