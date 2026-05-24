@@ -993,7 +993,7 @@ class FastHTTP:
             if route.response_model:
                 try:
                     json_data = result.json()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     json_data = None
                 if json_data is not None:
                     if get_origin(route.response_model) is list:
@@ -1443,7 +1443,7 @@ class ASGIApp:
                     result["body"] = json.dumps(result["json"], ensure_ascii=False)
                 else:
                     result["json"] = json_data
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.fasthttp.logger.debug("validation error=%s", e)
 
             await self._send_json(send, result)
@@ -1452,5 +1452,5 @@ class ASGIApp:
             await self._send_json(send, {"error": f"Connection error: {e!s}"})
         except httpx.TimeoutException as e:
             await self._send_json(send, {"error": f"Timeout: {e!s}"})
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             await self._send_json(send, {"error": f"Request failed: {e!s}"})
