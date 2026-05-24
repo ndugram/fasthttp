@@ -272,7 +272,7 @@ class TestFastHTTPLifespan:
         async def lifespan(_app: FastHTTP):
             nonlocal startup_called, shutdown_called
             startup_called = True
-            app.test_value = "initialized"
+            app.test_value = "initialized"  # type: ignore[attr-defined]
             yield
             shutdown_called = True
 
