@@ -28,7 +28,7 @@ def check_annotated_parameters(*, func: Callable[..., object]) -> None:
     for name, param in sig.parameters.items():
         if param.annotation is inspect.Parameter.empty:
             msg = (
-                f"Parameter '{name}' in function '{func.__name__}' "  # type: ignore[union-attr]
+                f"Parameter '{name}' in function '{func.__name__}' "  # type: ignore
                 "must have a type annotation"
             )
             raise TypeError(msg)
@@ -47,7 +47,7 @@ def check_annotated_return(*, func: Callable[..., object]) -> None:
     sig = inspect.signature(func)
     if sig.return_annotation is inspect.Signature.empty:
         msg = (
-            f"Function '{func.__name__}' must explicitly "  # type: ignore[union-attr]
+            f"Function '{func.__name__}' must explicitly "  # type: ignore
             "define return type annotation"
         )
         raise TypeError(msg)
