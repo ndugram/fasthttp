@@ -28,6 +28,11 @@ class RequestsOptinal(TypedDict, total=False):
     are sent, such as headers, timeouts, and redirect behavior.
 
     All fields are optional and may be omitted if not needed.
+
+    Note: Kept as TypedDict (not TypeAlias) intentionally — VS Code and
+    IDEs use the field definitions for type hints and autocompletion.
+    At call sites that pass plain ``dict``, use ``# type: ignore`` to
+    suppress structural-incompatibility errors from strict type checkers.
     """
 
     headers: Annotated[
