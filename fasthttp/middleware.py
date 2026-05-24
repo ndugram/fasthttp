@@ -10,7 +10,9 @@ from typing import TYPE_CHECKING, Annotated, Any, ClassVar
 import orjson
 
 try:
-    from fasthttp._core import cache_key as _rs_cache_key
+    from fasthttp._core import (
+        cache_key as _rs_cache_key,  # type: ignore[import-untyped]
+    )
     _HAVE_RUST_CACHE_KEY = True
 except ImportError:
     _HAVE_RUST_CACHE_KEY = False
@@ -390,7 +392,7 @@ class CacheMiddleware(BaseMiddleware):
 
         return response
 
-    async def on_error(self, _error: Exception, _route: Route, _config: RequestsOptinal) -> None:
+    async def on_error(self, error: Exception, route: Route, config: RequestsOptinal) -> None:  # noqa: ARG002
         key, _ = self._state.get()
         if key is not None:
             async with self._lock:
@@ -499,7 +501,7 @@ class DummyCookieJar(CookieJar):
     ```
     """
 
-    def set(self, _name: str, _value: str) -> None:
+    def set(self, name: str, value: str) -> None:  # noqa: ARG002
         return
 
     def __repr__(self) -> str:
@@ -569,8 +571,8 @@ class SessionMiddleware(BaseMiddleware):
 
     async def request(
         self,
-        _method: Annotated[str, Doc("HTTP method.")],
-        _url: Annotated[str, Doc("Request URL.")],
+        method: Annotated[str, Doc("HTTP method.")],  # noqa: ARG002
+        url: Annotated[str, Doc("Request URL.")],  # noqa: ARG002
         kwargs: Annotated[dict[str, Any], Doc("Request kwargs passed to httpx.")],
     ) -> dict[str, Any]:
         if self._jar._cookies:  # noqa: SLF001
