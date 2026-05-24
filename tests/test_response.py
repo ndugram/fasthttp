@@ -169,8 +169,8 @@ class TestResponse:
 
     def test_response_handler_result_stored(self, sample_response) -> None:
         """Test that handler result is stored in response."""
-        sample_response._handler_result = "processed result"
-        assert sample_response._handler_result == "processed result"
+        sample_response._handler_result = "processed result"  # noqa: SLF001
+        assert sample_response._handler_result == "processed result"  # noqa: SLF001
 
 
 class TestResponseUrl:
@@ -180,19 +180,19 @@ class TestResponseUrl:
 
     def test_set_url(self):
         r = Response(status=200, text="", headers={})
-        r._set_url("https://example.com/path")
+        r._set_url("https://example.com/path")  # noqa: SLF001
         assert r.url == "https://example.com/path"
 
     def test_set_url_overwrites(self):
         r = Response(status=200, text="", headers={})
-        r._set_url("https://first.com")
-        r._set_url("https://second.com")
+        r._set_url("https://first.com")  # noqa: SLF001
+        r._set_url("https://second.com")  # noqa: SLF001
         assert r.url == "https://second.com"
 
     def test_set_url_none(self):
         r = Response(status=200, text="", headers={})
-        r._set_url("https://example.com")
-        r._set_url(None)
+        r._set_url("https://example.com")  # noqa: SLF001
+        r._set_url(None)  # noqa: SLF001
         assert r.url is None
 
 
@@ -206,14 +206,14 @@ class TestResponseAssets:
     def test_assets_extracts_css_links(self):
         html = '<link rel="stylesheet" href="/style.css">'
         r = Response(status=200, text=html, headers={})
-        r._set_url("https://example.com")
+        r._set_url("https://example.com")  # noqa: SLF001
         result = r.assets()
         assert any("style.css" in link for link in result["css"])
 
     def test_assets_extracts_js_links(self):
         html = '<script src="/app.js"></script>'
         r = Response(status=200, text=html, headers={})
-        r._set_url("https://example.com")
+        r._set_url("https://example.com")  # noqa: SLF001
         result = r.assets()
         assert any("app.js" in link for link in result["js"])
 
@@ -271,7 +271,7 @@ class TestResponseDefaults:
 
     def test_handler_result_default_none(self):
         r = Response(status=200, text="", headers={})
-        assert r._handler_result is None
+        assert r._handler_result is None  # noqa: SLF001
 
     def test_path_params_always_empty_dict(self):
         r = Response(status=200, text="", headers={}, method="GET")
