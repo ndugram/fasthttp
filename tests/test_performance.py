@@ -137,7 +137,7 @@ async def test_middleware_after_response() -> None:
     )
     resp = _make_response()
     config = {"headers": {}, "timeout": 30.0}
-    await manager.process_after_response(resp, route, config)
+    await manager.process_after_response(resp, route, config)  # type: ignore
 
 
 @pytest.mark.benchmark
