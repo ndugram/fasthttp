@@ -1004,7 +1004,7 @@ class FastHTTP:
                             for item in json_data
                         ]
                     else:
-                        validated = route.response_model.model_validate(
+                        validated = route.response_model.model_validate(  # type: ignore
                             json_data
                         )
                     result._handler_result = validated  # noqa: SLF001
@@ -1437,10 +1437,10 @@ class ASGIApp:
                             item.model_dump() for item in validated
                         ]
                     else:
-                        validated = route.response_model.model_validate(
+                        validated = route.response_model.model_validate(  # type: ignore
                             json_data
                         )
-                        result["json"] = validated.model_dump()
+                        result["json"] = validated.model_dump()  # type: ignore
                     result["body"] = json.dumps(result["json"], ensure_ascii=False)
                 else:
                     result["json"] = json_data
