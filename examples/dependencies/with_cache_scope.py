@@ -4,7 +4,7 @@ from fasthttp.response import Response
 app = FastHTTP(debug=True)
 
 
-async def expensive_operation(route, config):
+async def expensive_operation(_route, config):
     import uuid
     config.setdefault("headers", {})["X-Request-ID"] = str(uuid.uuid4())
     return config
