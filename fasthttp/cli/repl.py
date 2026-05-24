@@ -142,7 +142,7 @@ class FastHTTPRepl:
 
         return parts[0].lower(), parts[1:]
 
-    def parse_args(self, args: list[str]) -> dict[str, Any]:  # noqa: C901
+    def parse_args(self, args: list[str]) -> dict[str, Any]:
         """Parse arguments into options."""
         result = {
             "url": None,
@@ -259,7 +259,7 @@ class FastHTTPRepl:
             print(f"{Colors.RED}Error: {e}{Colors.RESET}")
             return None
 
-    async def run_command(self, command: str):  # noqa: C901
+    async def run_command(self, command: str) -> None:  # noqa: C901
         """Run a single command."""
         method, args = self.parse_command(command)
 
@@ -341,7 +341,7 @@ class FastHTTPRepl:
             output = self.format_output(resp, kwargs["output"])
             print(output)
 
-    async def run(self):
+    async def run(self) -> None:
         """Run the REPL."""
         self.print_banner()
 
