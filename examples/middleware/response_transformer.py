@@ -15,7 +15,7 @@ class ResponseTransformerMiddleware(BaseMiddleware):
     def __init__(self) -> None:
         self._url: ContextVar[str] = ContextVar("transformer_url", default="")
 
-    async def request(self, _method: str, url: str, kwargs: dict) -> dict:
+    async def request(self, method: str, url: str, kwargs: dict) -> dict:
         self._url.set(url)
         return kwargs
 
