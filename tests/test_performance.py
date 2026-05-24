@@ -123,7 +123,7 @@ async def test_middleware_before_request() -> None:
         handler=_noop_handler,
     )
     config = {"headers": {"Authorization": "Bearer token"}, "timeout": 30.0}
-    await manager.process_before_request(route, config)
+    await manager.process_before_request(route, config)  # type: ignore
 
 
 @pytest.mark.benchmark
