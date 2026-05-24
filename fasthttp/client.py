@@ -121,11 +121,11 @@ class HTTPClient:
         if self.security:
             body = route.json or route.data
             config["headers"] = self.security.sign_request(
-                route.method, route.url, body, config["headers"]  # type: ignore[arg-type]
+                route.method, route.url, body, config["headers"]  # type: ignore
             )
 
         if self.middleware_manager:
-            config = await self.middleware_manager.process_before_request(route, config)
+            config = await self.middleware_manager.process_before_request(route, config)  # type: ignore
 
         for dep in route.dependencies:
             config = await dep(route, config)
@@ -210,7 +210,7 @@ class HTTPClient:
         error.log()
 
         if self.middleware_manager:
-            await self.middleware_manager.process_on_error(error, route, config)
+            await self.middleware_manager.process_on_error(error, route, config)  # type: ignore
 
     async def _handle_error(
         self,
@@ -233,7 +233,7 @@ class HTTPClient:
         exc.log()
 
         if self.middleware_manager:
-            await self.middleware_manager.process_on_error(exc, route, config)
+            await self.middleware_manager.process_on_error(exc, route, config)  # type: ignore
 
     def _build_response(
         self,
@@ -285,7 +285,7 @@ class HTTPClient:
                 headers=config.get("headers"),
                 params=config.get("params", route.params),
                 json=route.json,
-                content=route.data,  # type: ignore[arg-type]
+                content=route.data,  # type: ignore
                 timeout=timeout_config,
                 follow_redirects=False,
             )
@@ -375,7 +375,7 @@ class HTTPClient:
 
         if self.middleware_manager:
             response = await self.middleware_manager.process_after_response(
-                response, route, config
+                response, route, config  # type: ignore
             )
 
         handler_result = await route.handler(response)
