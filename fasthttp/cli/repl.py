@@ -218,7 +218,7 @@ class FastHTTPRepl:
             case "json":
                 try:
                     return json.dumps(resp.json(), indent=2, ensure_ascii=False)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return resp.text
             case "text":
                 return resp.text
@@ -233,7 +233,7 @@ class FastHTTPRepl:
             case _:
                 try:
                     return json.dumps(resp.json(), indent=2, ensure_ascii=False)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return resp.text
 
     async def execute_request(self, method: str, url: str, **kwargs: object) -> httpx.Response | None:
@@ -255,7 +255,7 @@ class FastHTTPRepl:
         except httpx.TimeoutException as e:
             print(f"{Colors.RED}Request timed out: {e}{Colors.RESET}")
             return None
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"{Colors.RED}Error: {e}{Colors.RESET}")
             return None
 
@@ -335,7 +335,7 @@ class FastHTTPRepl:
         if resp:
             try:
                 self.last_response = resp.json()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 self.last_response = {"text": resp.text}
 
             output = self.format_output(resp, kwargs["output"])
