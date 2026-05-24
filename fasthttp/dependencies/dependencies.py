@@ -38,7 +38,7 @@ class Dependency:
         self.func = func
         self.use_cache = use_cache
         self.scope = scope
-        self.__name__ = func.__name__
+        self.__name__ = func.__name__  # type: ignore[union-attr]
         self._is_async = iscoroutinefunction(func)
 
     async def __call__(self, route: Any, config: dict) -> dict:  # noqa: ANN401
