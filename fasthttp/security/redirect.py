@@ -44,7 +44,7 @@ class RedirectProtection:
         self,
         original_url: str,
         redirect_url: str,
-        original_method: str = "GET"
+        original_method: str = "GET",  # noqa: ARG002
     ) -> tuple[bool, str | None]:
         self._redirect_count += 1
 
