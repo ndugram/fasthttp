@@ -28,7 +28,7 @@ def make_route(
     async def handler(resp: Response) -> Response:
         return resp
 
-    return Route(method=method, url=url, handler=handler, params=params)  # type: ignore[arg-type]
+    return Route(method=method, url=url, handler=handler, params=params)  # type: ignore
 
 
 def make_response(status: int = 200, text: str = "ok") -> Response:
