@@ -373,7 +373,7 @@ class TestProcessBeforeRequest:
         mm = MiddlewareManager()
         route = make_route()
         config = {"headers": {"X-Existing": "yes"}, "timeout": 10.0}
-        result = await mm.process_before_request(route, config)
+        result = await mm.process_before_request(route, config)  # type: ignore
         assert result["headers"]["X-Existing"] == "yes"
 
     @pytest.mark.asyncio
