@@ -89,7 +89,7 @@ class SSRFProtection:
 
         except socket.gaierror:
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
         return True
