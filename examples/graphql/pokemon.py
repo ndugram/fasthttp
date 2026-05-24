@@ -11,7 +11,7 @@ app = FastHTTP(debug=True)
 
 
 @app.graphql(url="https://graphql-pokemon.vercel.app/")
-async def get_pokemon_by_name(resp: Response) -> dict:
+async def get_pokemon_by_name(_resp: Response) -> dict:
     """
     Get Pokemon by name.
     """
@@ -45,7 +45,7 @@ async def get_pokemon_by_name(resp: Response) -> dict:
 
 
 @app.graphql(url="https://graphql-pokemon.vercel.app/")
-async def get_pokemon_list(resp: Response) -> dict:
+async def get_pokemon_list(_resp: Response) -> dict:
     """
     Get list of Pokemon.
     """
@@ -66,7 +66,7 @@ async def get_pokemon_list(resp: Response) -> dict:
 
 
 @app.graphql(url="https://graphql-pokemon.vercel.app/")
-async def get_attacks(resp: Response) -> dict:
+async def get_attacks(_resp: Response) -> dict:
     """
     Get Pokemon with attacks.
     """
