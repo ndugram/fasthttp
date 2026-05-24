@@ -63,7 +63,7 @@ class TestFastHTTPApp:
         app = FastHTTP()
 
         @app.post(url="https://example.com/api", json={"test": "data"})
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         assert len(app.routes) == 1
@@ -74,7 +74,7 @@ class TestFastHTTPApp:
         app = FastHTTP()
 
         @app.put(url="https://example.com/api/1")
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         assert len(app.routes) == 1
@@ -85,7 +85,7 @@ class TestFastHTTPApp:
         app = FastHTTP()
 
         @app.patch(url="https://example.com/api/1")
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         assert len(app.routes) == 1
@@ -96,7 +96,7 @@ class TestFastHTTPApp:
         app = FastHTTP()
 
         @app.delete(url="https://example.com/api/1")
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         assert len(app.routes) == 1
@@ -107,7 +107,7 @@ class TestFastHTTPApp:
         app = FastHTTP()
 
         @app.get(url="https://example.com/api", tags=["users", "public"])
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         assert app.routes[0].tags == ["users", "public"]
@@ -117,7 +117,7 @@ class TestFastHTTPApp:
         app = FastHTTP()
 
         @app.get(url="https://example.com/api", params={"page": "1"})
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         assert app.routes[0].params == {"page": "1"}
@@ -127,7 +127,7 @@ class TestFastHTTPApp:
         router = Router(base_url="https://example.com", prefix="/v1", tags=["users"])
 
         @router.get("/me", tags=["private"])
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         app.include_router(router)
@@ -141,7 +141,7 @@ class TestFastHTTPApp:
         router = Router(base_url="https://example.com", prefix="/v1", tags=["users"])
 
         @router.get("/me")
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         app.include_router(router, prefix="/api", tags=["public"])
@@ -156,7 +156,7 @@ class TestFastHTTPApp:
         child = Router(prefix="/users")
 
         @child.get("/me")
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         parent.include_router(child)
@@ -170,7 +170,7 @@ class TestFastHTTPApp:
         router = Router()
 
         @router.get("/me")
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         with pytest.raises(ValueError, match="Relative URL requires base_url"):
@@ -181,7 +181,7 @@ class TestFastHTTPApp:
         router = Router(prefix="/v1")
 
         @router.get("/me")
-        async def handler(_resp: Response) -> dict:
+        async def handler(resp: Response) -> dict:
             return resp.json()
 
         app.include_router(router)
