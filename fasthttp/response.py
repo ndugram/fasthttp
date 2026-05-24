@@ -36,6 +36,19 @@ class Response:
     Used by FastHTTP to pass response data to route handlers.
     """
 
+    __slots__ = (
+        "_handler_result",
+        "_method",
+        "_query",
+        "_req_data",
+        "_req_headers",
+        "_req_json",
+        "_url",
+        "headers",
+        "status",
+        "text",
+    )
+
     def __init__(
         self,
         status: Annotated[
@@ -275,12 +288,7 @@ class Response:
             return str(self._req_data)
         return None
 
-    def assets(
-        self,
-        *,
-        css: bool = True,
-        js: bool = True
-    ) -> dict[str, list[str]]:
+    def assets(self, *, css: bool = True, js: bool = True) -> dict[str, list[str]]:
         base_url = self._url if self._url else ""
         result = extract_assets(self.text, base_url)
         if not css:
