@@ -1,11 +1,11 @@
 import re
 
 try:
-    from fasthttp._core import (
-        check_response_headers as _rs_check_response_headers,
+    from fasthttp._core import (  # type: ignore[import-untyped]
+        check_response_headers as _rs_check_response_headers,  # type: ignore[unresolved-import]
     )
-    from fasthttp._core import (
-        sanitize_request_headers as _rs_sanitize_request_headers,
+    from fasthttp._core import (  # type: ignore[import-untyped]
+        sanitize_request_headers as _rs_sanitize_request_headers,  # type: ignore[unresolved-import]
     )
     _RUST = True
 except ImportError:
