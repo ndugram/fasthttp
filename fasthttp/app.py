@@ -1343,7 +1343,7 @@ class ASGIApp:
             "body": json_str.encode("utf-8"),
         })
 
-    async def _send_404(self, send: Callable[..., Any], path: str = "/") -> None:
+    async def _send_404(self, send: Callable[..., Any], _path: str = "/") -> None:
         html = get_not_found_html(
             docs_url=self.docs_urls["docs_url"],
             openapi_url=self.docs_urls["openapi_url"],
@@ -1376,7 +1376,7 @@ class ASGIApp:
     async def _handle_proxy(  # noqa: C901
         self,
         send: Callable[..., Any],
-        method: str,
+        _method: str,
         body: bytes,
     ) -> None:
         try:
