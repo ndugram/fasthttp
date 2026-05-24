@@ -342,7 +342,7 @@ def generate_openapi_schema(  # noqa: C901
 
         if route.response_model:
             operation["responses"]["200"] = _generate_response_schema(
-                route.response_model
+                route.response_model  # type: ignore
             )
         else:
             operation["responses"]["200"] = {
