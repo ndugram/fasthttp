@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 async def handle_docs(
-    app: Annotated[
+    _app: Annotated[
         FastHTTP,
         Doc("FastHTTP application instance"),
     ],
@@ -73,7 +73,7 @@ async def handle_openapi_json(
 
 
 async def handle_not_found(
-    path: Annotated[
+    _path: Annotated[
         str,
         Doc("The requested path that was not found"),
     ],
