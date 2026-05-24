@@ -26,7 +26,7 @@ class HeaderMiddleware(BaseMiddleware):
     __methods__ = None
     __enabled__ = True
 
-    async def request(self, method: str, url: str, kwargs: dict) -> dict:
+    async def request(self, _method: str, _url: str, kwargs: dict) -> dict:
         kwargs["headers"] = kwargs.get("headers") or {}
         kwargs["headers"]["X-Custom-Header"] = "MyCustomValue"
         kwargs["headers"]["X-Request-ID"] = "12345"
