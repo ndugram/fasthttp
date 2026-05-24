@@ -1,17 +1,17 @@
 import re
 
 try:
-    from fasthttp._core import (
-        mask_cookie as _rs_mask_cookie,
+    from fasthttp._core import (  # type: ignore[import-untyped]
+        mask_cookie as _rs_mask_cookie,  # type: ignore[unresolved-import]
     )
-    from fasthttp._core import (
-        mask_headers as _rs_mask_headers,
+    from fasthttp._core import (  # type: ignore[import-untyped]
+        mask_headers as _rs_mask_headers,  # type: ignore[unresolved-import]
     )
-    from fasthttp._core import (
-        mask_log_message as _rs_mask_log_message,
+    from fasthttp._core import (  # type: ignore[import-untyped]
+        mask_log_message as _rs_mask_log_message,  # type: ignore[unresolved-import]
     )
-    from fasthttp._core import (
-        should_mask_value as _rs_should_mask_value,
+    from fasthttp._core import (  # type: ignore[import-untyped]
+        should_mask_value as _rs_should_mask_value,  # type: ignore[unresolved-import]
     )
     _RUST = True
 except ImportError:
