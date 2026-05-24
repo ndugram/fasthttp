@@ -11,7 +11,7 @@ app = FastHTTP()
 
 
 @app.graphql(url="https://swapi-graphql.netlify.app/.graphql")
-async def get_all_films(resp: Response) -> dict:
+async def get_all_films(_resp: Response) -> dict:
     """
     Get all Star Wars films.
     """
@@ -36,7 +36,7 @@ async def get_all_films(resp: Response) -> dict:
 
 
 @app.graphql(url="https://swapi-graphql.netlify.app/.graphql")
-async def get_film_by_id(resp: Response) -> dict:
+async def get_film_by_id(_resp: Response) -> dict:
     """
     Get film by episode ID.
     """
@@ -69,7 +69,7 @@ async def get_film_by_id(resp: Response) -> dict:
 
 
 @app.graphql(url="https://swapi-graphql.netlify.app/.graphql")
-async def get_all_people(resp: Response) -> dict:
+async def get_all_people(_resp: Response) -> dict:
     """
     Get all people (characters).
     """
@@ -96,7 +96,7 @@ async def get_all_people(resp: Response) -> dict:
 
 
 @app.graphql(url="https://swapi-graphql.netlify.app/.graphql")
-async def get_planet(resp: Response) -> dict:
+async def get_planet(_resp: Response) -> dict:
     """
     Get planet by name.
     """
@@ -124,7 +124,7 @@ async def get_planet(resp: Response) -> dict:
 
 
 @app.graphql(url="https://swapi-graphql.netlify.app/.graphql")
-async def get_starships(resp: Response) -> dict:
+async def get_starships(_resp: Response) -> dict:
     """
     Get all starships.
     """
