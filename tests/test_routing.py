@@ -285,7 +285,7 @@ class TestRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.get(url="/users")
-        async def get_users(resp: Response) -> list:
+        async def get_users(_resp: Response) -> list:
             return []
 
         assert len(router._route_defs) == 1
@@ -295,7 +295,7 @@ class TestRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.post(url="/users")
-        async def create_user(resp: Response) -> dict:
+        async def create_user(_resp: Response) -> dict:
             return {}
 
         assert router._route_defs[0].method == "POST"
@@ -304,7 +304,7 @@ class TestRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.put(url="/users/1")
-        async def update_user(resp: Response) -> dict:
+        async def update_user(_resp: Response) -> dict:
             return {}
 
         assert router._route_defs[0].method == "PUT"
@@ -313,7 +313,7 @@ class TestRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.patch(url="/users/1")
-        async def partial_update(resp: Response) -> dict:
+        async def partial_update(_resp: Response) -> dict:
             return {}
 
         assert router._route_defs[0].method == "PATCH"
@@ -322,7 +322,7 @@ class TestRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.delete(url="/users/1")
-        async def delete_user(resp: Response) -> None:
+        async def delete_user(_resp: Response) -> None:
             pass
 
         assert router._route_defs[0].method == "DELETE"
@@ -331,15 +331,15 @@ class TestRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.get(url="/users")
-        async def get_users(resp: Response) -> list:
+        async def get_users(_resp: Response) -> list:
             return []
 
         @router.post(url="/users")
-        async def create_user(resp: Response) -> dict:
+        async def create_user(_resp: Response) -> dict:
             return {}
 
         @router.delete(url="/users/1")
-        async def delete_user(resp: Response) -> None:
+        async def delete_user(_resp: Response) -> None:
             pass
 
         assert len(router._route_defs) == 3
@@ -378,7 +378,7 @@ class TestRouter:
         router = Router(base_url="https://api.example.com", tags=["shared"])
 
         @router.get(url="/users")
-        async def get_users(resp: Response) -> list:
+        async def get_users(_resp: Response) -> list:
             return []
 
         assert router._route_defs[0].tags == []
@@ -387,7 +387,7 @@ class TestRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.get(url="/search", params={"limit": "10"})
-        async def search(resp: Response) -> list:
+        async def search(_resp: Response) -> list:
             return []
 
         assert router._route_defs[0].params == {"limit": "10"}
@@ -396,7 +396,7 @@ class TestRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.post(url="/users", json={"role": "admin"})
-        async def create(resp: Response) -> dict:
+        async def create(_resp: Response) -> dict:
             return {}
 
         assert router._route_defs[0].json == {"role": "admin"}
@@ -413,7 +413,7 @@ class TestFastHTTPIncludeRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.get(url="/users")
-        async def get_users(resp: Response) -> list:
+        async def get_users(_resp: Response) -> list:
             return []
 
         app = FastHTTP()
@@ -426,7 +426,7 @@ class TestFastHTTPIncludeRouter:
         router = Router(base_url="https://api.example.com")
 
         @router.get(url="/items")
-        async def get_items(resp: Response) -> list:
+        async def get_items(_resp: Response) -> list:
             return []
 
         app = FastHTTP()
@@ -439,7 +439,7 @@ class TestFastHTTPIncludeRouter:
         child = Router(base_url="https://api.example.com")
 
         @child.get(url="/child-route")
-        async def child_handler(resp: Response) -> dict:
+        async def child_handler(_resp: Response) -> dict:
             return {}
 
         parent = Router(base_url="https://api.example.com")
