@@ -231,7 +231,7 @@ class TestHTTPClient:
 
         mock_httpx_client.request = AsyncMock(return_value=mock_response)
 
-        async def handler(response):
+        async def handler(_response):
             return "modified"
 
         route = Route(
@@ -260,7 +260,7 @@ class TestHTTPClient:
             headers={"X-Custom": "true"},
         )
 
-        async def handler(response):
+        async def handler(_response):
             return custom_response
 
         route = Route(
