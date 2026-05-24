@@ -65,13 +65,13 @@ class TestCheckAnnotatedReturn:
         check_annotated_return(func=fn)
 
     def test_missing_return_raises(self):
-        def fn():  # noqa: ANN202
+        def fn():
             pass
         with pytest.raises(TypeError, match="return type"):
             check_annotated_return(func=fn)
 
     def test_error_message_contains_function_name(self):
-        def my_handler():  # noqa: ANN202
+        def my_handler():
             pass
         with pytest.raises(TypeError, match="my_handler"):
             check_annotated_return(func=my_handler)
@@ -99,13 +99,13 @@ class TestValidateHandler:
             validate_handler(fn)
 
     def test_missing_return_annotation_raises(self):
-        def fn(x: int):  # noqa: ANN202
+        def fn(x: int):
             pass
         with pytest.raises(TypeError):
             validate_handler(fn)
 
     def test_both_missing_raises(self):
-        def fn(x):  # noqa: ANN202
+        def fn(x):
             pass
         with pytest.raises(TypeError):
             validate_handler(fn)
