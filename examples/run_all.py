@@ -21,9 +21,9 @@ def get_example_files() -> list[Path]:
 
 
 def run_example(example_file: Path) -> bool:
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"🚀 Running: {example_file.relative_to(Path(__file__).parent)}")
-    print(f"{'='*80}\n")
+    print(f"{'=' * 80}\n")
 
     try:
         result = subprocess.run(
@@ -78,9 +78,11 @@ def run_all_examples(*, sequential: bool = True) -> None:
 
             time.sleep(1)
 
-        print(f"\n\n{'='*80}")
-        print(f"📊 Summary: {successes} ✅ | {failures} ❌ | Total: {len(example_files)}")
-        print(f"{'='*80}\n")
+        print(f"\n\n{'=' * 80}")
+        print(
+            f"📊 Summary: {successes} ✅ | {failures} ❌ | Total: {len(example_files)}"
+        )
+        print(f"{'=' * 80}\n")
 
     else:
         print("Running examples in parallel...\n")
@@ -108,9 +110,11 @@ def run_all_examples(*, sequential: bool = True) -> None:
                     print(f"❌ Error running {example_file}: {e}")
                     failures += 1
 
-        print(f"\n\n{'='*80}")
-        print(f"📊 Summary: {successes} ✅ | {failures} ❌ | Total: {len(example_files)}")
-        print(f"{'='*80}\n")
+        print(f"\n\n{'=' * 80}")
+        print(
+            f"📊 Summary: {successes} ✅ | {failures} ❌ | Total: {len(example_files)}"
+        )
+        print(f"{'=' * 80}\n")
 
 
 def list_examples() -> None:
