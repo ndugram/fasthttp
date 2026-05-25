@@ -19,6 +19,15 @@ from .helpers.route_inspect import (
     validate_handler,
 )
 from .helpers.routing import apply_base_url, check_https_url
+
+try:
+    from fasthttp._core import (
+        normalize_url_for_matching as _rs_normalize_url,  # type: ignore
+    )
+
+    _HAVE_RUST_NORMALIZE = True
+except ImportError:
+    _HAVE_RUST_NORMALIZE = False
 from .logging import setup_logger
 from .middleware import (
     BaseMiddleware,
@@ -1363,7 +1372,8 @@ class ASGIApp:
         )
 
     def _normalize_url(self, url: str) -> str:
-        """Normalize URL for matching."""
+        if _HAVE_RUST_NORMALIZE:
+            return _rs_normalize_url(url)  # type: ignore[possibly-unbound]
         from urllib.parse import urlparse
 
         parsed = urlparse(url)
