@@ -37,7 +37,7 @@ class Security:
         method: str,
         url: str,
         body: dict | list | str | bytes | None,
-        headers: dict[str, str]
+        headers: dict[str, str],
     ) -> dict[str, str]:
         if not self._sign_requests:
             return headers
@@ -71,7 +71,12 @@ class Security:
         return self._headers.sanitize_request_headers(headers)
 
     async def post_request(
-        self, url: str, _method: str, *, success: bool, error: Exception | None = None  # noqa: ARG002
+        self,
+        url: str,
+        _method: str,
+        *,
+        success: bool,
+        error: Exception | None = None,  # noqa: ARG002
     ) -> None:
         parsed = urlparse(url)
         host = parsed.netloc
@@ -101,9 +106,7 @@ class Security:
     def check_redirect(
         self, original_url: str, redirect_url: str, method: str = "GET"
     ) -> None:
-        valid, error = self._redirect.check_redirect(
-            original_url, redirect_url, method
-        )
+        valid, error = self._redirect.check_redirect(original_url, redirect_url, method)
         if not valid:
             raise SecurityError(error)
 

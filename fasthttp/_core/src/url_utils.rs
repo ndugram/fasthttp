@@ -135,3 +135,60 @@ pub fn cache_key(method: &str, url: &str, params_json: &str) -> String {
     let raw = format!("{method}:{url}:{params_json}");
     format!("{:x}", md5::compute(raw.as_bytes()))
 }
+
+/// Detect path traversal attempts including URL-encoded and double-encoded variants.
+/// Returns true if any suspicious pattern is found.
+#[pyfunction]
+pub fn detect_path_traversal(path: &str) -> bool {
+    if path.contains("../") || path.contains("..\\") || path == ".." {
+        return true;
+    }
+
+    let lower = path.to_lowercase();
+
+    // URL-encoded dots: %2e
+    if lower.contains("%2e%2e")
+        || lower.contains("%2e.")
+        || lower.contains(".%2e")
+    {
+        return true;
+    }
+
+    // Double-encoded: %252e%252e
+    if lower.contains("%252e") {
+        return true;
+    }
+
+    // Slash encodings that follow ..: %2f, %5c, overlong UTF-8 %c0%af, %c1%9c
+    if lower.contains("..%2f")
+        || lower.contains("..%5c")
+        || lower.contains("..%c0%af")
+        || lower.contains("..%c1%9c")
+    {
+        return true;
+    }
+
+    // Null bytes
+    if path.contains('\0') || lower.contains("%00") {
+        return true;
+    }
+
+    false
+}
+
+/// Extract netloc+path from URL for route matching.
+/// Mirrors Python's f"{urlparse(url).netloc}{urlparse(url).path}".
+#[pyfunction]
+pub fn normalize_url_for_matching(url: &str) -> String {
+    match Url::parse(url) {
+        Ok(u) => {
+            let netloc = match (u.host_str(), u.port()) {
+                (Some(host), Some(port)) => format!("{}:{}", host, port),
+                (Some(host), None) => host.to_string(),
+                _ => String::new(),
+            };
+            format!("{}{}", netloc, u.path())
+        }
+        Err(_) => url.to_string(),
+    }
+}

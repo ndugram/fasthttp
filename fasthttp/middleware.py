@@ -11,9 +11,22 @@ import orjson
 
 try:
     from fasthttp._core import cache_key as _rs_cache_key  # type: ignore
+
     _HAVE_RUST_CACHE_KEY = True
 except ImportError:
     _HAVE_RUST_CACHE_KEY = False
+
+try:
+    from fasthttp._core import (
+        build_cookie_header as _rs_build_cookie_header,  # type: ignore
+    )
+    from fasthttp._core import (
+        parse_set_cookie_header as _rs_parse_set_cookie,  # type: ignore
+    )
+
+    _HAVE_RUST_COOKIE = True
+except ImportError:
+    _HAVE_RUST_COOKIE = False
 
 from annotated_doc import Doc
 
@@ -212,7 +225,9 @@ class MiddlewareManager:
             if not getattr(mw, "__enabled__", True):
                 continue
             allowed = getattr(mw, "__methods__", None)
-            if allowed is not None and method.upper() not in {m.upper() for m in allowed}:
+            if allowed is not None and method.upper() not in {
+                m.upper() for m in allowed
+            }:
                 continue
             result.append(mw)
         return result
@@ -357,7 +372,9 @@ class CacheMiddleware(BaseMiddleware):
         key_data = f"{method}:{url}:{params_json}"
         return hashlib.md5(key_data.encode()).hexdigest()  # noqa: S324
 
-    async def request(self, method: str, url: str, kwargs: dict[str, Any]) -> dict[str, Any]:
+    async def request(
+        self, method: str, url: str, kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
         if method not in self.cache_methods:
             self._state.set((None, None))
             return kwargs
@@ -390,7 +407,12 @@ class CacheMiddleware(BaseMiddleware):
 
         return response
 
-    async def on_error(self, error: Exception, route: Route, config: RequestsOptinal) -> None:  # noqa: ARG002
+    async def on_error(
+        self,
+        error: Exception,  # noqa: ARG002
+        route: Route,  # noqa: ARG002
+        config: RequestsOptinal,  # noqa: ARG002
+    ) -> None:
         key, _ = self._state.get()
         if key is not None:
             async with self._lock:
@@ -464,7 +486,9 @@ class CookieJar:
     def get(
         self,
         name: Annotated[str, Doc("Cookie name.")],
-        default: Annotated[str | None, Doc("Fallback value if cookie not found.")] = None,
+        default: Annotated[
+            str | None, Doc("Fallback value if cookie not found.")
+        ] = None,
     ) -> str | None:
         return self._cookies.get(name, default)
 
@@ -555,7 +579,9 @@ class SessionMiddleware(BaseMiddleware):
         *,
         jar: Annotated[
             CookieJar | None,
-            Doc("CookieJar instance to use as backing store. Takes priority over cookies."),
+            Doc(
+                "CookieJar instance to use as backing store. Takes priority over cookies."
+            ),
         ] = None,
     ) -> None:
         self._jar: CookieJar = jar if jar is not None else CookieJar(cookies)
@@ -575,9 +601,13 @@ class SessionMiddleware(BaseMiddleware):
     ) -> dict[str, Any]:
         if self._jar._cookies:  # noqa: SLF001
             headers = dict(kwargs.get("headers") or {})
-            headers["Cookie"] = "; ".join(
-                f"{k}={v}" for k, v in self._jar._cookies.items()  # noqa: SLF001
-            )
+            if _HAVE_RUST_COOKIE:
+                headers["Cookie"] = _rs_build_cookie_header(self._jar._cookies)  # type: ignore[possibly-unbound] # noqa: SLF001
+            else:
+                headers["Cookie"] = "; ".join(
+                    f"{k}={v}"
+                    for k, v in self._jar._cookies.items()  # noqa: SLF001
+                )
             kwargs["headers"] = headers
         return kwargs
 
@@ -587,11 +617,15 @@ class SessionMiddleware(BaseMiddleware):
     ) -> Response:
         raw = response.headers.get("set-cookie", "")
         if raw:
-            for cookie_str in raw.split(","):
-                name_value = cookie_str.split(";")[0].strip()
-                if "=" in name_value:
-                    k, v = name_value.split("=", 1)
-                    self._jar.set(k.strip(), v.strip())
+            if _HAVE_RUST_COOKIE:
+                for k, v in _rs_parse_set_cookie(raw).items():
+                    self._jar.set(k, v)
+            else:
+                for cookie_str in raw.split(","):
+                    name_value = cookie_str.split(";")[0].strip()
+                    if "=" in name_value:
+                        k, v = name_value.split("=", 1)
+                        self._jar.set(k.strip(), v.strip())
         return response
 
     def clear(self) -> None:

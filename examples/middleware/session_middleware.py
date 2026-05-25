@@ -4,6 +4,7 @@ from fasthttp.response import Response
 session = SessionMiddleware()
 app = FastHTTP(middleware=session)
 
+
 @app.get(
     url="https://httpbin.org/cookies/set",
     params={"session_token": "abc123", "user": "alice"},

@@ -17,22 +17,12 @@ class Error403(BaseModel):
 app = FastHTTP(debug=True, security=False)
 
 
-@app.get(
-    url="https://api.github.com/gist",
-    responses={
-        404: {"model": Error404}
-    }
-)
+@app.get(url="https://api.github.com/gist", responses={404: {"model": Error404}})
 async def handle_404(resp: Response) -> dict:
     return resp.json()
 
 
-@app.get(
-    url="https://api.github.com/repos",
-    responses={
-        403: {"model": Error403}
-    }
-)
+@app.get(url="https://api.github.com/repos", responses={403: {"model": Error403}})
 async def handle_403(resp: Response) -> dict:
     return resp.json()
 

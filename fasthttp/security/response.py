@@ -2,8 +2,18 @@ import re
 from dataclasses import dataclass
 
 try:
+    from fasthttp._core import (
+        check_content_type as _rs_check_content_type,  # type: ignore
+    )
+    from fasthttp._core import (
+        check_response_size as _rs_check_response_size,  # type: ignore
+    )
     from fasthttp._core import detect_xss as _rs_detect_xss  # type: ignore
     from fasthttp._core import sanitize_html as _rs_sanitize_html  # type: ignore
+    from fasthttp._core import (
+        validate_response as _rs_validate_response,  # type: ignore
+    )
+
     _RUST = True
 except ImportError:
     _RUST = False
@@ -35,36 +45,34 @@ class ResponseProtectionConfig:
     max_size_mb: int = 100
     sanitize_html: bool = True
     block_dangerous_content: bool = True
-    allowed_content_types: list | None  = None
+    allowed_content_types: list | None = None
 
 
 class ResponseProtection:
-    def __init__(
-        self,
-        config: ResponseProtectionConfig | None = None
-    ) -> None:
+    def __init__(self, config: ResponseProtectionConfig | None = None) -> None:
         self._config = config or ResponseProtectionConfig()
-        self._dangerous_content_types = [
-            ct.lower() for ct in DANGEROUS_CONTENT_TYPES
-        ]
+        self._dangerous_content_types = [ct.lower() for ct in DANGEROUS_CONTENT_TYPES]
 
-    def check_size(
-        self,
-        size_bytes: int
-    ) -> tuple[bool, str | None]:
+    def check_size(self, size_bytes: int) -> tuple[bool, str | None]:
+        if _RUST:
+            return _rs_check_response_size(size_bytes, self._config.max_size_mb)  # type: ignore[possibly-unbound]
         max_bytes = self._config.max_size_mb * 1024 * 1024
         if size_bytes > max_bytes:
             return False, f"Response too large: {size_bytes} bytes (max: {max_bytes})"
         return True, None
 
     def check_content_type(
-        self,
-        content_type: str | None,
-        expected_type: str | None = None
+        self, content_type: str | None, expected_type: str | None = None
     ) -> tuple[bool, str | None]:
         if not content_type:
             return True, None
-
+        if _RUST:
+            return _rs_check_content_type(  # type: ignore[possibly-unbound]
+                content_type,
+                expected_type,
+                self._config.block_dangerous_content,
+                self._config.allowed_content_types,
+            )
         content_type_lower = content_type.lower().split(";")[0].strip()
 
         if (
@@ -109,6 +117,14 @@ class ResponseProtection:
         content_type: str | None = None,
         status_code: int = 200,  # noqa: ARG002
     ) -> tuple[bool, str | None]:
+        if _RUST:
+            return _rs_validate_response(  # type: ignore[possibly-unbound]
+                content,
+                content_type,
+                self._config.max_size_mb,
+                self._config.block_dangerous_content,
+                self._config.allowed_content_types,
+            )
         size_check = self.check_size(len(content))
         if not size_check[0]:
             return size_check

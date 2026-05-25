@@ -1,4 +1,5 @@
 """Tests for OpenAPI schema generation."""
+
 from pydantic import BaseModel
 
 from fasthttp import FastHTTP
@@ -58,6 +59,7 @@ class TestExtractDocstring:
 
     def test_extract_docstring_basic(self) -> None:
         """Test extracting docstring from function."""
+
         def example_func():
             """This is a test function."""
 
@@ -66,6 +68,7 @@ class TestExtractDocstring:
 
     def test_extract_docstring_none(self) -> None:
         """Test extracting docstring from function without docstring."""
+
         def no_doc_func():
             pass
 
@@ -74,6 +77,7 @@ class TestExtractDocstring:
 
     def test_extract_docstring_multiline(self) -> None:
         """Test extracting multiline docstring."""
+
         def multiline_func():
             """
             This is a multiline
@@ -90,6 +94,7 @@ class TestGenerateSchemaFromModel:
 
     def test_generate_schema_basic_model(self) -> None:
         """Test generating schema from basic Pydantic model."""
+
         class UserModel(BaseModel):
             name: str
             age: int
@@ -147,6 +152,7 @@ class TestGenerateResponseSchema:
 
     def test_generate_response_schema_with_model(self) -> None:
         """Test generating response schema with Pydantic model."""
+
         class ResponseModel(BaseModel):
             id: int
             name: str
@@ -242,6 +248,7 @@ class TestGenerateOpenAPISchema:
 
     def test_generate_openapi_schema_with_response_model(self) -> None:
         """Test generating OpenAPI schema with response model."""
+
         class UserResponse(BaseModel):
             id: int
             name: str
@@ -282,6 +289,7 @@ class TestGenerateOpenAPISchema:
 
     def test_generate_openapi_schema_with_pydantic_models(self) -> None:
         """Test generating OpenAPI schema with Pydantic request/response models."""
+
         class CreateUserRequest(BaseModel):
             name: str
             email: str

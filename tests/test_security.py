@@ -1,4 +1,5 @@
 """Tests for security modules."""
+
 import asyncio
 
 import pytest

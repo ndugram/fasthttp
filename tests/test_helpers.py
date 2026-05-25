@@ -1,4 +1,5 @@
 """Tests for helpers/route_inspect.py."""
+
 import pytest
 from pydantic import BaseModel
 
@@ -14,38 +15,45 @@ from fasthttp.helpers.route_inspect import (
 # check_annotated_parameters
 # ---------------------------------------------------------------------------
 
+
 class TestCheckAnnotatedParameters:
     def test_fully_annotated_passes(self):
         def fn(x: int, y: str) -> None:
             pass
+
         check_annotated_parameters(func=fn)
 
     def test_no_params_passes(self):
         def fn() -> None:
             pass
+
         check_annotated_parameters(func=fn)
 
     def test_missing_annotation_raises(self):
         def fn(x) -> None:
             pass
+
         with pytest.raises(TypeError, match="x"):
             check_annotated_parameters(func=fn)
 
     def test_partial_annotation_raises(self):
         def fn(x: int, y) -> None:
             pass
+
         with pytest.raises(TypeError, match="y"):
             check_annotated_parameters(func=fn)
 
     def test_error_message_contains_function_name(self):
         def my_func(unannotated) -> None:
             pass
+
         with pytest.raises(TypeError, match="my_func"):
             check_annotated_parameters(func=my_func)
 
     def test_async_func_passes(self):
         async def fn(x: int) -> None:
             pass
+
         check_annotated_parameters(func=fn)
 
 
@@ -53,32 +61,38 @@ class TestCheckAnnotatedParameters:
 # check_annotated_return  # noqa: ERA001
 # ---------------------------------------------------------------------------
 
+
 class TestCheckAnnotatedReturn:
     def test_annotated_return_passes(self):
         def fn() -> int:
             return 1
+
         check_annotated_return(func=fn)
 
     def test_none_return_passes(self):
         def fn() -> None:
             pass
+
         check_annotated_return(func=fn)
 
     def test_missing_return_raises(self):
         def fn():
             pass
+
         with pytest.raises(TypeError, match="return type"):
             check_annotated_return(func=fn)
 
     def test_error_message_contains_function_name(self):
         def my_handler():
             pass
+
         with pytest.raises(TypeError, match="my_handler"):
             check_annotated_return(func=my_handler)
 
     def test_complex_return_type_passes(self):
         def fn() -> dict[str, list[int]]:
             return {}
+
         check_annotated_return(func=fn)
 
 
@@ -86,39 +100,46 @@ class TestCheckAnnotatedReturn:
 # validate_handler
 # ---------------------------------------------------------------------------
 
+
 class TestValidateHandler:
     def test_valid_handler_passes(self):
         def fn(_x: int, _y: str) -> bool:
             return True
+
         validate_handler(fn)
 
     def test_missing_param_annotation_raises(self):
         def fn(_x) -> bool:
             return True
+
         with pytest.raises(TypeError):
             validate_handler(fn)
 
     def test_missing_return_annotation_raises(self):
         def fn(x: int):
             pass
+
         with pytest.raises(TypeError):
             validate_handler(fn)
 
     def test_both_missing_raises(self):
         def fn(x):
             pass
+
         with pytest.raises(TypeError):
             validate_handler(fn)
 
     def test_async_valid_handler_passes(self):
         async def fn(x: int) -> str:
             return str(x)
+
         validate_handler(fn)
 
 
 # ---------------------------------------------------------------------------
 # create_route_params
 # ---------------------------------------------------------------------------
+
 
 class TestCreateRouteParams:
     def test_minimal_returns_dict(self):
@@ -170,12 +191,14 @@ class TestCreateRouteParams:
     def test_response_model_forwarded(self):
         class M(BaseModel):
             x: int
+
         result = create_route_params(method="GET", url="u", response_model=M)
         assert result["response_model"] is M
 
     def test_request_model_forwarded(self):
         class M(BaseModel):
             x: int
+
         result = create_route_params(method="POST", url="u", request_model=M)
         assert result["request_model"] is M
 
@@ -192,6 +215,7 @@ class TestCreateRouteParams:
 # ---------------------------------------------------------------------------
 # COMMON_PARAMS
 # ---------------------------------------------------------------------------
+
 
 class TestCommonParams:
     def test_common_params_exists(self):

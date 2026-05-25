@@ -1,4 +1,5 @@
 """Tests for Route, Router, and URL helpers."""
+
 import pytest
 from pydantic import BaseModel
 
@@ -15,6 +16,7 @@ from fasthttp.routing import Route, Router
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 async def dummy_handler(resp: Response) -> Response:
     return resp
 
@@ -22,6 +24,7 @@ async def dummy_handler(resp: Response) -> Response:
 # ---------------------------------------------------------------------------
 # check_https_url
 # ---------------------------------------------------------------------------
+
 
 class TestCheckHttpsUrl:
     def test_already_https(self):
@@ -48,6 +51,7 @@ class TestCheckHttpsUrl:
 # ---------------------------------------------------------------------------
 # join_prefix
 # ---------------------------------------------------------------------------
+
 
 class TestJoinPrefix:
     def test_empty_prefix_returns_url(self):
@@ -79,6 +83,7 @@ class TestJoinPrefix:
 # resolve_url
 # ---------------------------------------------------------------------------
 
+
 class TestResolveUrl:
     def test_absolute_url_returned_unchanged(self):
         url = "https://example.com/api"
@@ -97,11 +102,15 @@ class TestResolveUrl:
             resolve_url(url="/users", base_url=None, prefix="")
 
     def test_relative_with_base_url(self):
-        result = resolve_url(url="/users", base_url="https://api.example.com", prefix="")
+        result = resolve_url(
+            url="/users", base_url="https://api.example.com", prefix=""
+        )
         assert result == "https://api.example.com/users"
 
     def test_relative_with_base_and_prefix(self):
-        result = resolve_url(url="/items", base_url="https://api.example.com", prefix="/v1")
+        result = resolve_url(
+            url="/items", base_url="https://api.example.com", prefix="/v1"
+        )
         assert result == "https://api.example.com/v1/items"
 
     def test_base_url_without_scheme(self):
@@ -113,6 +122,7 @@ class TestResolveUrl:
 # ---------------------------------------------------------------------------
 # apply_base_url
 # ---------------------------------------------------------------------------
+
 
 class TestApplyBaseUrl:
     def test_absolute_unchanged(self):
@@ -139,6 +149,7 @@ class TestApplyBaseUrl:
 # ---------------------------------------------------------------------------
 # Route
 # ---------------------------------------------------------------------------
+
 
 class TestRoute:
     def test_route_creation_minimal(self):
@@ -196,11 +207,18 @@ class TestRoute:
         assert route.tags == ["users", "admin"]
 
     def test_route_tags_none_becomes_empty(self):
-        route = Route(method="GET", url="https://example.com", handler=dummy_handler, tags=None)
+        route = Route(
+            method="GET", url="https://example.com", handler=dummy_handler, tags=None
+        )
         assert route.tags == []
 
     def test_route_dependencies_none_becomes_empty(self):
-        route = Route(method="GET", url="https://example.com", handler=dummy_handler, dependencies=None)
+        route = Route(
+            method="GET",
+            url="https://example.com",
+            handler=dummy_handler,
+            dependencies=None,
+        )
         assert route.dependencies == []
 
     def test_route_skip_request(self):
@@ -214,7 +232,11 @@ class TestRoute:
 
     def test_route_all_http_methods(self):
         for method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
-            route = Route(method=method, url="https://example.com", handler=dummy_handler)  # type: ignore
+            route = Route(
+                method=method,  # type: ignore
+                url="https://example.com",
+                handler=dummy_handler,
+            )
             assert route.method == method
 
     def test_route_with_response_model(self):
@@ -255,13 +277,19 @@ class TestRoute:
         assert 404 in route.responses
 
     def test_route_responses_none_becomes_empty(self):
-        route = Route(method="GET", url="https://example.com", handler=dummy_handler, responses=None)
+        route = Route(
+            method="GET",
+            url="https://example.com",
+            handler=dummy_handler,
+            responses=None,
+        )
         assert route.responses == {}
 
 
 # ---------------------------------------------------------------------------
 # Router
 # ---------------------------------------------------------------------------
+
 
 class TestRouter:
     def test_router_creation_defaults(self):
@@ -405,6 +433,7 @@ class TestRouter:
 # ---------------------------------------------------------------------------
 # FastHTTP include_router integration
 # ---------------------------------------------------------------------------
+
 
 class TestFastHTTPIncludeRouter:
     def test_include_router_adds_routes(self):

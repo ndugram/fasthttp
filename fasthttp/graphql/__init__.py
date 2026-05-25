@@ -1,5 +1,3 @@
 from .types import GraphQLResponse
 
-__all__ = (
-    "GraphQLResponse",
-)
+__all__ = ("GraphQLResponse",)

@@ -6,6 +6,9 @@ from urllib.parse import urlparse
 
 try:
     from fasthttp._core import (
+        detect_path_traversal as _rs_detect_path_traversal,  # type: ignore
+    )
+    from fasthttp._core import (
         is_local_hostname as _rs_is_local_hostname,  # type: ignore
     )
     from fasthttp._core import is_private_ip as _rs_is_private_ip  # type: ignore
@@ -72,6 +75,9 @@ class SSRFProtection:
         hostname = parsed.hostname
 
         if not hostname:
+            return False
+
+        if _RUST and _rs_detect_path_traversal(parsed.path or ""):  # type: ignore[possibly-unbound]
             return False
 
         hostname_lower = hostname.lower()

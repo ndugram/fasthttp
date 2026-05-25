@@ -132,18 +132,16 @@ def _generate_response_schema(
                     "application/json": {
                         "schema": {
                             "type": "array",
-                            "items": {"$ref": f"#/components/schemas/{item_model.__name__}"}
+                            "items": {
+                                "$ref": f"#/components/schemas/{item_model.__name__}"
+                            },
                         }
                     }
                 },
             }
         return {
             "description": "Successful response",
-            "content": {
-                "application/json": {
-                    "schema": {"type": "array"}
-                }
-            },
+            "content": {"application/json": {"schema": {"type": "array"}}},
         }
 
     try:
@@ -152,7 +150,9 @@ def _generate_response_schema(
                 "description": "Successful response",
                 "content": {
                     "application/json": {
-                        "schema": {"$ref": f"#/components/schemas/{response_model.__name__}"}
+                        "schema": {
+                            "$ref": f"#/components/schemas/{response_model.__name__}"
+                        }
                     }
                 },
             }
@@ -196,7 +196,11 @@ def _collect_schemas(routes: list[Route]) -> dict[str, Any]:  # noqa: C901
                     model = args[0]
 
             try:
-                if isinstance(model, type) and issubclass(model, BaseModel) and model.__name__ not in schemas:
+                if (
+                    isinstance(model, type)
+                    and issubclass(model, BaseModel)
+                    and model.__name__ not in schemas
+                ):
                     schemas[model.__name__] = _generate_schema_from_model(model)
             except TypeError:
                 pass
@@ -204,7 +208,11 @@ def _collect_schemas(routes: list[Route]) -> dict[str, Any]:  # noqa: C901
         if route.request_model:
             model = route.request_model
             try:
-                if isinstance(model, type) and issubclass(model, BaseModel) and model.__name__ not in schemas:
+                if (
+                    isinstance(model, type)
+                    and issubclass(model, BaseModel)
+                    and model.__name__ not in schemas
+                ):
                     schemas[model.__name__] = _generate_schema_from_model(model)
             except TypeError:
                 pass
@@ -213,7 +221,12 @@ def _collect_schemas(routes: list[Route]) -> dict[str, Any]:  # noqa: C901
             for _, response_config in route.responses.items():
                 model = response_config.get("model")
                 try:
-                    if model and isinstance(model, type) and issubclass(model, BaseModel) and model.__name__ not in schemas:
+                    if (
+                        model
+                        and isinstance(model, type)
+                        and issubclass(model, BaseModel)
+                        and model.__name__ not in schemas
+                    ):
                         schemas[model.__name__] = _generate_schema_from_model(model)
                 except TypeError:
                     pass
@@ -328,15 +341,12 @@ def generate_openapi_schema(  # noqa: C901
             elif route.json:
                 request_body["content"] = {
                     "application/json": {
-                        "schema": _get_type_string(type(route.json)) or {"type": "object"}
+                        "schema": _get_type_string(type(route.json))
+                        or {"type": "object"}
                     }
                 }
             else:
-                request_body["content"] = {
-                    "text/plain": {
-                        "schema": {"type": "string"}
-                    }
-                }
+                request_body["content"] = {"text/plain": {"schema": {"type": "string"}}}
 
             operation["requestBody"] = request_body
 
@@ -352,8 +362,8 @@ def generate_openapi_schema(  # noqa: C901
         if route.responses:
             for status_code, response_config in route.responses.items():
                 model = response_config.get("model")
-                operation["responses"][str(status_code)] = _generate_error_response_schema(
-                    status_code, model
+                operation["responses"][str(status_code)] = (
+                    _generate_error_response_schema(status_code, model)
                 )
         else:
             operation["responses"]["400"] = {"description": "Bad request"}

@@ -49,7 +49,9 @@ except ImportError:
             return url
         if base_url is None:
             if url.startswith("/"):
-                msg = f"Relative URL requires base_url. Got url={url!r} without base_url."
+                msg = (
+                    f"Relative URL requires base_url. Got url={url!r} without base_url."
+                )
                 raise ValueError(msg)
             return check_https_url(url=url)
         base_url = check_https_url(url=base_url)

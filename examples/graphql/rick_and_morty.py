@@ -40,7 +40,7 @@ async def get_characters(_resp: Response) -> dict:
                 }
             }
         """,
-        "operation_name": "GetCharacters"
+        "operation_name": "GetCharacters",
     }
 
 
@@ -74,7 +74,7 @@ async def get_character_by_id(_resp: Response) -> dict:
             }
         """,
         "variables": {"id": 1},
-        "operation_name": "GetCharacter"
+        "operation_name": "GetCharacter",
     }
 
 
@@ -98,10 +98,10 @@ async def create_character(_resp: Response) -> dict:
                 "name": "Test Character",
                 "status": "Alive",
                 "species": "Human",
-                "gender": "Male"
+                "gender": "Male",
             }
         },
-        "operation_name": "CreateCharacter"
+        "operation_name": "CreateCharacter",
     }
 
 
@@ -130,7 +130,7 @@ async def get_episodes(_resp: Response) -> dict:
                 }
             }
         """,
-        "operation_name": "GetEpisodes"
+        "operation_name": "GetEpisodes",
     }
 
 

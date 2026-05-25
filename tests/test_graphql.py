@@ -1,4 +1,5 @@
 """Tests for GraphQL functionality."""
+
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -107,10 +108,12 @@ class TestGraphQLClient:
         from fasthttp.graphql.client import create_graphql_client
 
         mock_response = AsyncMock()
-        mock_response.json = Mock(return_value={
-            "data": {"user": {"name": "John"}},
-            "errors": None,
-        })
+        mock_response.json = Mock(
+            return_value={
+                "data": {"user": {"name": "John"}},
+                "errors": None,
+            }
+        )
 
         with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
@@ -130,10 +133,12 @@ class TestGraphQLClient:
         from fasthttp.graphql.client import create_graphql_client
 
         mock_response = AsyncMock()
-        mock_response.json = Mock(return_value={
-            "data": {"user": {"name": "John"}},
-            "errors": None,
-        })
+        mock_response.json = Mock(
+            return_value={
+                "data": {"user": {"name": "John"}},
+                "errors": None,
+            }
+        )
 
         with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
@@ -154,10 +159,12 @@ class TestGraphQLClient:
         from fasthttp.graphql.client import create_graphql_client
 
         mock_response = AsyncMock()
-        mock_response.json = Mock(return_value={
-            "data": {"createUser": {"id": 1, "name": "John"}},
-            "errors": None,
-        })
+        mock_response.json = Mock(
+            return_value={
+                "data": {"createUser": {"id": 1, "name": "John"}},
+                "errors": None,
+            }
+        )
 
         with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
@@ -177,10 +184,12 @@ class TestGraphQLClient:
         from fasthttp.graphql.client import create_graphql_client
 
         mock_response = AsyncMock()
-        mock_response.json = Mock(return_value={
-            "data": None,
-            "errors": [{"message": "User not found"}],
-        })
+        mock_response.json = Mock(
+            return_value={
+                "data": None,
+                "errors": [{"message": "User not found"}],
+            }
+        )
 
         with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
@@ -200,7 +209,9 @@ class TestGraphQLClient:
         from fasthttp.graphql.client import create_graphql_client
 
         mock_response = AsyncMock()
-        mock_response.json = Mock(return_value={"data": {"test": "data"}, "errors": None})
+        mock_response.json = Mock(
+            return_value={"data": {"test": "data"}, "errors": None}
+        )
 
         with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()

@@ -1,4 +1,5 @@
 """Tests for FastHTTP application core functionality."""
+
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -212,6 +213,7 @@ class TestFastHTTPApp:
         app = FastHTTP()
 
         with pytest.raises(TypeError, match="must have a type annotation"):
+
             @app.get(url="https://example.com/api")
             async def handler(_resp) -> dict:  # Missing type annotation
                 return {}
@@ -221,6 +223,7 @@ class TestFastHTTPApp:
         app = FastHTTP()
 
         with pytest.raises(TypeError, match="must explicitly define return type"):
+
             @app.get(url="https://example.com/api")
             async def handler(_resp: Response):  # Missing return annotation
                 return {}
@@ -446,10 +449,12 @@ class TestFastHTTPASGI:
         app = FastHTTP()
         asgi_app = ASGIApp(app)
 
-        request_body = json.dumps({
-            "method": "GET",
-            "url": "https://httpbin.org/get",
-        }).encode()
+        request_body = json.dumps(
+            {
+                "method": "GET",
+                "url": "https://httpbin.org/get",
+            }
+        ).encode()
 
         scope = {"type": "http", "path": "/request", "method": "POST"}
 

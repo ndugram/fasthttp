@@ -1,4 +1,3 @@
-
 NOT_FOUND_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -402,11 +401,11 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
 """
 
 
-def get_not_found_html(*, docs_url: str = "/docs", openapi_url: str = "/openapi.json") -> str:
-    return (
-        NOT_FOUND_HTML
-        .replace("__FASTHTTP_DOCS_URL__", docs_url)
-        .replace("__FASTHTTP_OPENAPI_URL__", openapi_url)
+def get_not_found_html(
+    *, docs_url: str = "/docs", openapi_url: str = "/openapi.json"
+) -> str:
+    return NOT_FOUND_HTML.replace("__FASTHTTP_DOCS_URL__", docs_url).replace(
+        "__FASTHTTP_OPENAPI_URL__", openapi_url
     )
 
 
@@ -576,9 +575,9 @@ SWAGGER_HTML = """<!DOCTYPE html>
 """
 
 
-def get_swagger_html(*, openapi_url: str = "/openapi.json", request_url: str = "/request") -> str:
-    return (
-        SWAGGER_HTML
-        .replace("__FASTHTTP_OPENAPI_URL__", openapi_url)
-        .replace("__FASTHTTP_REQUEST_URL__", request_url)
+def get_swagger_html(
+    *, openapi_url: str = "/openapi.json", request_url: str = "/request"
+) -> str:
+    return SWAGGER_HTML.replace("__FASTHTTP_OPENAPI_URL__", openapi_url).replace(
+        "__FASTHTTP_REQUEST_URL__", request_url
     )

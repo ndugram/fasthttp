@@ -1,4 +1,5 @@
 """Tests for HTTP status code constants."""
+
 from fasthttp import status
 
 
@@ -147,17 +148,20 @@ class TestStatusCodeValues:
 
     def test_all_codes_are_integers(self):
         import fasthttp.status as s
+
         for name in s.__all__:
             val = getattr(s, name)
             assert isinstance(val, int), f"{name} is not int"
 
     def test_all_codes_unique(self):
         import fasthttp.status as s
+
         values = [getattr(s, name) for name in s.__all__]
         assert len(values) == len(set(values)), "Duplicate status codes found"
 
     def test_all_codes_in_valid_range(self):
         import fasthttp.status as s
+
         for name in s.__all__:
             val = getattr(s, name)
             assert 100 <= val < 600, f"{name}={val} out of range"
