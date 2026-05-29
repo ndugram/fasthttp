@@ -52,8 +52,8 @@ dependencies = [
     "httpx>=0.28.1",
     "orjson>=3.11.7",
     "pydantic>=2.12.5",
-    "typer>=0.24.1",
-    "uvicorn>=0.42.0",
+    "typer>=0.26.3",
+    "uvicorn>=0.48.0",
 ]
 
 [project.optional-dependencies]
@@ -66,13 +66,12 @@ dev = [
     "pytest-cov>=6.0.0",
     "pytest-codspeed>=5.0.0",
     "aiohttp>=3.9.0",
-    "ruff>=0.15.14",
-    "mypy>=2.1.0",
+    "ruff>=0.15.15",
     "pre-commit>=4.0.0",
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",
     "pymdown-extensions>=10.21.3",
-    "ty>=0.0.39"
+    "ty>=0.0.40"
 ]
 
 [project.scripts]
