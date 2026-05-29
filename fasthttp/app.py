@@ -1005,15 +1005,15 @@ class FastHTTP:
                             json_data
                         )
                     result._handler_result = validated  # noqa: SLF001
-                    self.logger.debug("[RESULT] %s", validated)
+                    self.logger.info("[RESULT] %s", validated)
                 elif result.text:
-                    self.logger.debug("[RESULT] %s", result.text)
+                    self.logger.info("[RESULT] %s", result.text)
             else:
                 handler_result = getattr(result, "_handler_result", None)
                 if handler_result is not None:
-                    self.logger.debug("[RESULT] %s", handler_result)
+                    self.logger.info("[RESULT] %s", handler_result)
                 elif result.text:
-                    self.logger.debug("[RESULT] %s", result.text)
+                    self.logger.info("[RESULT] %s", result.text)
         else:
             self.logger.error(
                 "✖️ %-6s %-30s ERR %6.2fms",

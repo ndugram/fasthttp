@@ -2,7 +2,6 @@ from fasthttp import FastHTTP
 from fasthttp.response import Response
 
 app = FastHTTP(
-    debug=True,
     get_request={
         "headers": {
             "Authorization": "Bearer 123",
