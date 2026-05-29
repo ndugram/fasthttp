@@ -153,6 +153,83 @@ Decorator for GraphQL.
 )
 ```
 
+## AsyncSession
+
+Imperative async HTTP client — like `httpx.AsyncClient`. Returns responses directly instead of logging them.
+
+```python
+from fasthttp import AsyncSession
+```
+
+### Constructor
+
+```python
+AsyncSession(
+    base_url: str = None,
+    headers: dict = None,
+    timeout: float = 30.0,
+    http2: bool = False,
+    proxy: str = None,
+    security: bool = True,
+    middleware: list = None,
+    cookie_jar: CookieJar = None,
+    debug: bool = False,
+    secret_key: bytes = None,
+)
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `base_url` | `str` | `None` | Base URL prepended to relative paths |
+| `headers` | `dict` | `None` | Session-level headers sent with every request |
+| `timeout` | `float` | `30.0` | Default timeout in seconds |
+| `http2` | `bool` | `False` | Enable HTTP/2 |
+| `proxy` | `str` | `None` | Proxy server URL |
+| `security` | `bool` | `True` | Enable built-in security |
+| `middleware` | `list` | `None` | Middleware applied to all requests |
+| `cookie_jar` | `CookieJar` | `None` | Cookie jar for automatic cookie handling |
+| `debug` | `bool` | `False` | Enable debug logging |
+| `secret_key` | `bytes` | `None` | HMAC signing key (auto-generated if not set) |
+
+### Methods
+
+| Method | Signature |
+|--------|-----------|
+| `get` | `(url, *, params, headers, timeout) → Response \| None` |
+| `post` | `(url, *, json, data, headers, timeout) → Response \| None` |
+| `put` | `(url, *, json, data, headers, timeout) → Response \| None` |
+| `patch` | `(url, *, json, data, headers, timeout) → Response \| None` |
+| `delete` | `(url, *, json, data, headers, timeout) → Response \| None` |
+| `head` | `(url, *, params, headers, timeout) → Response \| None` |
+| `options` | `(url, *, params, headers, timeout) → Response \| None` |
+| `request` | `(method, url, *, params, json, data, headers, timeout) → Response \| None` |
+| `open` | `() → None` — open connection pool |
+| `close` | `() → None` — close connection pool |
+
+### Example
+
+```python
+import asyncio
+from fasthttp import AsyncSession
+
+
+async def main():
+    async with AsyncSession(
+        base_url="https://api.example.com",
+        headers={"Authorization": "Bearer token"},
+    ) as session:
+        resp = await session.get("/users")
+        if resp:
+            print(resp.json())
+
+
+asyncio.run(main())
+```
+
+See the full tutorial: [AsyncSession](../tutorial/async-session.md)
+
 ## Router
 
 `Router` is available from:

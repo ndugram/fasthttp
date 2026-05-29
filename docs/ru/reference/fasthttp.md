@@ -99,6 +99,83 @@ app.include_router(
 
 Декоратор для GraphQL.
 
+## AsyncSession
+
+Императивный async HTTP-клиент — аналог `httpx.AsyncClient`. Возвращает ответы напрямую вместо логирования.
+
+```python
+from fasthttp import AsyncSession
+```
+
+### Конструктор
+
+```python
+AsyncSession(
+    base_url: str = None,
+    headers: dict = None,
+    timeout: float = 30.0,
+    http2: bool = False,
+    proxy: str = None,
+    security: bool = True,
+    middleware: list = None,
+    cookie_jar: CookieJar = None,
+    debug: bool = False,
+    secret_key: bytes = None,
+)
+```
+
+### Параметры
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `base_url` | `str` | `None` | Базовый URL для относительных путей |
+| `headers` | `dict` | `None` | Заголовки сессии, отправляются с каждым запросом |
+| `timeout` | `float` | `30.0` | Таймаут по умолчанию в секундах |
+| `http2` | `bool` | `False` | Включить HTTP/2 |
+| `proxy` | `str` | `None` | URL прокси-сервера |
+| `security` | `bool` | `True` | Включить встроенную защиту |
+| `middleware` | `list` | `None` | Middleware для всех запросов |
+| `cookie_jar` | `CookieJar` | `None` | Хранилище cookies |
+| `debug` | `bool` | `False` | Подробное логирование |
+| `secret_key` | `bytes` | `None` | Ключ HMAC подписи (генерируется автоматически) |
+
+### Методы
+
+| Метод | Сигнатура |
+|-------|-----------|
+| `get` | `(url, *, params, headers, timeout) → Response \| None` |
+| `post` | `(url, *, json, data, headers, timeout) → Response \| None` |
+| `put` | `(url, *, json, data, headers, timeout) → Response \| None` |
+| `patch` | `(url, *, json, data, headers, timeout) → Response \| None` |
+| `delete` | `(url, *, json, data, headers, timeout) → Response \| None` |
+| `head` | `(url, *, params, headers, timeout) → Response \| None` |
+| `options` | `(url, *, params, headers, timeout) → Response \| None` |
+| `request` | `(method, url, *, params, json, data, headers, timeout) → Response \| None` |
+| `open` | `() → None` — открыть пул соединений |
+| `close` | `() → None` — закрыть пул соединений |
+
+### Пример
+
+```python
+import asyncio
+from fasthttp import AsyncSession
+
+
+async def main():
+    async with AsyncSession(
+        base_url="https://api.example.com",
+        headers={"Authorization": "Bearer token"},
+    ) as session:
+        resp = await session.get("/users")
+        if resp:
+            print(resp.json())
+
+
+asyncio.run(main())
+```
+
+Полное руководство: [AsyncSession](../tutorial/async-session.md)
+
 ## Router
 
 `Router` доступен через:
