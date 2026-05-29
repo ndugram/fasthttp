@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 try:
+    from fasthttp._core import (
+        check_redirect_url as _rs_check_redirect_url,  # type: ignore
+    )
     from fasthttp._core import is_private_ip as _rs_is_private_ip  # type: ignore
+
     _RUST = True
 except ImportError:
     _RUST = False
@@ -30,10 +34,7 @@ class RedirectConfig:
 
 
 class RedirectProtection:
-    def __init__(
-        self,
-        config: RedirectConfig | None = None
-    ) -> None:
+    def __init__(self, config: RedirectConfig | None = None) -> None:
         self._config = config or RedirectConfig()
         self._redirect_count = 0
 
@@ -47,6 +48,22 @@ class RedirectProtection:
         original_method: str = "GET",  # noqa: ARG002
     ) -> tuple[bool, str | None]:
         self._redirect_count += 1
+
+        if _RUST:
+            url_check = _rs_check_redirect_url(  # type: ignore[possibly-unbound]
+                original_url,
+                redirect_url,
+                self._redirect_count,
+                self._config.max_hops,
+                self._config.block_file_protocol,
+                self._config.block_javascript,
+                self._config.allow_http_downgrade,
+            )
+            if not url_check[0]:
+                return url_check
+            if self._config.block_internal_ips:
+                return self._check_internal_destination(redirect_url)
+            return True, None
 
         if self._redirect_count > self._config.max_hops:
             return False, f"Too many redirects (max: {self._config.max_hops})"
@@ -72,9 +89,7 @@ class RedirectProtection:
 
         return True, None
 
-    def _check_internal_destination(
-        self, url: str
-    ) -> tuple[bool, str | None]:
+    def _check_internal_destination(self, url: str) -> tuple[bool, str | None]:
         parsed = urlparse(url)
         hostname = parsed.hostname
 
@@ -107,6 +122,10 @@ class RedirectProtection:
     def should_follow_redirect(
         self, original_scheme: str, redirect_scheme: str
     ) -> tuple[bool, str | None]:
-        if original_scheme == "https" and redirect_scheme == "http" and not self._config.allow_http_downgrade:
+        if (
+            original_scheme == "https"
+            and redirect_scheme == "http"
+            and not self._config.allow_http_downgrade
+        ):
             return False, "HTTPS -> HTTP downgrade blocked"
         return True, None

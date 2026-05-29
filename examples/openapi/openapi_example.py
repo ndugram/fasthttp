@@ -7,6 +7,7 @@ from fasthttp.response import Response
 # Define Pydantic models
 class UserModel(BaseModel):
     """User response model."""
+
     id: int = Field(description="User ID")
     name: str = Field(description="User name")
     email: str = Field(description="User email")
@@ -14,6 +15,7 @@ class UserModel(BaseModel):
 
 class ErrorModel(BaseModel):
     """Error response model."""
+
     error: str = Field(description="Error message")
     code: int = Field(description="Error code")
 

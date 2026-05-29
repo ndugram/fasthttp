@@ -1,4 +1,3 @@
-
 from fasthttp.cli import commands
 from fasthttp.cli.client import CLIResponse as ClientResponse
 
@@ -13,7 +12,9 @@ class TestParseHeaders:
 
     def test_parse_headers_multiple(self) -> None:
         """Test parsing multiple headers."""
-        result = commands.parse_headers("Content-Type: application/json,Authorization: Bearer token")
+        result = commands.parse_headers(
+            "Content-Type: application/json,Authorization: Bearer token"
+        )
         assert result == {
             "Content-Type": "application/json",
             "Authorization": "Bearer token",

@@ -31,7 +31,7 @@ async def get_all_films(_resp: Response) -> dict:
                 }
             }
         """,
-        "operation_name": "GetAllFilms"
+        "operation_name": "GetAllFilms",
     }
 
 
@@ -64,7 +64,7 @@ async def get_film_by_id(_resp: Response) -> dict:
             }
         """,
         "variables": {"id": "ZmlsbXM6MQ=="},  # Film ID 1
-        "operation_name": "GetFilm"
+        "operation_name": "GetFilm",
     }
 
 
@@ -91,7 +91,7 @@ async def get_all_people(_resp: Response) -> dict:
                 }
             }
         """,
-        "operation_name": "GetAllPeople"
+        "operation_name": "GetAllPeople",
     }
 
 
@@ -119,7 +119,7 @@ async def get_planet(_resp: Response) -> dict:
             }
         """,
         "variables": {"name": "Tatooine"},
-        "operation_name": "GetPlanet"
+        "operation_name": "GetPlanet",
     }
 
 
@@ -147,7 +147,7 @@ async def get_starships(_resp: Response) -> dict:
                 }
             }
         """,
-        "operation_name": "GetStarships"
+        "operation_name": "GetStarships",
     }
 
 

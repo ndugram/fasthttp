@@ -22,8 +22,6 @@ async def read_cookies(resp: Response) -> dict:
     return data
 
 
-
-
 app2 = FastHTTP(cookie_jar=CookieJar({"auth_token": "xyz789", "theme": "dark"}))
 
 
@@ -32,8 +30,6 @@ async def inspect(resp: Response) -> dict:
     data = resp.json()
     print(f"Pre-seeded cookies seen by server: {data.get('cookies')}")
     return data
-
-
 
 
 jar3 = CookieJar({"a": "1", "b": "2"})

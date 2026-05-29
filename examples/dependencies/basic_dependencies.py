@@ -11,6 +11,7 @@ async def add_bearer_token(_route: object, config: dict) -> dict:
 
 async def add_trace_id(_route: object, config: dict) -> dict:
     import uuid
+
     config.setdefault("headers", {})["X-Trace-ID"] = str(uuid.uuid4())
     return config
 

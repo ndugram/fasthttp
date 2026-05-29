@@ -7,6 +7,7 @@ try:
     from fasthttp._core import (
         sanitize_request_headers as _rs_sanitize_request_headers,  # type: ignore
     )
+
     _RUST = True
 except ImportError:
     _RUST = False
@@ -40,17 +41,10 @@ CRLF_PATTERN = re.compile(r"[\r\n]")
 
 class HeaderProtection:
     def __init__(self) -> None:
-        self._dangerous_headers = [
-            h.lower() for h in DANGEROUS_RESPONSE_HEADERS
-            ]
-        self._blocked_request = [
-            h.lower() for h in BLOCKED_REQUEST_HEADERS
-            ]
+        self._dangerous_headers = [h.lower() for h in DANGEROUS_RESPONSE_HEADERS]
+        self._blocked_request = [h.lower() for h in BLOCKED_REQUEST_HEADERS]
 
-    def sanitize_request_headers(
-        self,
-        headers: dict[str, str]
-    ) -> dict[str, str]:
+    def sanitize_request_headers(self, headers: dict[str, str]) -> dict[str, str]:
         if _RUST:
             return _rs_sanitize_request_headers(headers)
         sanitized = {}
@@ -61,27 +55,20 @@ class HeaderProtection:
                 sanitized[key_clean] = value_clean
         return sanitized
 
-    def _sanitize_header_name(
-        self,
-        name: str
-    ) -> str | None:
+    def _sanitize_header_name(self, name: str) -> str | None:
         cleaned = name.strip()
         cleaned = CRLF_PATTERN.sub("", cleaned)
         if not cleaned or cleaned.lower() in self._blocked_request:
             return None
         return cleaned
 
-    def _sanitize_header_value(
-        self,
-        value: str
-    ) -> str | None:
+    def _sanitize_header_value(self, value: str) -> str | None:
         cleaned = value.strip()
         cleaned = CRLF_PATTERN.sub("", cleaned)
         return cleaned if cleaned else None
 
     def check_response_headers(
-        self,
-        headers: dict[str, str]
+        self, headers: dict[str, str]
     ) -> tuple[bool, str | None]:
         if _RUST:
             return _rs_check_response_headers(headers)
@@ -101,9 +88,7 @@ class HeaderProtection:
 
         return True, None
 
-    def _check_cookie_security(
-        self, cookie: str
-    ) -> tuple[bool, str | None]:
+    def _check_cookie_security(self, cookie: str) -> tuple[bool, str | None]:
         parts = cookie.lower().split(";")
         has_secure = any("secure" in p.strip() for p in parts)
         has_samesite = any("samesite" in p.strip() for p in parts)
@@ -115,9 +100,5 @@ class HeaderProtection:
 
         return True, None
 
-    def validate_host_header(
-        self,
-        actual_host: str,
-        expected_host: str
-    ) -> bool:
+    def validate_host_header(self, actual_host: str, expected_host: str) -> bool:
         return actual_host.lower() == expected_host.lower()

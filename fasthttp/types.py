@@ -2,7 +2,9 @@ from typing import Annotated, Literal, TypeAlias, TypedDict
 
 from annotated_doc import Doc
 
-HTTPMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+HTTPMethod: TypeAlias = Literal[
+    "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"
+]
 
 
 class JSONResponse:

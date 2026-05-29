@@ -97,6 +97,7 @@ def setup_logger(*, debug: bool = False) -> logging.Logger:
     logger = logging.getLogger(LOGGER_NAME)
 
     if logger.handlers:
+        logger.handlers[0].setLevel(logging.DEBUG if debug else logging.INFO)
         return logger
 
     logger.setLevel(logging.DEBUG)

@@ -14,6 +14,7 @@
 
 ### Основные функции
 - [Параллельное выполнение](parallel-execution.md) - Параллельные запросы
+- [AsyncSession](async-session.md) - Императивный HTTP-клиент (как httpx.AsyncClient)
 - [Роутеры](routers.md) - Группировка маршрутов, prefix и вложенность
 - [Теги](tags.md) - Группировка и фильтрация
 - [Зависимости](dependencies.md) - Модификация запросов

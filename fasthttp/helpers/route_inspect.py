@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-
 # Route params type for HTTP methods
 RouteParams = dict[str, Any]
 

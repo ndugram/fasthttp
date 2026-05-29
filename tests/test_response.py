@@ -239,8 +239,7 @@ class TestResponseAssets:
 class TestResponseReqText:
     def test_req_text_json_priority_over_data(self):
         r = Response(
-            status=200, text="", headers={},
-            req_json={"x": 1}, req_data="ignored"
+            status=200, text="", headers={}, req_json={"x": 1}, req_data="ignored"
         )
         result = r.req_text()
         assert result == '{"x":1}'

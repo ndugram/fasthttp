@@ -12,8 +12,10 @@ from .middleware import (
     SessionMiddleware,
 )
 from .routing import Router
+from .session import AsyncSession
 
 __all__ = (
+    "AsyncSession",
     "BaseMiddleware",
     "CacheMiddleware",
     "CookieJar",

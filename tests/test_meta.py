@@ -1,4 +1,5 @@
 """Tests for __meta__.py version string."""
+
 import fasthttp.__meta__ as meta
 
 
@@ -20,5 +21,6 @@ class TestMeta:
 
     def test_version_importable_from_fasthttp(self):
         import fasthttp
+
         assert hasattr(fasthttp, "__version__")
         assert fasthttp.__version__ == meta.__version__

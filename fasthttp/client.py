@@ -47,7 +47,7 @@ class HTTPClient:
                 the value is a dict containing default headers, timeout, and
                 other request options for that method.
                 """
-            )
+            ),
         ],
         logger: Annotated[
             logging.Logger,
@@ -57,7 +57,7 @@ class HTTPClient:
                 errors, success responses, and middleware processing. Should be
                 configured by the application for appropriate log output.
                 """
-            )
+            ),
         ],
         middleware_manager: Annotated[
             MiddlewareManager | None,
@@ -67,7 +67,7 @@ class HTTPClient:
                 hooks (before_request, after_response, on_error). If None,
                 no middleware processing will be applied. Defaults to None.
                 """
-            )
+            ),
         ] = None,
         security: Annotated[
             Security | None,
@@ -76,7 +76,7 @@ class HTTPClient:
                 Optional Security instance for built-in security features.
                 If None, security is enabled by default with all protections.
                 """
-            )
+            ),
         ] = None,
         startup_uuid: Annotated[
             str | None,
@@ -85,7 +85,7 @@ class HTTPClient:
                 UUID generated on application startup.
                 Will be sent as X-Request-ID header in all requests.
                 """
-            )
+            ),
         ] = None,
     ) -> None:
         self.request_configs = request_configs
@@ -119,9 +119,12 @@ class HTTPClient:
         config["headers"] = headers
 
         if self.security:
-            body = route.json or route.data
+            body: dict | list | str | bytes | None = route.json or route.data  # type: ignore
             config["headers"] = self.security.sign_request(
-                route.method, route.url, body, config["headers"]  # type: ignore
+                route.method,
+                route.url,
+                body,
+                config["headers"],
             )
 
         if self.middleware_manager:
@@ -178,9 +181,7 @@ class HTTPClient:
             )
 
     async def _check_response_security(
-        self,
-        route: Route,
-        response: httpx.Response
+        self, route: Route, response: httpx.Response
     ) -> None:
         if not self.security:
             return
@@ -195,10 +196,7 @@ class HTTPClient:
         await self.security.post_request(route.url, route.method, success=True)
 
     async def _handle_bad_status(
-        self,
-        route: Route,
-        config: dict,
-        response: httpx.Response
+        self, route: Route, config: dict, response: httpx.Response
     ) -> None:
         error = FastHTTPBadStatusError(
             message=f"HTTP {response.status_code}",
@@ -222,13 +220,15 @@ class HTTPClient:
     ) -> None:
         if self.security:
             self.security.release_slot()
-            await self.security.post_request(route.url, route.method, success=False, error=error)
+            await self.security.post_request(
+                route.url, route.method, success=False, error=error
+            )
 
         exc = error_class(
             message=str(error) or "Request failed",
             url=route.url,
             method=route.method,
-            **kwargs
+            **kwargs,
         )
         exc.log()
 
@@ -236,10 +236,7 @@ class HTTPClient:
             await self.middleware_manager.process_on_error(exc, route, config)  # type: ignore
 
     def _build_response(
-        self,
-        route: Route,
-        config: dict,
-        response: httpx.Response
+        self, route: Route, config: dict, response: httpx.Response
     ) -> Response:
         resp = Response(
             status=response.status_code,
@@ -255,9 +252,7 @@ class HTTPClient:
         return resp
 
     async def _process_handler_result(
-        self,
-        response: Response,
-        handler_result: object
+        self, response: Response, handler_result: object
     ) -> Response:
         if isinstance(handler_result, Response):
             return handler_result
@@ -271,7 +266,7 @@ class HTTPClient:
         client: httpx.AsyncClient,
         route: Route,
         config: dict,
-        timeout_config: httpx.Timeout
+        timeout_config: httpx.Timeout,
     ) -> tuple[httpx.Response, float] | None:
         if route.skip_request:
             return None
@@ -295,24 +290,25 @@ class HTTPClient:
             await self._handle_error(route, config, e, FastHTTPConnectionError)
         except httpx.TimeoutException as e:
             await self._handle_error(
-                route, config, e, FastHTTPTimeoutError,
-                timeout=config.get("timeout", "default")
+                route,
+                config,
+                e,
+                FastHTTPTimeoutError,
+                timeout=config.get("timeout", "default"),
             )
         except SecurityError as e:
             if self.security:
                 self.security.release_slot()
-                await self.security.post_request(route.url, route.method, success=False, error=e)
+                await self.security.post_request(
+                    route.url, route.method, success=False, error=e
+                )
             self.logger.error("Security error: %s", e)
         except Exception as e:  # noqa: BLE001
             await self._handle_error(route, config, e, FastHTTPRequestError)
 
         return None
 
-    async def send(
-        self,
-        client: httpx.AsyncClient,
-        route: Route
-    ) -> Response | None:
+    async def send(self, client: httpx.AsyncClient, route: Route) -> Response | None:
         if not self._validate_request(route):
             return None
 
@@ -324,7 +320,9 @@ class HTTPClient:
 
         if self.security:
             await self.security.acquire_slot()
-            config["headers"] = self.security.sanitize_request_headers(config["headers"])
+            config["headers"] = self.security.sanitize_request_headers(
+                config["headers"]
+            )
 
         timeout_config = self._get_timeout_config(config)
         self._log_request(route, config)
@@ -340,10 +338,7 @@ class HTTPClient:
             )
             empty_response._set_url(route.url)  # noqa: SLF001
             handler_result = await route.handler(empty_response)
-            return await self._process_handler_result(
-                empty_response,
-                handler_result
-            )
+            return await self._process_handler_result(empty_response, handler_result)
 
         if not result:
             return None
@@ -363,7 +358,9 @@ class HTTPClient:
                         validated = error_model.model_validate(error_data)
                         response._handler_result = validated  # noqa: SLF001
                         handler_result = await route.handler(response)
-                        return await self._process_handler_result(response, handler_result)
+                        return await self._process_handler_result(
+                            response, handler_result
+                        )
                     except Exception:  # noqa: S110, BLE001
                         pass
             await self._handle_bad_status(route, config, resp)
@@ -375,7 +372,9 @@ class HTTPClient:
 
         if self.middleware_manager:
             response = await self.middleware_manager.process_after_response(
-                response, route, config  # type: ignore
+                response,
+                route,
+                config,  # type: ignore
             )
 
         handler_result = await route.handler(response)

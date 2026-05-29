@@ -35,7 +35,9 @@ class TestHTTPClient:
         assert client.middleware_manager is mm
 
     @pytest.mark.asyncio
-    async def test_send_get_request_success(self, http_client, mock_httpx_client) -> None:
+    async def test_send_get_request_success(
+        self, http_client, mock_httpx_client
+    ) -> None:
         """Test successful GET request."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -60,7 +62,9 @@ class TestHTTPClient:
         assert result.text == "Success"
 
     @pytest.mark.asyncio
-    async def test_send_post_request_with_json(self, http_client, mock_httpx_client) -> None:
+    async def test_send_post_request_with_json(
+        self, http_client, mock_httpx_client
+    ) -> None:
         """Test POST request with JSON body."""
         mock_response = MagicMock()
         mock_response.status_code = 201
@@ -85,7 +89,9 @@ class TestHTTPClient:
         assert result.status == 201
 
     @pytest.mark.asyncio
-    async def test_send_request_adds_user_agent(self, http_client, mock_httpx_client) -> None:
+    async def test_send_request_adds_user_agent(
+        self, http_client, mock_httpx_client
+    ) -> None:
         """Test that User-Agent header is added automatically."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -111,7 +117,9 @@ class TestHTTPClient:
         assert headers["User-Agent"] == f"fasthttp/{__version__}"
 
     @pytest.mark.asyncio
-    async def test_send_request_handles_4xx_status(self, http_client, mock_httpx_client) -> None:
+    async def test_send_request_handles_4xx_status(
+        self, http_client, mock_httpx_client
+    ) -> None:
         """Test handling of 4xx status codes."""
         mock_response = MagicMock()
         mock_response.status_code = 404
@@ -134,11 +142,15 @@ class TestHTTPClient:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_send_request_handles_connection_error(self, http_client, mock_httpx_client) -> None:
+    async def test_send_request_handles_connection_error(
+        self, http_client, mock_httpx_client
+    ) -> None:
         """Test handling of connection errors."""
         import httpx
 
-        mock_httpx_client.request = AsyncMock(side_effect=httpx.ConnectError("Connection failed"))
+        mock_httpx_client.request = AsyncMock(
+            side_effect=httpx.ConnectError("Connection failed")
+        )
 
         async def handler(response) -> Response:
             return response
@@ -154,11 +166,15 @@ class TestHTTPClient:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_send_request_handles_timeout(self, http_client, mock_httpx_client) -> None:
+    async def test_send_request_handles_timeout(
+        self, http_client, mock_httpx_client
+    ) -> None:
         """Test handling of timeout errors."""
         import httpx
 
-        mock_httpx_client.request = AsyncMock(side_effect=httpx.TimeoutException("Timeout"))
+        mock_httpx_client.request = AsyncMock(
+            side_effect=httpx.TimeoutException("Timeout")
+        )
 
         async def handler(response) -> Response:
             return response
@@ -174,7 +190,9 @@ class TestHTTPClient:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_send_request_with_query_params(self, http_client, mock_httpx_client) -> None:
+    async def test_send_request_with_query_params(
+        self, http_client, mock_httpx_client
+    ) -> None:
         """Test request with query parameters."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -199,7 +217,9 @@ class TestHTTPClient:
         assert call_kwargs.get("params") == {"q": "test", "page": "1"}
 
     @pytest.mark.asyncio
-    async def test_send_request_with_custom_timeout(self, http_client, mock_httpx_client) -> None:
+    async def test_send_request_with_custom_timeout(
+        self, http_client, mock_httpx_client
+    ) -> None:
         """Test request with custom timeout configuration."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -222,7 +242,9 @@ class TestHTTPClient:
         await http_client.send(mock_httpx_client, route)
 
     @pytest.mark.asyncio
-    async def test_send_handler_result_string(self, http_client, mock_httpx_client) -> None:
+    async def test_send_handler_result_string(
+        self, http_client, mock_httpx_client
+    ) -> None:
         """Test that handler returning string updates response text."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -245,7 +267,9 @@ class TestHTTPClient:
         assert result.text == "modified"
 
     @pytest.mark.asyncio
-    async def test_send_handler_result_response(self, http_client, mock_httpx_client) -> None:
+    async def test_send_handler_result_response(
+        self, http_client, mock_httpx_client
+    ) -> None:
         """Test that handler returning Response returns that Response."""
         mock_response = MagicMock()
         mock_response.status_code = 200

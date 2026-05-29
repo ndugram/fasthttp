@@ -4,10 +4,7 @@ from fasthttp.response import Response
 app = FastHTTP()
 
 
-@app.get(
-    url="https://jsonplaceholder.typicode.com/users",
-    tags=["users", "v1"]
-)
+@app.get(url="https://jsonplaceholder.typicode.com/users", tags=["users", "v1"])
 async def get_users(resp: Response) -> dict:
     return resp.json()
 

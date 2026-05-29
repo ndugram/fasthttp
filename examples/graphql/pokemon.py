@@ -40,7 +40,7 @@ async def get_pokemon_by_name(_resp: Response) -> dict:
             }
         """,
         "variables": {"name": "pikachu"},
-        "operation_name": "GetPokemon"
+        "operation_name": "GetPokemon",
     }
 
 
@@ -61,7 +61,7 @@ async def get_pokemon_list(_resp: Response) -> dict:
                 }
             }
         """,
-        "operation_name": "GetPokemonList"
+        "operation_name": "GetPokemonList",
     }
 
 
@@ -92,7 +92,7 @@ async def get_attacks(_resp: Response) -> dict:
             }
         """,
         "variables": {"name": "charizard"},
-        "operation_name": "GetAttacks"
+        "operation_name": "GetAttacks",
     }
 
 

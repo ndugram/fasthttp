@@ -2,6 +2,7 @@ use once_cell::sync::Lazy;
 use pyo3::prelude::*;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
+use url::Url;
 
 static SECRET_HEADERS_SET: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     HashSet::from([
@@ -98,4 +99,41 @@ pub fn mask_log_message(message: &str) -> String {
 #[pyfunction]
 pub fn should_mask_value(key: &str) -> bool {
     SECRET_PARAM_RE.is_match(key)
+}
+
+/// Mask sensitive query parameters in a URL for safe logging.
+/// Leaves non-sensitive params and all other URL parts unchanged.
+#[pyfunction]
+pub fn mask_url(url_str: &str) -> String {
+    let mut parsed = match Url::parse(url_str) {
+        Ok(u) => u,
+        Err(_) => return url_str.to_string(),
+    };
+
+    if parsed.query().map_or(true, |q| q.is_empty()) {
+        return url_str.to_string();
+    }
+
+    let mut needs_masking = false;
+    let pairs: Vec<(String, String)> = parsed
+        .query_pairs()
+        .map(|(k, v)| {
+            if SECRET_PARAM_RE.is_match(&k) {
+                needs_masking = true;
+                (k.into_owned(), "*****".to_string())
+            } else {
+                (k.into_owned(), v.into_owned())
+            }
+        })
+        .collect();
+
+    if !needs_masking {
+        return url_str.to_string();
+    }
+
+    parsed.query_pairs_mut().clear();
+    for (k, v) in &pairs {
+        parsed.query_pairs_mut().append_pair(k, v);
+    }
+    parsed.to_string()
 }

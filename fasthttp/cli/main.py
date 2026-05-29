@@ -21,12 +21,12 @@ def version() -> None:
 @app.command()
 def repl(
     proxy: str | None = typer.Option(
-        None, "-p", "--proxy",
-        help="Proxy URL (http://, https://, socks5://)"
+        None, "-p", "--proxy", help="Proxy URL (http://, https://, socks5://)"
     ),
 ) -> None:
     """Start interactive REPL mode."""
     from fasthttp.cli.repl import main
+
     main(proxy=proxy)
 
 
@@ -35,6 +35,7 @@ def callback(ctx: typer.Context) -> None:
     """Default command - start REPL."""
     if ctx.invoked_subcommand is None:
         from fasthttp.cli.repl import main
+
         main()
 
 

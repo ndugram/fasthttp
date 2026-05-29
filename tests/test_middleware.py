@@ -1,4 +1,5 @@
 """Comprehensive tests for fasthttp middleware system."""
+
 import asyncio
 import time
 from typing import ClassVar
@@ -19,6 +20,7 @@ from fasthttp.types import HTTPMethod
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def make_route(
     method: str = "GET",
@@ -83,6 +85,7 @@ class PriorityMiddleware(BaseMiddleware):
 # ---------------------------------------------------------------------------
 # BaseMiddleware
 # ---------------------------------------------------------------------------
+
 
 class TestBaseMiddleware:
     def test_repr_with_return_type(self):
@@ -164,6 +167,7 @@ class TestBaseMiddleware:
 # MiddlewareChain
 # ---------------------------------------------------------------------------
 
+
 class TestMiddlewareChain:
     def test_len(self):
         chain = MiddlewareChain([SimpleMiddleware("a"), SimpleMiddleware("b")])
@@ -208,6 +212,7 @@ class TestMiddlewareChain:
 # MiddlewareManager — init
 # ---------------------------------------------------------------------------
 
+
 class TestMiddlewareManagerInit:
     def test_init_none(self):
         mm = MiddlewareManager(None)
@@ -237,6 +242,7 @@ class TestMiddlewareManagerInit:
 # ---------------------------------------------------------------------------
 # MiddlewareManager — sorting and filtering
 # ---------------------------------------------------------------------------
+
 
 class TestMiddlewareManagerSortingFiltering:
     def test_sorted_by_priority(self):
@@ -315,6 +321,7 @@ class TestMiddlewareManagerSortingFiltering:
 # MiddlewareManager — process_before_request
 # ---------------------------------------------------------------------------
 
+
 class TestProcessBeforeRequest:
     @pytest.mark.asyncio
     async def test_header_added_by_middleware(self):
@@ -327,10 +334,12 @@ class TestProcessBeforeRequest:
     @pytest.mark.asyncio
     async def test_request_order_matches_priority(self):
         order = []
-        mm = MiddlewareManager([
-            PriorityMiddleware(10, order),
-            PriorityMiddleware(0, order),
-        ])
+        mm = MiddlewareManager(
+            [
+                PriorityMiddleware(10, order),
+                PriorityMiddleware(0, order),
+            ]
+        )
         route = make_route()
         await mm.process_before_request(route, {})
         assert order.index("req:0") < order.index("req:10")
@@ -428,14 +437,17 @@ class TestProcessBeforeRequest:
 # MiddlewareManager — process_after_response
 # ---------------------------------------------------------------------------
 
+
 class TestProcessAfterResponse:
     @pytest.mark.asyncio
     async def test_response_called_in_reverse_priority(self):
         order = []
-        mm = MiddlewareManager([
-            PriorityMiddleware(0, order),
-            PriorityMiddleware(10, order),
-        ])
+        mm = MiddlewareManager(
+            [
+                PriorityMiddleware(0, order),
+                PriorityMiddleware(10, order),
+            ]
+        )
         route = make_route()
         resp = make_response()
         await mm.process_before_request(route, {})
@@ -505,6 +517,7 @@ class TestProcessAfterResponse:
 # MiddlewareManager — process_on_error
 # ---------------------------------------------------------------------------
 
+
 class TestProcessOnError:
     @pytest.mark.asyncio
     async def test_on_error_called(self):
@@ -551,6 +564,7 @@ class TestProcessOnError:
 # ---------------------------------------------------------------------------
 # CacheMiddleware
 # ---------------------------------------------------------------------------
+
 
 class TestCacheMiddleware:
     @pytest.mark.asyncio
@@ -745,6 +759,7 @@ class TestCacheMiddleware:
 # CacheEntry
 # ---------------------------------------------------------------------------
 
+
 class TestCacheEntry:
     def test_expires_at_set_correctly(self):
         resp = make_response()
@@ -766,11 +781,13 @@ class TestCacheEntry:
 # HTTPMethod literal
 # ---------------------------------------------------------------------------
 
+
 class TestHTTPMethod:
     def test_http_method_values(self):
         from typing import get_args
 
         from fasthttp.types import HTTPMethod
+
         args = get_args(HTTPMethod)
         assert "GET" in args
         assert "POST" in args
@@ -782,6 +799,7 @@ class TestHTTPMethod:
         from typing import get_args
 
         from fasthttp.types import HTTPMethod
+
         assert len(get_args(HTTPMethod)) == 7
 
 
@@ -789,25 +807,30 @@ class TestHTTPMethod:
 # Integration — FastHTTP + middleware
 # ---------------------------------------------------------------------------
 
+
 class TestMiddlewareIntegration:
     def test_fasthttp_accepts_list(self):
         from fasthttp import FastHTTP
+
         app = FastHTTP(middleware=[SimpleMiddleware("a"), SimpleMiddleware("b")])
         assert len(app.middleware_manager.middlewares) == 2
 
     def test_fasthttp_accepts_chain(self):
         from fasthttp import FastHTTP
+
         chain = SimpleMiddleware("a") | SimpleMiddleware("b")
         app = FastHTTP(middleware=chain)
         assert len(app.middleware_manager.middlewares) == 2
 
     def test_fasthttp_accepts_single(self):
         from fasthttp import FastHTTP
+
         app = FastHTTP(middleware=SimpleMiddleware())
         assert len(app.middleware_manager.middlewares) == 1
 
     def test_fasthttp_no_middleware(self):
         from fasthttp import FastHTTP
+
         app = FastHTTP()
         assert app.middleware_manager.middlewares == []
 

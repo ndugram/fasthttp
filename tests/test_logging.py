@@ -1,4 +1,5 @@
 """Tests for ColorFormatter and setup_logger."""
+
 import logging
 
 from fasthttp.logging import LOGGER_NAME, ColorFormatter, setup_logger
@@ -8,9 +9,13 @@ class TestColorFormatter:
     def test_format_debug(self):
         formatter = ColorFormatter("%(levelname)s %(message)s")
         record = logging.LogRecord(
-            name="test", level=logging.DEBUG,
-            pathname="", lineno=0, msg="debug msg",
-            args=(), exc_info=None,
+            name="test",
+            level=logging.DEBUG,
+            pathname="",
+            lineno=0,
+            msg="debug msg",
+            args=(),
+            exc_info=None,
         )
         result = formatter.format(record)
         assert "debug msg" in result
@@ -18,9 +23,13 @@ class TestColorFormatter:
     def test_format_info(self):
         formatter = ColorFormatter("%(levelname)s %(message)s")
         record = logging.LogRecord(
-            name="test", level=logging.INFO,
-            pathname="", lineno=0, msg="info msg",
-            args=(), exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="info msg",
+            args=(),
+            exc_info=None,
         )
         result = formatter.format(record)
         assert "info msg" in result
@@ -28,9 +37,13 @@ class TestColorFormatter:
     def test_format_warning(self):
         formatter = ColorFormatter("%(levelname)s %(message)s")
         record = logging.LogRecord(
-            name="test", level=logging.WARNING,
-            pathname="", lineno=0, msg="warn msg",
-            args=(), exc_info=None,
+            name="test",
+            level=logging.WARNING,
+            pathname="",
+            lineno=0,
+            msg="warn msg",
+            args=(),
+            exc_info=None,
         )
         result = formatter.format(record)
         assert "warn msg" in result
@@ -38,9 +51,13 @@ class TestColorFormatter:
     def test_format_error(self):
         formatter = ColorFormatter("%(levelname)s %(message)s")
         record = logging.LogRecord(
-            name="test", level=logging.ERROR,
-            pathname="", lineno=0, msg="error msg",
-            args=(), exc_info=None,
+            name="test",
+            level=logging.ERROR,
+            pathname="",
+            lineno=0,
+            msg="error msg",
+            args=(),
+            exc_info=None,
         )
         result = formatter.format(record)
         assert "error msg" in result
@@ -48,9 +65,13 @@ class TestColorFormatter:
     def test_format_critical(self):
         formatter = ColorFormatter("%(levelname)s %(message)s")
         record = logging.LogRecord(
-            name="test", level=logging.CRITICAL,
-            pathname="", lineno=0, msg="critical msg",
-            args=(), exc_info=None,
+            name="test",
+            level=logging.CRITICAL,
+            pathname="",
+            lineno=0,
+            msg="critical msg",
+            args=(),
+            exc_info=None,
         )
         result = formatter.format(record)
         assert "critical msg" in result
@@ -58,9 +79,13 @@ class TestColorFormatter:
     def test_format_result_prefix(self):
         formatter = ColorFormatter("%(message)s")
         record = logging.LogRecord(
-            name="test", level=logging.INFO,
-            pathname="", lineno=0, msg="[RESULT] done",
-            args=(), exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="[RESULT] done",
+            args=(),
+            exc_info=None,
         )
         result = formatter.format(record)
         assert "done" in result
@@ -68,28 +93,48 @@ class TestColorFormatter:
     def test_format_time_returns_string(self):
         formatter = ColorFormatter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO,
-            pathname="", lineno=0, msg="x",
-            args=(), exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="x",
+            args=(),
+            exc_info=None,
         )
         ts = formatter.formatTime(record)
         assert isinstance(ts, str)
         assert ":" in ts
 
     def test_level_colors_defined_for_all_standard_levels(self):
-        for level in [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL]:
+        for level in [
+            logging.DEBUG,
+            logging.INFO,
+            logging.WARNING,
+            logging.ERROR,
+            logging.CRITICAL,
+        ]:
             assert level in ColorFormatter.LEVEL_COLORS
 
     def test_level_icons_defined_for_all_standard_levels(self):
-        for level in [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL]:
+        for level in [
+            logging.DEBUG,
+            logging.INFO,
+            logging.WARNING,
+            logging.ERROR,
+            logging.CRITICAL,
+        ]:
             assert level in ColorFormatter.LEVEL_ICONS
 
     def test_levelname_contains_ansi_reset(self):
         formatter = ColorFormatter("%(levelname)s")
         record = logging.LogRecord(
-            name="test", level=logging.DEBUG,
-            pathname="", lineno=0, msg="x",
-            args=(), exc_info=None,
+            name="test",
+            level=logging.DEBUG,
+            pathname="",
+            lineno=0,
+            msg="x",
+            args=(),
+            exc_info=None,
         )
         formatter.format(record)
         assert "\033[0m" in record.levelname
@@ -97,9 +142,13 @@ class TestColorFormatter:
     def test_unknown_level_uses_reset_color(self):
         formatter = ColorFormatter("%(message)s")
         record = logging.LogRecord(
-            name="test", level=99,
-            pathname="", lineno=0, msg="custom level",
-            args=(), exc_info=None,
+            name="test",
+            level=99,
+            pathname="",
+            lineno=0,
+            msg="custom level",
+            args=(),
+            exc_info=None,
         )
         result = formatter.format(record)
         assert "custom level" in result

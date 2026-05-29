@@ -14,10 +14,7 @@ class LimitsConfig:
 
 
 class Limits:
-    def __init__(
-        self,
-        config: LimitsConfig | None = None
-    ) -> None:
+    def __init__(self, config: LimitsConfig | None = None) -> None:
         self._config = config or LimitsConfig()
         self._semaphore: asyncio.Semaphore | None = (
             asyncio.Semaphore(self._config.max_concurrent_requests)

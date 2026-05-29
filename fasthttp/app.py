@@ -19,6 +19,15 @@ from .helpers.route_inspect import (
     validate_handler,
 )
 from .helpers.routing import apply_base_url, check_https_url
+
+try:
+    from fasthttp._core import (
+        normalize_url_for_matching as _rs_normalize_url,  # type: ignore
+    )
+
+    _HAVE_RUST_NORMALIZE = True
+except ImportError:
+    _HAVE_RUST_NORMALIZE = False
 from .logging import setup_logger
 from .middleware import (
     BaseMiddleware,
@@ -996,15 +1005,15 @@ class FastHTTP:
                             json_data
                         )
                     result._handler_result = validated  # noqa: SLF001
-                    self.logger.debug("[RESULT] %s", validated)
+                    self.logger.info("[RESULT] %s", validated)
                 elif result.text:
-                    self.logger.debug("[RESULT] %s", result.text)
+                    self.logger.info("[RESULT] %s", result.text)
             else:
                 handler_result = getattr(result, "_handler_result", None)
                 if handler_result is not None:
-                    self.logger.debug("[RESULT] %s", handler_result)
+                    self.logger.info("[RESULT] %s", handler_result)
                 elif result.text:
-                    self.logger.debug("[RESULT] %s", result.text)
+                    self.logger.info("[RESULT] %s", result.text)
         else:
             self.logger.error(
                 "✖️ %-6s %-30s ERR %6.2fms",
@@ -1363,7 +1372,8 @@ class ASGIApp:
         )
 
     def _normalize_url(self, url: str) -> str:
-        """Normalize URL for matching."""
+        if _HAVE_RUST_NORMALIZE:
+            return _rs_normalize_url(url)  # type: ignore[possibly-unbound]
         from urllib.parse import urlparse
 
         parsed = urlparse(url)
