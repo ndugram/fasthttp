@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock, patch
+from urllib.parse import urlparse
 
 import pytest
 
@@ -152,8 +153,9 @@ class TestAsyncSession:
                 await session.get("/users")
 
         route = mock_send.call_args.args[1]
-        assert "api.example.com" in route.url
-        assert "/users" in route.url
+        parsed = urlparse(route.url)
+        assert parsed.hostname == "api.example.com"
+        assert parsed.path == "/users"
 
     @pytest.mark.asyncio
     async def test_generic_request_method(self) -> None:
