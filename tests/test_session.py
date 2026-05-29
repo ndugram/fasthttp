@@ -56,7 +56,7 @@ class TestAsyncSession:
                 session._http_client,
                 "send",
                 AsyncMock(return_value=_mock_resp(200, '{"id": 1}')),
-            ):  # noqa: SLF001
+            ):
                 resp = await session.get("https://example.com/api/1")
 
         assert resp is not None
@@ -69,7 +69,7 @@ class TestAsyncSession:
                 session._http_client,
                 "send",
                 AsyncMock(return_value=_mock_resp(201, '{"created": true}')),
-            ):  # noqa: SLF001
+            ):
                 resp = await session.post(
                     "https://example.com/api", json={"name": "test"}
                 )
@@ -82,7 +82,7 @@ class TestAsyncSession:
         async with AsyncSession(security=False) as session:
             with patch.object(
                 session._http_client, "send", AsyncMock(return_value=_mock_resp(200))
-            ):  # noqa: SLF001
+            ):
                 resp = await session.put(
                     "https://example.com/api/1", json={"name": "updated"}
                 )
@@ -95,7 +95,7 @@ class TestAsyncSession:
         async with AsyncSession(security=False) as session:
             with patch.object(
                 session._http_client, "send", AsyncMock(return_value=_mock_resp(200))
-            ):  # noqa: SLF001
+            ):
                 resp = await session.patch(
                     "https://example.com/api/1", json={"field": "value"}
                 )
@@ -110,7 +110,7 @@ class TestAsyncSession:
                 session._http_client,
                 "send",
                 AsyncMock(return_value=_mock_resp(204, "")),
-            ):  # noqa: SLF001
+            ):
                 resp = await session.delete("https://example.com/api/1")
 
         assert resp is not None
@@ -160,7 +160,7 @@ class TestAsyncSession:
         async with AsyncSession(security=False) as session:
             with patch.object(
                 session._http_client, "send", AsyncMock(return_value=_mock_resp(200))
-            ):  # noqa: SLF001
+            ):
                 resp = await session.request("GET", "https://example.com/api")
 
         assert resp is not None
@@ -171,7 +171,7 @@ class TestAsyncSession:
         async with AsyncSession(security=False) as session:
             with patch.object(
                 session._http_client, "send", AsyncMock(return_value=None)
-            ):  # noqa: SLF001
+            ):
                 resp = await session.get("https://example.com/missing")
 
         assert resp is None
@@ -182,7 +182,7 @@ class TestAsyncSession:
         async with AsyncSession(security=False) as session:
             with patch.object(
                 session._http_client, "send", AsyncMock(return_value=None)
-            ):  # noqa: SLF001
+            ):
                 resp = await session.get("https://example.com/api")
 
         assert resp is None
@@ -193,7 +193,7 @@ class TestAsyncSession:
         async with AsyncSession(security=False) as session:
             with patch.object(
                 session._http_client, "send", AsyncMock(return_value=None)
-            ):  # noqa: SLF001
+            ):
                 resp = await session.get("https://example.com/api")
 
         assert resp is None
