@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 import orjson
 from pydantic import BaseModel, ConfigDict, PrivateAttr
@@ -39,7 +39,7 @@ class Response(BaseModel, Generic[T]):
     Used by FastHTTP to pass response data to route handlers.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     status: int
     """HTTP status code of the response (e.g. 200, 404, 500)."""
@@ -64,35 +64,28 @@ class Response(BaseModel, Generic[T]):
     _req_json: dict[str, Any] | None = PrivateAttr(default=None)
     _req_data: object | None = PrivateAttr(default=None)
 
-    def model_post_init(self, __context: object, /) -> None:
-        extra = self.__pydantic_extra__ or {}
-        self._req_json = extra.pop("req_json", None)
-        self._req_data = extra.pop("req_data", None)
-
-    if TYPE_CHECKING:
-
-        def __init__(
-            self,
-            *,
-            status: int,
-            text: str,
-            headers: dict[str, Any],
-            method: str | None = None,
-            req_headers: dict[str, Any] | None = None,
-            query: dict[str, Any] | None = None,
-            req_json: dict[str, Any] | None = None,
-            req_data: object | None = None,
-        ) -> None:
-            super().__init__(
-                status=status,
-                text=text,
-                headers=headers,
-                method=method,
-                req_headers=req_headers,
-                query=query,
-                req_json=req_json,
-                req_data=req_data,
-            )
+    def __init__(
+        self,
+        *,
+        status: int,
+        text: str,
+        headers: dict[str, Any],
+        method: str | None = None,
+        req_headers: dict[str, Any] | None = None,
+        query: dict[str, Any] | None = None,
+        req_json: dict[str, Any] | None = None,
+        req_data: object | None = None,
+    ) -> None:
+        super().__init__(
+            status=status,
+            text=text,
+            headers=headers,
+            method=method,
+            req_headers=req_headers,
+            query=query,
+        )
+        self._req_json = req_json
+        self._req_data = req_data
 
     def _set_url(self, url: str | None) -> None:
         self._url = url
@@ -107,7 +100,7 @@ class Response(BaseModel, Generic[T]):
         """Always empty — FastHTTP does not use path parameters."""
         return {}
 
-    def json(self) -> Any:  # noqa: ANN401
+    def json(self) -> Any:  # noqa: ANN401  # pyright: ignore[reportIncompatibleMethodOverride]
         """Parse the response body as JSON."""
         return orjson.loads(self.text)
 
