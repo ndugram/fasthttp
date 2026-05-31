@@ -62,7 +62,7 @@ ignore = [
 
 [lint.per-file-ignores]
 "__init__.py"  = ["F401", "E501"]
-"tests/*"      = ["S101", "D103", "D104", "ANN001", "ANN201", "ANN202", "ARG001", "ARG002"]
+"tests/*"      = ["S101", "D103", "D104", "ANN001", "ANN201", "ANN202", "ARG001", "ARG002", "SLF001"]
 "examples/*"   = ["T201", "S602", "S603", "N815", "ARG001", "ARG002"]
 "fasthttp/cli/*" = ["T201"]
 

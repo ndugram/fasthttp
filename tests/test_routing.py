@@ -316,8 +316,8 @@ class TestRouter:
         async def get_users(_resp: Response) -> list:
             return []
 
-        assert len(router._route_defs) == 1  # noqa: SLF001
-        assert router._route_defs[0].method == "GET"  # noqa: SLF001
+        assert len(router._route_defs) == 1
+        assert router._route_defs[0].method == "GET"
 
     def test_router_post_decorator(self):
         router = Router(base_url="https://api.example.com")
@@ -326,7 +326,7 @@ class TestRouter:
         async def create_user(_resp: Response) -> dict:
             return {}
 
-        assert router._route_defs[0].method == "POST"  # noqa: SLF001
+        assert router._route_defs[0].method == "POST"
 
     def test_router_put_decorator(self):
         router = Router(base_url="https://api.example.com")
@@ -335,7 +335,7 @@ class TestRouter:
         async def update_user(_resp: Response) -> dict:
             return {}
 
-        assert router._route_defs[0].method == "PUT"  # noqa: SLF001
+        assert router._route_defs[0].method == "PUT"
 
     def test_router_patch_decorator(self):
         router = Router(base_url="https://api.example.com")
@@ -344,7 +344,7 @@ class TestRouter:
         async def partial_update(_resp: Response) -> dict:
             return {}
 
-        assert router._route_defs[0].method == "PATCH"  # noqa: SLF001
+        assert router._route_defs[0].method == "PATCH"
 
     def test_router_delete_decorator(self):
         router = Router(base_url="https://api.example.com")
@@ -353,7 +353,7 @@ class TestRouter:
         async def delete_user(_resp: Response) -> None:
             pass
 
-        assert router._route_defs[0].method == "DELETE"  # noqa: SLF001
+        assert router._route_defs[0].method == "DELETE"
 
     def test_router_multiple_routes(self):
         router = Router(base_url="https://api.example.com")
@@ -370,29 +370,29 @@ class TestRouter:
         async def delete_user(_resp: Response) -> None:
             pass
 
-        assert len(router._route_defs) == 3  # noqa: SLF001
+        assert len(router._route_defs) == 3
 
     def test_router_include_router(self):
         parent = Router(base_url="https://api.example.com", prefix="/v1")
         child = Router()
 
         parent.include_router(child, prefix="/admin")
-        assert len(parent._include_defs) == 1  # noqa: SLF001
-        assert parent._include_defs[0].prefix == "/admin"  # noqa: SLF001
+        assert len(parent._include_defs) == 1
+        assert parent._include_defs[0].prefix == "/admin"
 
     def test_router_include_router_with_tags(self):
         parent = Router(base_url="https://api.example.com")
         child = Router()
 
         parent.include_router(child, tags=["admin"])
-        assert parent._include_defs[0].tags == ["admin"]  # noqa: SLF001
+        assert parent._include_defs[0].tags == ["admin"]
 
     def test_router_include_router_with_base_url(self):
         parent = Router()
         child = Router()
 
         parent.include_router(child, base_url="https://other.example.com")
-        assert parent._include_defs[0].base_url == "https://other.example.com"  # noqa: SLF001
+        assert parent._include_defs[0].base_url == "https://other.example.com"
 
     def test_router_tags_none_becomes_empty(self):
         router = Router(tags=None)
@@ -409,7 +409,7 @@ class TestRouter:
         async def get_users(_resp: Response) -> list:
             return []
 
-        assert router._route_defs[0].tags == []  # noqa: SLF001
+        assert router._route_defs[0].tags == []
 
     def test_router_route_with_params(self):
         router = Router(base_url="https://api.example.com")
@@ -418,7 +418,7 @@ class TestRouter:
         async def search(_resp: Response) -> list:
             return []
 
-        assert router._route_defs[0].params == {"limit": "10"}  # noqa: SLF001
+        assert router._route_defs[0].params == {"limit": "10"}
 
     def test_router_route_with_json(self):
         router = Router(base_url="https://api.example.com")
@@ -427,7 +427,7 @@ class TestRouter:
         async def create(_resp: Response) -> dict:
             return {}
 
-        assert router._route_defs[0].json == {"role": "admin"}  # noqa: SLF001
+        assert router._route_defs[0].json == {"role": "admin"}
 
 
 # ---------------------------------------------------------------------------

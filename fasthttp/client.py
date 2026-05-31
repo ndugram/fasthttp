@@ -238,17 +238,17 @@ class HTTPClient:
     def _build_response(
         self, route: Route, config: dict, response: httpx.Response
     ) -> Response:
-        resp = Response(
+        resp = Response.model_construct(
             status=response.status_code,
             text=response.text,
             headers=dict(response.headers),
             method=route.method,
             req_headers=config.get("headers"),
             query=route.params,
-            req_json=route.json,
-            req_data=route.data,
         )
-        resp._set_url(route.url)  # noqa: SLF001
+        resp._url = route.url  # noqa: SLF001
+        resp._req_json = route.json  # noqa: SLF001
+        resp._req_data = route.data  # noqa: SLF001
         return resp
 
     async def _process_handler_result(
@@ -330,13 +330,13 @@ class HTTPClient:
         result = await self._execute_request(client, route, config, timeout_config)
 
         if route.skip_request:
-            empty_response = Response(
+            empty_response = Response.model_construct(
                 status=200,
                 text="",
                 headers={},
                 method=route.method,
             )
-            empty_response._set_url(route.url)  # noqa: SLF001
+            empty_response._url = route.url  # noqa: SLF001
             handler_result = await route.handler(empty_response)
             return await self._process_handler_result(empty_response, handler_result)
 
