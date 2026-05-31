@@ -552,7 +552,7 @@ class TestFastHTTPLogResult:
         response = Response(status=200, text="OK", headers={})
 
         # Just verify it doesn't crash
-        app._log_result(route, 100.5, response)  # noqa: SLF001
+        app._log_result(route, 100.5, response)
         assert True
 
     def test_log_result_with_none(self) -> None:
@@ -566,5 +566,5 @@ class TestFastHTTPLogResult:
         )
 
         # Just verify it doesn't crash
-        app._log_result(route, 100.5, None)  # noqa: SLF001
+        app._log_result(route, 100.5, None)
         assert True
