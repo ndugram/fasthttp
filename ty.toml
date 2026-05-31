@@ -4,3 +4,4 @@ python-platform = "all"
 
 [rules]
 unused-type-ignore-comment = "warn"
+invalid-method-override = "ignore"
