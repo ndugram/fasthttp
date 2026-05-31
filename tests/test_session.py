@@ -17,7 +17,7 @@ class TestAsyncSession:
         assert session.base_url is None
         assert session.http2_enabled is False
         assert session.proxy is None
-        assert session._client is None  # noqa: SLF001
+        assert session._client is None
 
     def test_creation_with_options(self) -> None:
         session = AsyncSession(
@@ -29,26 +29,26 @@ class TestAsyncSession:
         )
         assert session.base_url == "https://api.example.com"
         assert session.http2_enabled is True
-        assert session._session_headers == {"X-Token": "abc"}  # noqa: SLF001
+        assert session._session_headers == {"X-Token": "abc"}
 
     def test_ensure_open_raises_when_closed(self) -> None:
         session = AsyncSession()
         with pytest.raises(RuntimeError, match="not open"):
-            session._ensure_open()  # noqa: SLF001
+            session._ensure_open()
 
     @pytest.mark.asyncio
     async def test_context_manager_opens_and_closes(self) -> None:
         async with AsyncSession(security=False) as session:
-            assert session._client is not None  # noqa: SLF001
-        assert session._client is None  # noqa: SLF001
+            assert session._client is not None
+        assert session._client is None
 
     @pytest.mark.asyncio
     async def test_open_close_manual(self) -> None:
         session = AsyncSession(security=False)
         await session.open()
-        assert session._client is not None  # noqa: SLF001
+        assert session._client is not None
         await session.close()
-        assert session._client is None  # noqa: SLF001
+        assert session._client is None
 
     @pytest.mark.asyncio
     async def test_get_request(self) -> None:
@@ -121,7 +121,7 @@ class TestAsyncSession:
     async def test_get_with_params(self) -> None:
         mock_send = AsyncMock(return_value=_mock_resp(200, "[]"))
         async with AsyncSession(security=False) as session:
-            with patch.object(session._http_client, "send", mock_send):  # noqa: SLF001
+            with patch.object(session._http_client, "send", mock_send):
                 await session.get(
                     "https://example.com/api", params={"page": 1, "limit": 10}
                 )
@@ -133,7 +133,7 @@ class TestAsyncSession:
     async def test_per_request_headers_applied(self) -> None:
         mock_send = AsyncMock(return_value=_mock_resp(200))
         async with AsyncSession(security=False) as session:
-            with patch.object(session._http_client, "send", mock_send):  # noqa: SLF001
+            with patch.object(session._http_client, "send", mock_send):
                 await session.get(
                     "https://example.com/api",
                     headers={"X-Request": "request-value"},
@@ -149,7 +149,7 @@ class TestAsyncSession:
         async with AsyncSession(
             base_url="https://api.example.com", security=False
         ) as session:
-            with patch.object(session._http_client, "send", mock_send):  # noqa: SLF001
+            with patch.object(session._http_client, "send", mock_send):
                 await session.get("/users")
 
         route = mock_send.call_args.args[1]
@@ -205,7 +205,7 @@ class TestAsyncSession:
         for method in ("get", "post", "put", "patch", "delete"):
             mock_send = AsyncMock(return_value=_mock_resp(200))
             async with AsyncSession(security=False) as session:
-                with patch.object(session._http_client, "send", mock_send):  # noqa: SLF001
+                with patch.object(session._http_client, "send", mock_send):
                     await getattr(session, method)("https://example.com/api")
 
             route = mock_send.call_args.args[1]
@@ -219,6 +219,6 @@ class TestAsyncSession:
             security=False,
         )
         for method in ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"):
-            cfg = session._request_configs[method]  # noqa: SLF001
+            cfg = session._request_configs[method]
             assert cfg["timeout"] == 15.0
             assert cfg["headers"]["X-Token"] == "tok"
