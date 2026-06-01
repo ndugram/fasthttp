@@ -63,6 +63,7 @@ ignore = [
 [lint.per-file-ignores]
 "__init__.py"  = ["F401", "E501"]
 "tests/*"      = ["S101", "D103", "D104", "ANN001", "ANN201", "ANN202", "ARG001", "ARG002", "SLF001"]
+"tests/test_benchmark_comparison.py" = ["S101", "D103", "D104", "ANN001", "ANN201", "ANN202", "ARG001", "ARG002", "SLF001", "T201", "ANN401", "E702", "SIM108", "RUF010"]
 "examples/*"   = ["T201", "S602", "S603", "N815", "ARG001", "ARG002"]
 "fasthttp/cli/*" = ["T201"]
 
