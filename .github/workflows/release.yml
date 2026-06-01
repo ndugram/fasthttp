@@ -209,3 +209,71 @@ jobs:
             --data-urlencode "text=${MESSAGE}" \
             -d "parse_mode=Markdown" \
             --data-urlencode "reply_markup=${KEYBOARD}"
+
+      - name: Email — released
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          to: ${{ secrets.EMAIL_TO }}
+          from: "fasthttp CI <${{ secrets.EMAIL_USERNAME }}>"
+          subject: "🚀 fasthttp-client v${{ needs.prepare.outputs.version }} released"
+          html_body: |
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                body { margin: 0; padding: 0; background: #0d1117; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+                .wrap { max-width: 560px; margin: 40px auto; background: #161b22; border-radius: 12px; overflow: hidden; border: 1px solid #30363d; }
+                .hero { background: linear-gradient(135deg, #238636 0%, #1a7f37 100%); padding: 32px 32px 24px; }
+                .hero h1 { margin: 0; color: #fff; font-size: 24px; font-weight: 700; }
+                .hero .tag { display: inline-block; margin-top: 8px; background: rgba(255,255,255,.15); color: #fff; border-radius: 20px; padding: 4px 14px; font-size: 13px; font-weight: 600; }
+                .body { padding: 28px 32px; }
+                .desc { color: #8b949e; font-size: 14px; line-height: 1.6; margin: 0 0 24px; }
+                .meta { display: flex; gap: 24px; margin-bottom: 28px; }
+                .meta-item { flex: 1; }
+                .meta-item .label { color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 4px; }
+                .meta-item .value { color: #e6edf3; font-size: 14px; font-weight: 600; }
+                .btns { display: flex; gap: 10px; }
+                .btn { flex: 1; display: block; text-align: center; padding: 10px 0; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; }
+                .btn-primary { background: #238636; color: #fff; }
+                .btn-secondary { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
+                .footer { padding: 16px 32px; border-top: 1px solid #21262d; color: #8b949e; font-size: 12px; text-align: center; }
+              </style>
+            </head>
+            <body>
+              <div class="wrap">
+                <div class="hero">
+                  <h1>fasthttp-client</h1>
+                  <span class="tag">v${{ needs.prepare.outputs.version }}</span>
+                </div>
+                <div class="body">
+                  <p class="desc">New version successfully built, published to PyPI and tagged on GitHub.</p>
+                  <div class="meta">
+                    <div class="meta-item">
+                      <div class="label">Released by</div>
+                      <div class="value">@${{ github.actor }}</div>
+                    </div>
+                    <div class="meta-item">
+                      <div class="label">Timestamp</div>
+                      <div class="value">${{ github.event.head_commit.timestamp }}</div>
+                    </div>
+                    <div class="meta-item">
+                      <div class="label">Commit</div>
+                      <div class="value">${{ needs.prepare.outputs.sha && needs.prepare.outputs.sha || github.sha }}</div>
+                    </div>
+                  </div>
+                  <div class="btns">
+                    <a class="btn btn-primary" href="https://pypi.org/project/fasthttp-client/">📦 PyPI</a>
+                    <a class="btn btn-secondary" href="https://github.com/${{ github.repository }}/releases/tag/v${{ needs.prepare.outputs.version }}">💻 Release</a>
+                    <a class="btn btn-secondary" href="https://fasthttp.ndugram.dev">📖 Docs</a>
+                  </div>
+                </div>
+                <div class="footer">fasthttp-client · GitHub Actions · ${{ github.repository }}</div>
+              </div>
+            </body>
+            </html>
