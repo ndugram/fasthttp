@@ -94,7 +94,17 @@ pub fn validate_response(
         }
     }
 
-    if content.contains(&b'<') && content.contains(&b'>') {
+    // Skip XSS scan for markup content types — scripts/events are expected there.
+    // XSS detection is only meaningful for non-markup API responses (e.g. JSON).
+    let is_markup = content_type.map_or(false, |ct| {
+        let ct_lower = ct.to_lowercase();
+        ct_lower.contains("html")
+            || ct_lower.contains("xml")
+            || ct_lower.contains("rss")
+            || ct_lower.contains("atom")
+    });
+
+    if !is_markup && content.contains(&b'<') && content.contains(&b'>') {
         if let Ok(text) = std::str::from_utf8(content) {
             let (found, reason) = detect_xss(text);
             if found {
