@@ -9,51 +9,54 @@ permissions:
   contents: write
 
 jobs:
-  # ── 1. Version check, tag creation, GitHub release ──────────────────────────
+  # ── 1. Bump version, commit [skip ci], output new version + sha ─────────────
   prepare:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      skip: ${{ steps.tag_check.outputs.skip }}
-      sha: ${{ steps.sha.outputs.sha }}
+      version: ${{ steps.bump.outputs.version }}
+      sha: ${{ steps.push.outputs.sha }}
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_TOKEN }}
 
-      - name: Get version from pyproject
-        id: version
+      - name: Bump patch version
+        id: bump
         run: |
-          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          CUR=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          IFS='.' read -r major minor patch <<< "$CUR"
+          NEW="${major}.${minor}.$((patch + 1))"
 
-      - name: Check if tag already exists
-        id: tag_check
+          sed -i "s/^version = \"${CUR}\"/version = \"${NEW}\"/" pyproject.toml
+          sed -i "s/__version__ = \"${CUR}\"/__version__ = \"${NEW}\"/" fasthttp/__meta__.py
+
+          echo "version=$NEW" >> $GITHUB_OUTPUT
+          echo "Bumped $CUR → $NEW"
+
+      - name: Commit and push [skip ci]
+        id: push
         run: |
-          TAG="v${{ steps.version.outputs.version }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists, skipping release"
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Get HEAD SHA
-        if: steps.tag_check.outputs.skip == 'false'
-        id: sha
-        run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml fasthttp/__meta__.py
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.version }} [skip ci]"
+          git push
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   # ── 2a. Linux wheels (manylinux, x86_64 + aarch64) ──────────────────────────
   build-linux:
     needs: prepare
-    if: needs.prepare.outputs.skip == 'false'
     runs-on: ubuntu-latest
     strategy:
       matrix:
         target: [x86_64, aarch64]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - uses: PyO3/maturin-action@v1
         with:
@@ -71,18 +74,14 @@ jobs:
           name: wheels-linux-${{ matrix.target }}
           path: dist
 
-  # ── 2b. macOS wheels (Intel + Apple Silicon) ─────────────────────────────────
+  # ── 2b. macOS wheels (Apple Silicon) ─────────────────────────────────────────
   build-macos:
     needs: prepare
-    if: needs.prepare.outputs.skip == 'false'
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      matrix:
-        include:
-          - runner: macos-latest
-            target: aarch64
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - uses: actions/setup-python@v5
         with:
@@ -94,7 +93,7 @@ jobs:
 
       - uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
+          target: aarch64
           manifest-path: fasthttp/_core/Cargo.toml
           args: >-
             --release
@@ -104,16 +103,17 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-macos-${{ matrix.target }}
+          name: wheels-macos-aarch64
           path: dist
 
   # ── 2c. Windows wheels (x86_64) ──────────────────────────────────────────────
   build-windows:
     needs: prepare
-    if: needs.prepare.outputs.skip == 'false'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - uses: actions/setup-python@v5
         with:
@@ -140,10 +140,11 @@ jobs:
   # ── 2d. Source distribution ──────────────────────────────────────────────────
   build-sdist:
     needs: prepare
-    if: needs.prepare.outputs.skip == 'false'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - uses: PyO3/maturin-action@v1
         with:
