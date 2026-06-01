@@ -1,0 +1,47 @@
+name: Auto Version Bump
+
+on:
+  push:
+    branches:
+      - master
+
+
+jobs:
+  bump:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Read current version
+        id: current
+        run: |
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          VERSION="${{ steps.current.outputs.version }}"
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          NEW="${major}.${minor}.$((patch + 1))"
+
+          sed -i "s/^version = \"${VERSION}\"/version = \"${NEW}\"/" pyproject.toml
+          sed -i "s/__version__ = \"${VERSION}\"/__version__ = \"${NEW}\"/" fasthttp/__meta__.py
+
+          echo "new_version=$NEW" >> $GITHUB_OUTPUT
+          echo "Bumped $VERSION → $NEW"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml fasthttp/__meta__.py
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }}"
+          git push
