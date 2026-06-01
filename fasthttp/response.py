@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
 from typing import Annotated, Any
 
 import orjson
@@ -46,6 +47,7 @@ class Response:
         query: Annotated[dict | None, Doc("Query parameters encoded into the request URL.")] = None,
         req_json: Annotated[dict | None, Doc("JSON body sent with the request.")] = None,
         req_data: Annotated[object | None, Doc("Raw body or form data sent with the request.")] = None,
+        content: Annotated[bytes | None, Doc("Raw response body as bytes.")] = None,
     ) -> None:
         self.status = status
         self.text = text
@@ -57,6 +59,7 @@ class Response:
         self._req_json = req_json
         self._req_data = req_data
         self._url: str | None = None
+        self._content: bytes | None = content
 
     def _set_url(self, url: str | None) -> None:
         self._url = url
@@ -113,6 +116,33 @@ class Response:
         if self._req_data is not None:
             return str(self._req_data)
         return None
+
+    def bytes(self) -> bytes:
+        """Return raw response body as bytes."""
+        if self._content is not None:
+            return self._content
+        return self.text.encode()
+
+    def html(self) -> str:
+        """Return response body as HTML string.
+
+        Raises ValueError if Content-Type is not HTML.
+        """
+        content_type = self.headers.get("content-type", "")
+        if content_type and "html" not in content_type.lower():
+            msg = f"Expected HTML response, got Content-Type: {content_type}"
+            raise ValueError(msg)
+        return self.text
+
+    def xml(self) -> ET.Element:
+        """Parse response body as XML and return root Element.
+
+        Only use with trusted sources — stdlib XML parser is vulnerable to
+        entity expansion attacks (XXE). For untrusted data, use defusedxml.
+
+        Raises xml.etree.ElementTree.ParseError on invalid XML.
+        """
+        return ET.fromstring(self.text)  # noqa: S314
 
     def assets(self, *, css: bool = True, js: bool = True) -> dict[str, list[str]]:
         """Extract CSS and JS asset URLs from the response HTML."""
