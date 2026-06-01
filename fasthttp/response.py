@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Generic, TypeVar
+from typing import Annotated, Any
 
 import orjson
-from pydantic import BaseModel, ConfigDict, PrivateAttr
+from annotated_doc import Doc
 
 try:
     from fasthttp._core import extract_assets  # type: ignore
@@ -26,10 +26,7 @@ except ImportError:
         return {"css": css, "js": js}
 
 
-T = TypeVar("T")
-
-
-class Response(BaseModel, Generic[T]):
+class Response:
     """
     HTTP response object.
 
@@ -39,53 +36,27 @@ class Response(BaseModel, Generic[T]):
     Used by FastHTTP to pass response data to route handlers.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    status: int
-    """HTTP status code of the response (e.g. 200, 404, 500)."""
-
-    text: str
-    """Raw response body as a string."""
-
-    headers: dict[str, Any]
-    """HTTP response headers returned by the server."""
-
-    method: str | None = None
-    """HTTP method used for the request (GET, POST, PUT, etc.)."""
-
-    req_headers: dict[str, Any] | None = None
-    """HTTP headers sent with the request."""
-
-    query: dict[str, Any] | None = None
-    """Query parameters encoded into the request URL."""
-
-    _url: str | None = PrivateAttr(default=None)
-    _handler_result: Any = PrivateAttr(default=None)
-    _req_json: dict[str, Any] | None = PrivateAttr(default=None)
-    _req_data: object | None = PrivateAttr(default=None)
-
     def __init__(
         self,
-        *,
-        status: int,
-        text: str,
-        headers: dict[str, Any],
-        method: str | None = None,
-        req_headers: dict[str, Any] | None = None,
-        query: dict[str, Any] | None = None,
-        req_json: dict[str, Any] | None = None,
-        req_data: object | None = None,
+        status: Annotated[int, Doc("HTTP status code (e.g. 200, 404, 500).")],
+        text: Annotated[str, Doc("Raw response body as a string.")],
+        headers: Annotated[dict, Doc("HTTP response headers returned by the server.")],
+        method: Annotated[str | None, Doc("HTTP method used for the request.")] = None,
+        req_headers: Annotated[dict | None, Doc("HTTP headers sent with the request.")] = None,
+        query: Annotated[dict | None, Doc("Query parameters encoded into the request URL.")] = None,
+        req_json: Annotated[dict | None, Doc("JSON body sent with the request.")] = None,
+        req_data: Annotated[object | None, Doc("Raw body or form data sent with the request.")] = None,
     ) -> None:
-        super().__init__(
-            status=status,
-            text=text,
-            headers=headers,
-            method=method,
-            req_headers=req_headers,
-            query=query,
-        )
+        self.status = status
+        self.text = text
+        self.headers = headers
+        self._handler_result: Any = None
+        self._method = method
+        self._req_headers = req_headers
+        self._query = query
         self._req_json = req_json
         self._req_data = req_data
+        self._url: str | None = None
 
     def _set_url(self, url: str | None) -> None:
         self._url = url
@@ -96,15 +67,42 @@ class Response(BaseModel, Generic[T]):
         return self._url
 
     @property
+    def method(self) -> str | None:
+        """HTTP method used for the request (GET, POST, PUT, etc.)."""
+        return self._method
+
+    @method.setter
+    def method(self, value: str | None) -> None:
+        self._method = value
+
+    @property
+    def req_headers(self) -> dict | None:
+        """HTTP headers sent with the request."""
+        return self._req_headers
+
+    @req_headers.setter
+    def req_headers(self, value: dict | None) -> None:
+        self._req_headers = value
+
+    @property
+    def query(self) -> dict | None:
+        """Query parameters encoded into the request URL."""
+        return self._query
+
+    @query.setter
+    def query(self, value: dict | None) -> None:
+        self._query = value
+
+    @property
     def path_params(self) -> dict[str, Any]:
         """Always empty — FastHTTP does not use path parameters."""
         return {}
 
-    def json(self) -> Any:  # noqa: ANN401  # pyright: ignore[reportIncompatibleMethodOverride]
+    def json(self) -> Any:  # noqa: ANN401
         """Parse the response body as JSON."""
         return orjson.loads(self.text)
 
-    def req_json(self) -> dict[str, Any] | None:
+    def req_json(self) -> dict | None:
         """Return the JSON body that was sent with the request."""
         return self._req_json
 
