@@ -7,9 +7,8 @@ Response object reference.
 | Attribute | Type | Description |
 |-----------|------|-------------|
 | `status` | `int` | HTTP status code |
-| `text` | `str` | Raw response body |
+| `text` | `str` | Raw response body as string |
 | `headers` | `dict` | Response headers |
-| `content` | `bytes` | Raw bytes |
 | `method` | `str` | HTTP method |
 | `url` | `str` | Request URL |
 
@@ -38,6 +37,61 @@ Get request body as text:
 ```python
 sent = resp.req_text()  # Returns str or None
 ```
+
+### bytes()
+
+Returns the raw response body as bytes. Uses the actual bytes received from the server; falls back to `text.encode()` if unavailable:
+
+```python
+raw = resp.bytes()  # Returns bytes
+```
+
+**Use cases:** downloading images, PDFs, zip files, any binary content.
+
+```python
+@app.get(url="https://httpbin.org/image/png")
+async def handler(resp: Response) -> dict:
+    raw = resp.bytes()
+    return {"size": len(raw), "is_png": raw[:4] == b"\x89PNG"}
+```
+
+### html()
+
+Returns the response body as an HTML string. Raises `ValueError` if `Content-Type` is not HTML:
+
+```python
+html = resp.html()  # Returns str
+```
+
+**Raises:** `ValueError` — if `Content-Type` is present and does not contain `html`.
+
+```python
+@app.get(url="https://example.com")
+async def handler(resp: Response) -> dict:
+    html = resp.html()
+    return {"length": len(html)}
+```
+
+### xml()
+
+Parses the response body as XML and returns the root `xml.etree.ElementTree.Element`:
+
+```python
+root = resp.xml()  # Returns ET.Element
+```
+
+**Raises:** `xml.etree.ElementTree.ParseError` — if the body is not valid XML.
+
+```python
+@app.get(url="https://feeds.bbci.co.uk/news/rss.xml")
+async def handler(resp: Response) -> dict:
+    root = resp.xml()
+    channel = root.find("channel")
+    return {"title": channel.findtext("title")}
+```
+
+!!! warning
+    Uses the stdlib XML parser — vulnerable to XXE attacks. Only use with trusted sources.
 
 ### assets()
 
