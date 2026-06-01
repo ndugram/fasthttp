@@ -1,4 +1,5 @@
 import json
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -282,3 +283,126 @@ class TestResponseDefaults:
         for status in [200, 201, 400, 404, 500]:
             r = Response(status=status, text="", headers={})
             assert repr(r) == f"<Response [{status}]>"
+
+
+class TestResponseBytes:
+    def test_bytes_returns_stored_content(self):
+        raw = b"\x89PNG\r\n\x1a\n"
+        r = Response(status=200, text="", headers={}, content=raw)
+        assert r.bytes() == raw
+
+    def test_bytes_falls_back_to_text_encode(self):
+        r = Response(status=200, text="hello", headers={})
+        assert r.bytes() == b"hello"
+
+    def test_bytes_utf8_text_fallback(self):
+        r = Response(status=200, text="привет", headers={})
+        assert r.bytes() == "привет".encode()
+
+    def test_bytes_empty_content(self):
+        r = Response(status=200, text="", headers={}, content=b"")
+        assert r.bytes() == b""
+
+    def test_bytes_binary_content_not_decodable_as_text(self):
+        raw = bytes(range(256))
+        r = Response(status=200, text="", headers={}, content=raw)
+        assert r.bytes() == raw
+
+    def test_content_default_is_none(self):
+        r = Response(status=200, text="", headers={})
+        assert r._content is None
+
+    def test_bytes_prefers_content_over_text(self):
+        raw = b"binary"
+        r = Response(status=200, text="text", headers={}, content=raw)
+        assert r.bytes() == b"binary"
+
+
+class TestResponseHtml:
+    def test_html_returns_text(self):
+        html = "<html><body>Hello</body></html>"
+        r = Response(status=200, text=html, headers={"content-type": "text/html"})
+        assert r.html() == html
+
+    def test_html_with_charset_in_content_type(self):
+        html = "<p>test</p>"
+        r = Response(
+            status=200,
+            text=html,
+            headers={"content-type": "text/html; charset=utf-8"},
+        )
+        assert r.html() == html
+
+    def test_html_no_content_type_allowed(self):
+        r = Response(status=200, text="<p>ok</p>", headers={})
+        assert r.html() == "<p>ok</p>"
+
+    def test_html_raises_on_json_content_type(self):
+        r = Response(
+            status=200,
+            text='{"key": "val"}',
+            headers={"content-type": "application/json"},
+        )
+        with pytest.raises(ValueError, match="Expected HTML"):
+            r.html()
+
+    def test_html_raises_on_xml_content_type(self):
+        r = Response(
+            status=200,
+            text="<root/>",
+            headers={"content-type": "application/xml"},
+        )
+        with pytest.raises(ValueError, match="Expected HTML"):
+            r.html()
+
+    def test_html_xhtml_content_type_allowed(self):
+        r = Response(
+            status=200,
+            text="<html/>",
+            headers={"content-type": "application/xhtml+xml"},
+        )
+        # xhtml contains "html" → should NOT raise
+        assert r.html() == "<html/>"
+
+
+class TestResponseXml:
+    def test_xml_returns_element(self):
+        r = Response(status=200, text="<root><item>1</item></root>", headers={})
+        el = r.xml()
+        assert isinstance(el, ET.Element)
+        assert el.tag == "root"
+
+    def test_xml_parses_children(self):
+        r = Response(
+            status=200,
+            text="<users><user id='1'>Alice</user><user id='2'>Bob</user></users>",
+            headers={},
+        )
+        root = r.xml()
+        assert len(root) == 2
+        assert root[0].text == "Alice"
+        assert root[1].get("id") == "2"
+
+    def test_xml_raises_on_invalid_xml(self):
+        r = Response(status=200, text="not xml at all", headers={})
+        with pytest.raises(ET.ParseError):
+            r.xml()
+
+    def test_xml_self_closing_tag(self):
+        r = Response(status=200, text="<empty/>", headers={})
+        el = r.xml()
+        assert el.tag == "empty"
+        assert len(el) == 0
+
+    def test_xml_rss_like_structure(self):
+        rss = (
+            "<rss version='2.0'>"
+            "<channel><title>Feed</title><item><title>Post 1</title></item></channel>"
+            "</rss>"
+        )
+        r = Response(status=200, text=rss, headers={})
+        root = r.xml()
+        assert root.tag == "rss"
+        channel = root.find("channel")
+        assert channel is not None
+        assert channel.findtext("title") == "Feed"

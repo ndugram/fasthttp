@@ -19,8 +19,8 @@ async def handle_response(resp: Response) -> dict:
     # Response headers
     headers = resp.headers
     
-    # Raw content
-    content = resp.content
+    # Raw bytes
+    raw = resp.bytes()
     
     return {"status": status, "data": data}
 ```
@@ -60,6 +60,58 @@ Returns request body as text:
 # For POST request with data=b"raw data"
 sent = resp.req_text()  # Returns "raw data"
 ```
+
+### bytes()
+
+Returns the raw response body as bytes. Use for binary responses like images, PDFs, or archives:
+
+```python
+@app.get(url="https://httpbin.org/image/png")
+async def download_image(resp: Response) -> dict:
+    raw = resp.bytes()
+    return {
+        "size": len(raw),
+        "is_png": raw[:4] == b"\x89PNG",
+    }
+```
+
+### html()
+
+Returns the response body as an HTML string. Raises `ValueError` if the `Content-Type` is not HTML — useful to catch accidental calls on JSON endpoints:
+
+```python
+@app.get(url="https://example.com")
+async def get_page(resp: Response) -> dict:
+    html = resp.html()
+    return {"length": len(html)}
+```
+
+```python
+# Raises ValueError: Expected HTML response, got Content-Type: application/json
+@app.get(url="https://api.example.com/users")
+async def wrong_call(resp: Response):
+    return resp.html()
+```
+
+### xml()
+
+Parses the response body as XML and returns the root `Element`. Works for any XML-based format including RSS and Atom feeds:
+
+```python
+@app.get(url="https://feeds.bbci.co.uk/news/rss.xml")
+async def get_rss(resp: Response) -> dict:
+    root = resp.xml()
+    channel = root.find("channel")
+    items = channel.findall("item")
+    return {
+        "feed": channel.findtext("title"),
+        "count": len(items),
+        "latest": [i.findtext("title") for i in items[:3]],
+    }
+```
+
+!!! warning
+    `xml()` uses the standard library XML parser which is vulnerable to entity expansion attacks (XXE). Only use it with **trusted sources**. For untrusted data, use `defusedxml`.
 
 ### assets()
 
@@ -119,7 +171,7 @@ async def check_response(resp: Response) -> dict | None:
 | `status` | `int` | HTTP status code |
 | `text` | `str` | Raw response body |
 | `headers` | `dict` | Response headers |
-| `content` | `bytes` | Raw bytes |
+| `bytes()` | `bytes` | Raw response body as bytes |
 | `method` | `str` | HTTP method used |
 
 ## Complete Example

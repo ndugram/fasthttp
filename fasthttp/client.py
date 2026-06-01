@@ -247,6 +247,7 @@ class HTTPClient:
             query=route.params,
             req_json=route.json,
             req_data=route.data,
+            content=response.content,
         )
         resp._url = route.url  # noqa: SLF001
         return resp

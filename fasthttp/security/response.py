@@ -134,7 +134,14 @@ class ResponseProtection:
             if not ct_check[0]:
                 return ct_check
 
-        if b"<" in content and b">" in content:
+        is_markup = bool(
+            content_type
+            and any(
+                t in content_type.lower()
+                for t in ("html", "xml", "rss", "atom")
+            )
+        )
+        if not is_markup and b"<" in content and b">" in content:
             try:
                 text = content.decode("utf-8", errors="ignore")
                 xss_check = self.detect_xss(text)
