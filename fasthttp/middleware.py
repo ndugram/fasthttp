@@ -387,6 +387,8 @@ class CacheMiddleware(BaseMiddleware):
                 if time.time() < entry.expires_at:
                     self._cache.move_to_end(key)
                     self._state.set((key, entry.response))
+
+                    kwargs["_fasthttp_cached_response"] = entry.response
                     return kwargs
                 del self._cache[key]
 

@@ -118,20 +118,27 @@ class HTTPClient:
 
         config["headers"] = headers
 
+        if self.middleware_manager:
+            config = await self.middleware_manager.process_before_request(route, config)  # type: ignore
+
+        dep_cache: dict[int, dict] = {}
+        for dep in route.dependencies:
+            func_id = id(dep.func)
+            if dep.use_cache and func_id in dep_cache:
+                config = dep_cache[func_id]
+            else:
+                config = await dep(route, config)
+                if dep.use_cache:
+                    dep_cache[func_id] = config
+
         if self.security:
             body: dict | list | str | bytes | None = route.json or route.data  # type: ignore
             config["headers"] = self.security.sign_request(
                 route.method,
                 route.url,
                 body,
-                config["headers"],
+                dict(config.get("headers") or {}),
             )
-
-        if self.middleware_manager:
-            config = await self.middleware_manager.process_before_request(route, config)  # type: ignore
-
-        for dep in route.dependencies:
-            config = await dep(route, config)
 
         return config
 
@@ -153,14 +160,13 @@ class HTTPClient:
             return False
 
     def _get_timeout_config(self, config: dict) -> httpx.Timeout:
+        user_timeout = config.get("timeout")
+        if user_timeout is not None:
+            return httpx.Timeout(user_timeout)
         if self.security:
             if self.security.connect_timeout:
                 return httpx.Timeout(self.security.connect_timeout)
             return httpx.Timeout(self.security.timeout)
-
-        timeout = config.get("timeout", 30.0)
-        if timeout is not None:
-            return httpx.Timeout(timeout)
         return httpx.Timeout(30.0)
 
     def _log_request(self, route: Route, config: dict) -> None:
@@ -316,6 +322,11 @@ class HTTPClient:
         config = self.request_configs.get(route.method, {})
         config = await self._prepare_config(route, config)
 
+        if "_fasthttp_cached_response" in config:
+            cached = config["_fasthttp_cached_response"]
+            handler_result = await route.handler(cached)
+            return await self._process_handler_result(cached, handler_result)
+
         if not await self._apply_security_checks(route):
             return None
 
@@ -338,6 +349,7 @@ class HTTPClient:
                 method=route.method,
             )
             empty_response._url = route.url  # noqa: SLF001
+            empty_response._response_model = route.response_model  # noqa: SLF001
             handler_result = await route.handler(empty_response)
             return await self._process_handler_result(empty_response, handler_result)
 
@@ -345,7 +357,13 @@ class HTTPClient:
             return None
 
         resp, elapsed = result
-        await self._check_response_security(route, resp)
+        try:
+            await self._check_response_security(route, resp)
+        except SecurityError as e:
+            self.logger.error("Response security check failed: %s", e)
+            if self.security:
+                self.security.release_slot()
+            return None
 
         if resp.status_code >= 400:
             error_model = route.responses.get(resp.status_code)
