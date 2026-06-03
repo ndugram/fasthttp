@@ -989,31 +989,11 @@ class FastHTTP:
                 elapsed,
             )
 
-            if route.response_model:
-                try:
-                    json_data = result.json()
-                except Exception:  # noqa: BLE001
-                    json_data = None
-                if json_data is not None:
-                    if get_origin(route.response_model) is list:
-                        item_model = get_args(route.response_model)[0]
-                        validated = [
-                            item_model.model_validate(item) for item in json_data
-                        ]
-                    else:
-                        validated = route.response_model.model_validate(  # type: ignore
-                            json_data
-                        )
-                    result._handler_result = validated  # noqa: SLF001
-                    self.logger.info("[RESULT] %s", validated)
-                elif result.text:
-                    self.logger.info("[RESULT] %s", result.text)
-            else:
-                handler_result = getattr(result, "_handler_result", None)
-                if handler_result is not None:
-                    self.logger.info("[RESULT] %s", handler_result)
-                elif result.text:
-                    self.logger.info("[RESULT] %s", result.text)
+            handler_result = getattr(result, "_handler_result", None)
+            if handler_result is not None:
+                self.logger.info("[RESULT] %s", handler_result)
+            elif result.text:
+                self.logger.info("[RESULT] %s", result.text)
         else:
             self.logger.error(
                 "✖️ %-6s %-30s ERR %6.2fms",
