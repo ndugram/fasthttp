@@ -370,6 +370,7 @@ class HTTPClient:
         log_success(route.url, route.method, resp.status_code, elapsed)
 
         response = self._build_response(route, config, resp)
+        response._response_model = route.response_model  # noqa: SLF001
 
         if self.middleware_manager:
             response = await self.middleware_manager.process_after_response(
