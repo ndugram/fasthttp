@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import Annotated, Any
+from typing import Annotated, Any, get_args, get_origin
 
 import orjson
 from annotated_doc import Doc
@@ -53,6 +53,7 @@ class Response:
         self.text = text
         self.headers = headers
         self._handler_result: Any = None
+        self._response_model: type | None = None
         self._method = method
         self._req_headers = req_headers
         self._query = query
@@ -102,7 +103,12 @@ class Response:
         return {}
 
     def json(self) -> Any:  # noqa: ANN401
-        """Parse the response body as JSON."""
+        """Parse the response body as JSON, validating against response_model if set."""
+        if self._response_model is not None:
+            if get_origin(self._response_model) is list:
+                item_model = get_args(self._response_model)[0]
+                return [item_model.model_validate(item) for item in orjson.loads(self.text)]
+            return self._response_model.model_validate_json(self.text)  # type: ignore[union-attr]
         return orjson.loads(self.text)
 
     def req_json(self) -> dict | None:
