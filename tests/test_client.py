@@ -4,6 +4,7 @@ import pytest
 
 from fasthttp.__meta__ import __version__
 from fasthttp.client import HTTPClient
+from fasthttp.exceptions import FastHTTPBadStatusError
 from fasthttp.middleware import MiddlewareManager as MM  # noqa: N817
 from fasthttp.response import Response
 from fasthttp.routing import Route
@@ -297,3 +298,118 @@ class TestHTTPClient:
 
         assert result == custom_response
         assert result.status == 201
+
+    @pytest.mark.asyncio
+    async def test_raise_for_status_false_returns_none_on_4xx(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """Test that raise_for_status=False (default) returns None on 4xx."""
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.text = "Not Found"
+        mock_response.headers = {}
+        mock_response.content = b"Not Found"
+
+        mock_httpx_client.request = AsyncMock(return_value=mock_response)
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            raise_for_status=False,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(method="GET", url="http://example.com/notfound", handler=handler)
+
+        result = await client.send(mock_httpx_client, route)
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_raise_for_status_true_raises_on_4xx(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """Test that raise_for_status=True raises FastHTTPBadStatusError on 4xx."""
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.text = "Not Found"
+        mock_response.headers = {}
+        mock_response.content = b"Not Found"
+
+        mock_httpx_client.request = AsyncMock(return_value=mock_response)
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            raise_for_status=True,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(method="GET", url="http://example.com/notfound", handler=handler)
+
+        with pytest.raises(FastHTTPBadStatusError) as exc_info:
+            await client.send(mock_httpx_client, route)
+
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_raise_for_status_true_raises_on_5xx(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """Test that raise_for_status=True raises FastHTTPBadStatusError on 5xx."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_response.headers = {}
+        mock_response.content = b"Internal Server Error"
+
+        mock_httpx_client.request = AsyncMock(return_value=mock_response)
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            raise_for_status=True,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(method="GET", url="http://example.com/error", handler=handler)
+
+        with pytest.raises(FastHTTPBadStatusError) as exc_info:
+            await client.send(mock_httpx_client, route)
+
+        assert exc_info.value.status_code == 500
+
+    @pytest.mark.asyncio
+    async def test_raise_for_status_true_no_raise_on_2xx(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """Test that raise_for_status=True does NOT raise on 2xx."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = '{"ok": true}'
+        mock_response.headers = {}
+        mock_response.content = b'{"ok": true}'
+
+        mock_httpx_client.request = AsyncMock(return_value=mock_response)
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            raise_for_status=True,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(method="GET", url="http://example.com/ok", handler=handler)
+
+        result = await client.send(mock_httpx_client, route)
+
+        assert result is not None
+        assert result.status == 200
