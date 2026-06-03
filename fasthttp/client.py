@@ -87,12 +87,27 @@ class HTTPClient:
                 """
             ),
         ] = None,
+        *,
+        raise_for_status: Annotated[
+            bool,
+            Doc(
+                """
+                Whether to raise FastHTTPBadStatusError on 4xx/5xx responses.
+
+                When True, any response with a status code >= 400 will raise
+                FastHTTPBadStatusError instead of returning None.
+
+                Defaults to False.
+                """
+            ),
+        ] = False,
     ) -> None:
         self.request_configs = request_configs
         self.logger = logger
         self.middleware_manager = middleware_manager
         self.security = security
         self.startup_uuid = startup_uuid
+        self.raise_for_status = raise_for_status
 
     def _validate_request(self, route: Route) -> bool:
         if not route.request_model:
@@ -215,6 +230,9 @@ class HTTPClient:
 
         if self.middleware_manager:
             await self.middleware_manager.process_on_error(error, route, config)  # type: ignore
+
+        if self.raise_for_status:
+            raise error
 
     async def _handle_error(
         self,
