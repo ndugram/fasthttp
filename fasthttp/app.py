@@ -261,6 +261,34 @@ class FastHTTP:
                 """
             ),
         ] = True,
+        raise_for_status: Annotated[
+            bool,
+            Doc(
+                """
+                Raise FastHTTPBadStatusError on 4xx/5xx responses.
+
+                When True, any response with a status code >= 400 will raise
+                FastHTTPBadStatusError instead of silently returning None.
+
+                Useful when you want to handle HTTP errors via try/except
+                rather than checking for None returns.
+
+                Example:
+                ```python
+                app = FastHTTP(raise_for_status=True)
+
+                @app.get("https://api.example.com/users")
+                async def get_users(resp: Response) -> list:
+                    return resp.json()
+
+                try:
+                    app.run()
+                except FastHTTPBadStatusError as e:
+                    print(e.status_code)
+                ```
+                """
+            ),
+        ] = False,
         lifespan: Annotated[
             Callable[[FastHTTP], object] | None,
             Doc(
@@ -421,6 +449,7 @@ class FastHTTP:
         }
 
         self.security_enabled = security
+        self.raise_for_status = raise_for_status
         self.secret_key = secret_key or secrets.token_bytes(32)
         self.security = Security(secret_key=self.secret_key) if security else None
         self.startup_uuid = None
@@ -439,6 +468,7 @@ class FastHTTP:
             self.middleware_manager,
             self.security,
             self.startup_uuid,
+            raise_for_status=self.raise_for_status,
         )
 
     def _check_annotated_parameters(
@@ -1020,12 +1050,15 @@ class FastHTTP:
         ) as client:
             if total > 1:
                 if sys.version_info >= (3, 11):
-                    async with asyncio.TaskGroup() as tg:
-                        tg_tasks = [
-                            tg.create_task(self._run_route(client, route))
-                            for route in routes
-                        ]
-                    results = [t.result() for t in tg_tasks]
+                    try:
+                        async with asyncio.TaskGroup() as tg:
+                            tg_tasks = [
+                                tg.create_task(self._run_route(client, route))
+                                for route in routes
+                            ]
+                        results = [t.result() for t in tg_tasks]
+                    except BaseExceptionGroup as eg:
+                        raise eg.exceptions[0] from None
                 else:
                     results = await asyncio.gather(
                         *[self._run_route(client, route) for route in routes]
