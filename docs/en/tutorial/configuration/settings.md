@@ -8,17 +8,18 @@ Basic application configuration.
 from fasthttp import FastHTTP
 
 app = FastHTTP(
-    debug=False,      # Debug mode
-    http2=False,      # Use HTTP/2
-    proxy=None,       # Proxy server
-    security=True,    # Enable security
-    lifespan=None,    # Lifespan context manager
-    middleware=[],    # Middleware list
-    get_request={},   # Default GET settings
-    post_request={},  # Default POST settings
-    put_request={},   # Default PUT settings
-    patch_request={}, # Default PATCH settings
-    delete_request={} # Default DELETE settings
+    debug=False,             # Debug mode
+    http2=False,             # Use HTTP/2
+    proxy=None,              # Proxy server
+    security=True,           # Enable security
+    lifespan=None,           # Lifespan context manager
+    middleware=[],           # Middleware list
+    raise_for_status=False,  # Raise on 4xx/5xx
+    get_request={},          # Default GET settings
+    post_request={},         # Default POST settings
+    put_request={},          # Default PUT settings
+    patch_request={},        # Default PATCH settings
+    delete_request={}        # Default DELETE settings
 )
 ```
 
@@ -32,6 +33,7 @@ app = FastHTTP(
 | `security` | `bool` | `True` | Enable security features |
 | `lifespan` | `Callable` | `None` | Startup/shutdown handler |
 | `middleware` | `list` | `[]` | Middleware instances |
+| `raise_for_status` | `bool` | `False` | Raise `FastHTTPBadStatusError` on 4xx/5xx for all routes |
 | `get_request` | `dict` | `{}` | Default GET settings |
 | `post_request` | `dict` | `{}` | Default POST settings |
 | `put_request` | `dict` | `{}` | Default PUT settings |

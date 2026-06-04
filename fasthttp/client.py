@@ -231,7 +231,7 @@ class HTTPClient:
         if self.middleware_manager:
             await self.middleware_manager.process_on_error(error, route, config)  # type: ignore
 
-        if self.raise_for_status:
+        if self.raise_for_status or route.raise_for_status:
             raise error
 
     async def _handle_error(
