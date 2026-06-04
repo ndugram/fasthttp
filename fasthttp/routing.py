@@ -68,6 +68,9 @@ class Route(BaseModel):
     skip_request: bool = False
     """When True, skips HTTP execution — handler is responsible for the request."""
 
+    raise_for_status: bool = False
+    """When True, raises FastHTTPBadStatusError on 4xx/5xx for this route only."""
+
     responses: dict[int, dict[Literal["model"], type[BaseModel]]] = Field(
         default_factory=dict
     )
@@ -99,6 +102,7 @@ class Route(BaseModel):
             tags: list[str] | None = None,
             dependencies: list[Any] | None = None,
             skip_request: bool = False,
+            raise_for_status: bool = False,
             responses: dict[int, dict[Literal["model"], type[BaseModel]]]
             | None = None,
         ) -> None:
@@ -115,6 +119,7 @@ class Route(BaseModel):
                 dependencies=dependencies,
                 skip_request=skip_request,
                 responses=responses,
+                raise_for_status=raise_for_status
             )
 
 
@@ -133,6 +138,7 @@ class _RouteDef:
     tags: list[str]
     dependencies: list[Any]
     skip_request: bool
+    raise_for_status: bool
     responses: dict[int, dict[Literal["model"], type[BaseModel]]]
 
 
@@ -218,6 +224,7 @@ class Router:
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
         skip_request: bool = False,
+        raise_for_status: bool = False,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
@@ -235,6 +242,7 @@ class Router:
                     tags=tags or [],
                     dependencies=dependencies or [],
                     skip_request=skip_request,
+                    raise_for_status=raise_for_status,
                     responses=responses or {},
                 )
             )
@@ -251,6 +259,7 @@ class Router:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
+        raise_for_status: bool = False,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a GET route on the router."""
@@ -262,6 +271,7 @@ class Router:
             request_model=request_model,
             tags=tags,
             dependencies=dependencies,
+            raise_for_status=raise_for_status,
             responses=responses,
         )
 
@@ -275,6 +285,7 @@ class Router:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
+        raise_for_status: bool = False,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a POST route on the router."""
@@ -287,6 +298,7 @@ class Router:
             request_model=request_model,
             tags=tags,
             dependencies=dependencies,
+            raise_for_status=raise_for_status,
             responses=responses,
         )
 
@@ -300,6 +312,7 @@ class Router:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
+        raise_for_status: bool = False,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a PUT route on the router."""
@@ -312,6 +325,7 @@ class Router:
             request_model=request_model,
             tags=tags,
             dependencies=dependencies,
+            raise_for_status=raise_for_status,
             responses=responses,
         )
 
@@ -325,6 +339,7 @@ class Router:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
+        raise_for_status: bool = False,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a PATCH route on the router."""
@@ -337,6 +352,7 @@ class Router:
             request_model=request_model,
             tags=tags,
             dependencies=dependencies,
+            raise_for_status=raise_for_status,
             responses=responses,
         )
 
@@ -350,6 +366,7 @@ class Router:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
+        raise_for_status: bool = False,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a DELETE route on the router."""
@@ -362,6 +379,7 @@ class Router:
             request_model=request_model,
             tags=tags,
             dependencies=dependencies,
+            raise_for_status=raise_for_status,
             responses=responses,
         )
 
@@ -374,6 +392,7 @@ class Router:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
+        raise_for_status: bool = False,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a HEAD route on the router."""
@@ -385,6 +404,7 @@ class Router:
             request_model=request_model,
             tags=tags,
             dependencies=dependencies,
+            raise_for_status=raise_for_status,
             responses=responses,
         )
 
@@ -397,6 +417,7 @@ class Router:
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
+        raise_for_status: bool = False,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering an OPTIONS route on the router."""
@@ -408,6 +429,7 @@ class Router:
             request_model=request_model,
             tags=tags,
             dependencies=dependencies,
+            raise_for_status=raise_for_status,
             responses=responses,
         )
 
@@ -453,6 +475,7 @@ class Router:
                     tags=route_tags,
                     dependencies=route_deps,
                     skip_request=rd.skip_request,
+                    raise_for_status=rd.raise_for_status,
                     responses=rd.responses,
                 )
             )
