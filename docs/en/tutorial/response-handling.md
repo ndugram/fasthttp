@@ -164,6 +164,52 @@ async def check_response(resp: Response) -> dict | None:
     return resp.json()
 ```
 
+### raise_for_status
+
+By default, 4xx and 5xx responses are logged and the handler receives `None`. Enable `raise_for_status` to raise `FastHTTPBadStatusError` instead.
+
+#### Global — all routes
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.exceptions import FastHTTPBadStatusError
+from fasthttp.response import Response
+
+app = FastHTTP(raise_for_status=True)
+
+
+@app.get(url="https://api.example.com/users")
+async def get_users(resp: Response) -> list:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    try:
+        app.run()
+    except FastHTTPBadStatusError as e:
+        print(f"HTTP {e.status_code} on {e.url}")
+```
+
+#### Per-route — only specific routes
+
+```python
+app = FastHTTP()
+
+
+@app.get(url="https://api.example.com/critical", raise_for_status=True)
+async def critical(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/optional")
+async def optional(resp: Response) -> dict | None:
+    if resp is None:
+        return None
+    return resp.json()
+```
+
+`FastHTTPBadStatusError` has `.status_code`, `.url`, `.method`, and `.response_body` attributes.
+
 ## Response Properties
 
 | Property | Type | Description |
