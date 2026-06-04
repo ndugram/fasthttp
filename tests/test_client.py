@@ -413,3 +413,104 @@ class TestHTTPClient:
 
         assert result is not None
         assert result.status == 200
+
+    @pytest.mark.asyncio
+    async def test_route_raise_for_status_raises_when_global_false(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """Test that route-level raise_for_status=True raises even when global is False."""
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.text = "Not Found"
+        mock_response.headers = {}
+        mock_response.content = b"Not Found"
+
+        mock_httpx_client.request = AsyncMock(return_value=mock_response)
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            raise_for_status=False,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(
+            method="GET",
+            url="http://example.com/notfound",
+            handler=handler,
+            raise_for_status=True,
+        )
+
+        with pytest.raises(FastHTTPBadStatusError) as exc_info:
+            await client.send(mock_httpx_client, route)
+
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_route_raise_for_status_global_true_route_false_still_raises(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """Test that global raise_for_status=True raises even when route flag is False."""
+        mock_response = MagicMock()
+        mock_response.status_code = 422
+        mock_response.text = "Unprocessable Entity"
+        mock_response.headers = {}
+        mock_response.content = b"Unprocessable Entity"
+
+        mock_httpx_client.request = AsyncMock(return_value=mock_response)
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            raise_for_status=True,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(
+            method="GET",
+            url="http://example.com/validate",
+            handler=handler,
+            raise_for_status=False,
+        )
+
+        with pytest.raises(FastHTTPBadStatusError) as exc_info:
+            await client.send(mock_httpx_client, route)
+
+        assert exc_info.value.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_route_raise_for_status_both_false_returns_none(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """Test that both global and route raise_for_status=False returns None on 4xx."""
+        mock_response = MagicMock()
+        mock_response.status_code = 403
+        mock_response.text = "Forbidden"
+        mock_response.headers = {}
+        mock_response.content = b"Forbidden"
+
+        mock_httpx_client.request = AsyncMock(return_value=mock_response)
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            raise_for_status=False,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(
+            method="GET",
+            url="http://example.com/forbidden",
+            handler=handler,
+            raise_for_status=False,
+        )
+
+        result = await client.send(mock_httpx_client, route)
+
+        assert result is None
