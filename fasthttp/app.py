@@ -48,6 +48,7 @@ if TYPE_CHECKING:
 
     from pydantic import BaseModel
 
+    from .auth import BasicAuth, BearerAuth, DigestAuth
     from .response import Response
     from .types import RequestsOptinal
 
@@ -578,6 +579,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
+        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
@@ -596,6 +598,7 @@ class FastHTTP:
                     tags=tags,
                     dependencies=dependencies,
                     raise_for_status=raise_for_status,
+                    auth=auth,
                     responses=responses,
                 )
             )
@@ -707,6 +710,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
+        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -718,6 +722,7 @@ class FastHTTP:
             tags=tags,
             dependencies=dependencies,
             raise_for_status=raise_for_status,
+            auth=auth,
             responses=responses,
         )
 
@@ -732,6 +737,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
+        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -744,6 +750,7 @@ class FastHTTP:
             tags=tags,
             dependencies=dependencies,
             raise_for_status=raise_for_status,
+            auth=auth,
             responses=responses,
         )
 
@@ -758,6 +765,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
+        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -770,6 +778,7 @@ class FastHTTP:
             tags=tags,
             dependencies=dependencies,
             raise_for_status=raise_for_status,
+            auth=auth,
             responses=responses,
         )
 
@@ -784,6 +793,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
+        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -796,6 +806,7 @@ class FastHTTP:
             tags=tags,
             dependencies=dependencies,
             raise_for_status=raise_for_status,
+            auth=auth,
             responses=responses,
         )
 
@@ -810,6 +821,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
+        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -822,6 +834,7 @@ class FastHTTP:
             tags=tags,
             dependencies=dependencies,
             raise_for_status=raise_for_status,
+            auth=auth,
             responses=responses,
         )
 
@@ -835,6 +848,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
+        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -846,6 +860,7 @@ class FastHTTP:
             tags=tags,
             dependencies=dependencies,
             raise_for_status=raise_for_status,
+            auth=auth,
             responses=responses,
         )
 
@@ -859,6 +874,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
+        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -870,6 +886,7 @@ class FastHTTP:
             tags=tags,
             dependencies=dependencies,
             raise_for_status=raise_for_status,
+            auth=auth,
             responses=responses,
         )
 
