@@ -274,6 +274,42 @@ async def other_api(resp: Response) -> dict:
     return resp.json()
 ```
 
+## raise_for_status на маршрутах роутера
+
+`raise_for_status` можно задать на уровне конкретного маршрута через декоратор роутера. При `True` этот маршрут бросает `FastHTTPBadStatusError` на 4xx/5xx вместо возврата `None`.
+
+```python
+from fasthttp import FastHTTP, Router
+from fasthttp.exceptions import FastHTTPBadStatusError
+from fasthttp.response import Response
+
+app = FastHTTP()
+payments = Router(base_url="https://api.example.com", prefix="/payments")
+
+
+@payments.post("/charge", raise_for_status=True)
+async def charge(resp: Response) -> dict:
+    return resp.json()
+
+
+@payments.get("/history")
+async def history(resp: Response) -> dict | None:
+    if resp is None:
+        return None
+    return resp.json()
+
+
+app.include_router(payments)
+
+if __name__ == "__main__":
+    try:
+        app.run()
+    except FastHTTPBadStatusError as e:
+        print(f"Платёж не прошёл: HTTP {e.status_code}")
+```
+
+Работает совместно с глобальным флагом `FastHTTP(raise_for_status=True)` — достаточно `True` на любом уровне.
+
 ## Когда использовать роутеры
 
 Используйте роутеры, когда в проекте есть:
