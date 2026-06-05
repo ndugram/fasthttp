@@ -88,6 +88,7 @@ nav:
         - en/tutorial/routers.md
         - en/tutorial/tags.md
         - en/tutorial/dependencies.md
+        - en/tutorial/authentication.md
         - en/tutorial/lifespan.md
       - Validation:
         - en/tutorial/validation/index.md
@@ -149,6 +150,7 @@ nav:
         - ru/tutorial/routers.md
         - ru/tutorial/tags.md
         - ru/tutorial/dependencies.md
+        - ru/tutorial/authentication.md
         - ru/tutorial/lifespan.md
       - Validation:
         - ru/tutorial/validation/index.md

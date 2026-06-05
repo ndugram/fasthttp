@@ -15,6 +15,7 @@ from fasthttp.security import (
 )
 
 from .__meta__ import __version__
+from .auth import resolve_auth
 from .exceptions import (
     FastHTTPBadStatusError,
     FastHTTPConnectionError,
@@ -308,6 +309,7 @@ class HTTPClient:
                 content=route.data,  # type: ignore
                 timeout=timeout_config,
                 follow_redirects=False,
+                auth=resolve_auth(route.auth),
             )
             elapsed = (time.perf_counter() - start) * 1000
             return resp, elapsed

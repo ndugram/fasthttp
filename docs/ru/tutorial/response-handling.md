@@ -155,6 +155,52 @@ async def check_response(resp: Response) -> dict | None:
     return resp.json()
 ```
 
+### raise_for_status
+
+По умолчанию ответы 4xx и 5xx логируются, а обработчик получает `None`. Включите `raise_for_status`, чтобы вместо этого бросалось исключение `FastHTTPBadStatusError`.
+
+#### Глобально — все маршруты
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.exceptions import FastHTTPBadStatusError
+from fasthttp.response import Response
+
+app = FastHTTP(raise_for_status=True)
+
+
+@app.get(url="https://api.example.com/users")
+async def get_users(resp: Response) -> list:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    try:
+        app.run()
+    except FastHTTPBadStatusError as e:
+        print(f"HTTP {e.status_code} на {e.url}")
+```
+
+#### Per-route — только конкретные маршруты
+
+```python
+app = FastHTTP()
+
+
+@app.get(url="https://api.example.com/critical", raise_for_status=True)
+async def critical(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/optional")
+async def optional(resp: Response) -> dict | None:
+    if resp is None:
+        return None
+    return resp.json()
+```
+
+`FastHTTPBadStatusError` содержит атрибуты `.status_code`, `.url`, `.method` и `.response_body`.
+
 ## Свойства ответа
 
 | Свойство | Тип | Описание |

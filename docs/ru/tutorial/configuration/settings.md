@@ -8,17 +8,18 @@
 from fasthttp import FastHTTP
 
 app = FastHTTP(
-    debug=False,      # Режим отладки
-    http2=False,      # Использовать HTTP/2
-    proxy=None,       # Прокси сервер
-    security=True,    # Включить безопасность
-    lifespan=None,    # Обработчик запуска/завершения
-    middleware=[],    # Список middleware
-    get_request={},   # Настройки по умолчанию для GET
-    post_request={},  # Настройки по умолчанию для POST
-    put_request={},   # Настройки по умолчанию для PUT
-    patch_request={}, # Настройки по умолчанию для PATCH
-    delete_request={} # Настройки по умолчанию для DELETE
+    debug=False,             # Режим отладки
+    http2=False,             # Использовать HTTP/2
+    proxy=None,              # Прокси сервер
+    security=True,           # Включить безопасность
+    lifespan=None,           # Обработчик запуска/завершения
+    middleware=[],           # Список middleware
+    raise_for_status=False,  # Бросать исключение на 4xx/5xx
+    get_request={},          # Настройки по умолчанию для GET
+    post_request={},         # Настройки по умолчанию для POST
+    put_request={},          # Настройки по умолчанию для PUT
+    patch_request={},        # Настройки по умолчанию для PATCH
+    delete_request={}        # Настройки по умолчанию для DELETE
 )
 ```
 
@@ -32,6 +33,7 @@ app = FastHTTP(
 | `security` | `bool` | `True` | Включить функции безопасности |
 | `lifespan` | `Callable` | `None` | Обработчик запуска/завершения |
 | `middleware` | `list` | `[]` | Список middleware |
+| `raise_for_status` | `bool` | `False` | Бросать `FastHTTPBadStatusError` на 4xx/5xx для всех маршрутов |
 | `get_request` | `dict` | `{}` | Настройки GET |
 | `post_request` | `dict` | `{}` | Настройки POST |
 

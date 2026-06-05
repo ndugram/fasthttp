@@ -1,0 +1,39 @@
+name: Daily Download Stats
+
+on:
+  schedule:
+    - cron: "0 15 * * *"   # every day at 15:00 UTC (22:00 Novosibirsk UTC+7)
+  workflow_dispatch:        # allow manual run
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install matplotlib requests
+
+      - name: Generate chart
+        run: python .github/scripts/download_stats.py
+
+      - name: Send chart to Telegram
+        run: |
+          YESTERDAY=$(date -d "yesterday" +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)
+          CAPTION="📦 *fasthttp-client* — daily stats (${YESTERDAY})
+
+          Chart shows downloads per day for the last 30 days.
+          [PyPI](https://pypi.org/project/fasthttp-client/) · [pepy.tech](https://pepy.tech/projects/fasthttp-client)"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendPhoto" \
+            -F "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -F "photo=@stats.png" \
+            -F "caption=${CAPTION}" \
+            -F "parse_mode=Markdown"
