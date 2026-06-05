@@ -2,7 +2,7 @@ name: Daily Download Stats
 
 on:
   schedule:
-    - cron: "0 9 * * *"   # every day at 09:00 UTC
+    - cron: "0 15 * * *"   # every day at 15:00 UTC (22:00 Novosibirsk UTC+7)
   workflow_dispatch:        # allow manual run
 
 jobs:
