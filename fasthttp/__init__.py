@@ -1,6 +1,7 @@
 from . import status
 from .__meta__ import __version__
 from .app import FastHTTP
+from .auth import BasicAuth, BearerAuth, DigestAuth
 from .dependencies import Depends
 from .middleware import (
     BaseMiddleware,
@@ -17,9 +18,12 @@ from .session import AsyncSession
 __all__ = (
     "AsyncSession",
     "BaseMiddleware",
+    "BasicAuth",
+    "BearerAuth",
     "CacheMiddleware",
     "CookieJar",
     "Depends",
+    "DigestAuth",
     "DummyCookieJar",
     "FastHTTP",
     "MiddlewareChain",
