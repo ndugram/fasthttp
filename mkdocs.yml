@@ -85,6 +85,7 @@ nav:
         - en/tutorial/response-handling.md
         - en/tutorial/parallel-execution.md
         - en/tutorial/async-session.md
+        - en/tutorial/streaming.md
         - en/tutorial/routers.md
         - en/tutorial/tags.md
         - en/tutorial/dependencies.md
@@ -147,6 +148,7 @@ nav:
         - ru/tutorial/response-handling.md
         - ru/tutorial/parallel-execution.md
         - ru/tutorial/async-session.md
+        - ru/tutorial/streaming.md
         - ru/tutorial/routers.md
         - ru/tutorial/tags.md
         - ru/tutorial/dependencies.md
