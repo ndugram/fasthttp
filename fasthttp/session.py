@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, cast
 
 import httpx
@@ -20,7 +21,7 @@ from .routing import Route
 from .security import Security
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine
+    from collections.abc import AsyncGenerator, Callable, Coroutine
 
     from .response import Response
     from .types import HTTPMethod
@@ -330,3 +331,44 @@ class AsyncSession:
                 timeout=timeout,
             ),
         )
+
+    @asynccontextmanager
+    async def stream(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        content: bytes | None = None,
+        timeout: float | None = None,
+    ) -> AsyncGenerator[httpx.Response, None]:
+        """Async context manager for streaming HTTP responses (SSE, chunked, etc.).
+
+        Usage:
+        ```python
+        async with session.stream("POST", "/stream", content=b"...", headers={...}) as resp:
+            async for line in resp.aiter_lines():
+                print(line)
+        ```
+        """
+        client = self._ensure_open()
+        method_upper = method.upper()
+
+        merged_headers: dict[str, str] = {}
+        if method_upper in self._request_configs:
+            merged_headers.update(self._request_configs[method_upper].get("headers", {}))
+        if headers:
+            merged_headers.update(headers)
+
+        _timeout = timeout
+        if _timeout is None and method_upper in self._request_configs:
+            _timeout = self._request_configs[method_upper].get("timeout", 30.0)
+
+        async with client.stream(
+            method_upper,
+            self._resolve_url(url),
+            headers=merged_headers or None,
+            content=content,
+            timeout=_timeout,
+        ) as resp:
+            yield resp
