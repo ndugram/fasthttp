@@ -49,6 +49,7 @@ Key features:
 - **Extensible** — middleware, dependency injection, routers, lifespan hooks.
 - **Interactive** — built-in Swagger UI via `app.web_run()` to browse and execute requests in the browser.
 - **HTTP/2** — optional HTTP/2 support, with automatic fallback to HTTP/1.1.
+- **Concurrency control** — limit parallel requests with `concurrency=N` to respect rate limits or avoid overloading a server.
 
 ## Sponsors
 
@@ -403,6 +404,46 @@ async def get_data(resp: Response) -> dict:
 
 
 if __name__ == "__main__":
+    app.run()
+```
+
+</details>
+
+<details markdown="1">
+<summary>With concurrency limit...</summary>
+
+By default all routes run fully in parallel. Use `concurrency` to cap how many requests execute at the same time — useful when the target API has a rate limit or you want predictable resource usage:
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+# At most 3 requests run simultaneously
+app = FastHTTP(concurrency=3)
+
+
+@app.get(url="https://api.example.com/items/1")
+async def item_1(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/2")
+async def item_2(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/3")
+async def item_3(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/4")
+async def item_4(resp: Response) -> dict:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    # First 3 start immediately, item_4 waits for a free slot
     app.run()
 ```
 
