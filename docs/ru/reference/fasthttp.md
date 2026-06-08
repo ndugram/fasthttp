@@ -20,6 +20,7 @@ app = FastHTTP(
     put_request: dict = {},
     patch_request: dict = {},
     delete_request: dict = {},
+    concurrency: int = None,
 )
 ```
 
@@ -39,6 +40,7 @@ app = FastHTTP(
 | `put_request` | `dict` | `{}` | Настройки PUT |
 | `patch_request` | `dict` | `{}` | Настройки PATCH |
 | `delete_request` | `dict` | `{}` | Настройки DELETE |
+| `concurrency` | `int \| None` | `None` | Макс. параллельных запросов при `run()`. `None` = без лимита |
 
 **Использование base_url:**
 
