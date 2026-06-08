@@ -88,6 +88,62 @@ async def single_request(resp: Response) -> dict:
 app.run()
 ```
 
+## Limiting Concurrency
+
+By default, all routes run fully in parallel. Use `concurrency` to cap how many requests execute at the same time.
+
+```python
+app = FastHTTP(concurrency=5)
+```
+
+This is useful when:
+
+- The target API has a rate limit (e.g. 5 req/s)
+- You want to avoid overwhelming a server with 100+ simultaneous connections
+- You need predictable resource usage
+
+### Example
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+# At most 3 requests run at the same time
+app = FastHTTP(concurrency=3)
+
+
+@app.get(url="https://api.example.com/items/1")
+async def item_1(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/2")
+async def item_2(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/3")
+async def item_3(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/4")
+async def item_4(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/5")
+async def item_5(resp: Response) -> dict:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    # First 3 start immediately, remaining 2 wait for a slot
+    app.run()
+```
+
+`None` (default) means no limit — all routes run in parallel.
+
 ## When Parallelism Matters
 
 Parallel execution is especially beneficial when:
