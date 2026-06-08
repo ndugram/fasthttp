@@ -8,7 +8,7 @@ from fasthttp.response import Response
 class LoggingMiddleware(BaseMiddleware):
     __return_type__ = None
     __priority__ = 99
-    __methods__: ClassVar[list[str]] = ["GET"]
+    __methods__ = ("GET",)
     __enabled__ = True
 
     async def request(self, method: str, url: str, kwargs: dict) -> dict:

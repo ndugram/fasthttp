@@ -160,7 +160,7 @@ class TestBaseMiddleware:
     def test_class_var_in_annotations(self):
         ann = str(BaseMiddleware.__annotations__["__methods__"])
         assert "ClassVar" in ann
-        assert "HTTPMethod" in ann
+        assert "Sequence" in ann
 
 
 # ---------------------------------------------------------------------------
