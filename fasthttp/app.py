@@ -413,6 +413,25 @@ class FastHTTP:
                 """
             ),
         ] = "",
+        concurrency: Annotated[
+            int | None,
+            Doc(
+                """
+                Maximum number of requests to run in parallel during `run()`.
+
+                When set, FastHTTP will use a semaphore to limit how many
+                requests execute concurrently. Useful when hitting rate-limited
+                APIs or to avoid overwhelming a server.
+
+                ``None`` (default) means no limit — all routes run in parallel.
+
+                Example:
+                ```python
+                app = FastHTTP(concurrency=5)
+                ```
+                """
+            ),
+        ] = None,
     ) -> None:
         self.logger = setup_logger(debug=debug)
         self.routes: list[Route] = []
@@ -462,6 +481,8 @@ class FastHTTP:
                     self.startup_uuid = str(uuid.uuid4())
             else:
                 self.startup_uuid = str(uuid.uuid4())
+
+        self.concurrency = concurrency
 
         self.client = HTTPClient(
             self.request_configs,
@@ -1077,16 +1098,24 @@ class FastHTTP:
 
         start_all = time.perf_counter()
 
+        sem = asyncio.Semaphore(self.concurrency) if self.concurrency else None
+
         async with httpx.AsyncClient(
             http2=self.http2_enabled,
             proxy=self.proxy,
         ) as client:
+            async def _guarded(route: Route) -> tuple[Route, float, Response | None]:
+                if sem:
+                    async with sem:
+                        return await self._run_route(client, route)
+                return await self._run_route(client, route)
+
             if total > 1:
                 if sys.version_info >= (3, 11):
                     try:
                         async with asyncio.TaskGroup() as tg:
                             tg_tasks = [
-                                tg.create_task(self._run_route(client, route))
+                                tg.create_task(_guarded(route))
                                 for route in routes
                             ]
                         results = [t.result() for t in tg_tasks]
@@ -1094,13 +1123,13 @@ class FastHTTP:
                         raise eg.exceptions[0] from None
                 else:
                     results = await asyncio.gather(
-                        *[self._run_route(client, route) for route in routes]
+                        *[_guarded(route) for route in routes]
                     )
 
                 for route, elapsed, result in results:
                     self._log_result(route, elapsed, result)
             else:
-                route, elapsed, result = await self._run_route(client, routes[0])
+                route, elapsed, result = await _guarded(routes[0])
                 self._log_result(route, elapsed, result)
 
         total_time = time.perf_counter() - start_all
