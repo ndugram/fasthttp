@@ -72,6 +72,62 @@ INFO    | fasthttp    | GET https://jsonplaceholder.typicode.com/comments/1 200 
 INFO    | fasthttp    | Done in 0.15s
 ```
 
+## Ограничение параллелизма
+
+По умолчанию все маршруты выполняются полностью параллельно. Параметр `concurrency` ограничивает количество одновременно выполняемых запросов.
+
+```python
+app = FastHTTP(concurrency=5)
+```
+
+Это полезно когда:
+
+- У целевого API есть rate limit (например, 5 req/s)
+- Нужно не перегружать сервер при 100+ одновременных соединениях
+- Требуется предсказуемое потребление ресурсов
+
+### Пример
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+# Не более 3 запросов одновременно
+app = FastHTTP(concurrency=3)
+
+
+@app.get(url="https://api.example.com/items/1")
+async def item_1(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/2")
+async def item_2(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/3")
+async def item_3(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/4")
+async def item_4(resp: Response) -> dict:
+    return resp.json()
+
+
+@app.get(url="https://api.example.com/items/5")
+async def item_5(resp: Response) -> dict:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    # Первые 3 стартуют сразу, остальные 2 ждут свободного слота
+    app.run()
+```
+
+`None` (по умолчанию) — без лимита, все маршруты параллельно.
+
 ## Когда это важно
 
 Параллельное выполнение особенно полезно при:
