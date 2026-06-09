@@ -67,6 +67,92 @@ app.web_run(base_url="/api")
 
 Now the docs will be available at `http://127.0.0.1:8000/api/docs`.
 
+## Customizing API Info
+
+Pass `title`, `version`, and `description` to `FastHTTP` to control what Swagger UI shows in the header:
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP(
+    title="Payments API",
+    version="3.1.0",
+    description="""
+## Payments API
+
+Charge cards, issue refunds, and query transaction history.
+
+Markdown is **supported**.
+""",
+)
+
+
+@app.get("https://api.example.com/transactions")
+async def list_transactions(resp: Response) -> list:
+    """List recent transactions."""
+    return resp.json()
+
+
+app.web_run()
+```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `title` | `"FastHTTP API"` | API name shown in Swagger UI header |
+| `version` | `"1.0.0"` | Version string next to the title |
+| `description` | `""` | Markdown description below the title |
+
+## Security Schemes in Swagger UI
+
+When routes use `auth=`, FastHTTP automatically adds the corresponding security scheme to `components/securitySchemes` and attaches a lock icon to protected operations in Swagger UI.
+
+```python
+from fasthttp import FastHTTP, BearerAuth, BasicAuth
+from fasthttp.response import Response
+
+app = FastHTTP(title="Secure API", version="1.0.0")
+
+
+@app.get(
+    "https://api.example.com/profile",
+    auth=BearerAuth(token="my-token"),
+    tags=["users"],
+)
+async def get_profile(resp: Response) -> dict:
+    """Protected with Bearer token."""
+    return resp.json()
+
+
+@app.get(
+    "https://legacy.example.com/data",
+    auth=BasicAuth(username="admin", password="pass"),
+    tags=["legacy"],
+)
+async def get_legacy_data(resp: Response) -> dict:
+    """Protected with Basic auth."""
+    return resp.json()
+
+
+@app.get("https://api.example.com/status", tags=["public"])
+async def status(resp: Response) -> dict:
+    """Public — no lock icon."""
+    return resp.json()
+
+
+app.web_run()
+```
+
+FastHTTP emits the following scheme entries automatically:
+
+| Auth class | Scheme name | OpenAPI type |
+|------------|-------------|--------------|
+| `BearerAuth` | `bearerAuth` | `http / bearer / JWT` |
+| `BasicAuth` | `basicAuth` | `http / basic` |
+| `DigestAuth` | `digestAuth` | `http / digest` |
+
+Schemes are only added to the schema when at least one route uses the corresponding `auth=` class.
+
 ## With Tags
 
 ```python
