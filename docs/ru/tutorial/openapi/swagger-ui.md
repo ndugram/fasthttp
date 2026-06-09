@@ -55,6 +55,92 @@ app.web_run(base_url="/api")
 
 Теперь документация будет доступна по адресу `http://127.0.0.1:8000/api/docs`.
 
+## Кастомизация информации об API
+
+Параметры `title`, `version` и `description` в `FastHTTP` управляют заголовком в Swagger UI:
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.response import Response
+
+app = FastHTTP(
+    title="Payments API",
+    version="3.1.0",
+    description="""
+## Payments API
+
+Списание средств, возвраты и история транзакций.
+
+Поддерживает **Markdown**.
+""",
+)
+
+
+@app.get("https://api.example.com/transactions")
+async def list_transactions(resp: Response) -> list:
+    """Список последних транзакций."""
+    return resp.json()
+
+
+app.web_run()
+```
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `title` | `"FastHTTP API"` | Название API в заголовке Swagger UI |
+| `version` | `"1.0.0"` | Строка версии рядом с названием |
+| `description` | `""` | Markdown-описание под заголовком |
+
+## Security Schemes в Swagger UI
+
+Если маршруты используют `auth=`, FastHTTP автоматически добавляет схему безопасности в `components/securitySchemes` и показывает значок замка на защищённых операциях.
+
+```python
+from fasthttp import FastHTTP, BearerAuth, BasicAuth
+from fasthttp.response import Response
+
+app = FastHTTP(title="Secure API", version="1.0.0")
+
+
+@app.get(
+    "https://api.example.com/profile",
+    auth=BearerAuth(token="my-token"),
+    tags=["users"],
+)
+async def get_profile(resp: Response) -> dict:
+    """Защищён Bearer-токеном."""
+    return resp.json()
+
+
+@app.get(
+    "https://legacy.example.com/data",
+    auth=BasicAuth(username="admin", password="pass"),
+    tags=["legacy"],
+)
+async def get_legacy_data(resp: Response) -> dict:
+    """Защищён Basic-аутентификацией."""
+    return resp.json()
+
+
+@app.get("https://api.example.com/status", tags=["public"])
+async def status(resp: Response) -> dict:
+    """Публичный — без замка."""
+    return resp.json()
+
+
+app.web_run()
+```
+
+FastHTTP добавляет схемы автоматически:
+
+| Класс | Имя схемы | OpenAPI тип |
+|-------|-----------|-------------|
+| `BearerAuth` | `bearerAuth` | `http / bearer / JWT` |
+| `BasicAuth` | `basicAuth` | `http / basic` |
+| `DigestAuth` | `digestAuth` | `http / digest` |
+
+Схема добавляется в документ только если хотя бы один маршрут использует соответствующий `auth=`.
+
 ## Пример
 
 ```python
