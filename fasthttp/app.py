@@ -413,6 +413,46 @@ class FastHTTP:
                 """
             ),
         ] = "",
+        title: Annotated[
+            str,
+            Doc(
+                """
+                Title shown in the OpenAPI schema and Swagger UI.
+
+                Example:
+                ```python
+                app = FastHTTP(title="My API")
+                ```
+                """
+            ),
+        ] = "FastHTTP API",
+        version: Annotated[
+            str,
+            Doc(
+                """
+                API version shown in the OpenAPI schema and Swagger UI.
+
+                Example:
+                ```python
+                app = FastHTTP(version="2.0.0")
+                ```
+                """
+            ),
+        ] = "1.0.0",
+        description: Annotated[
+            str,
+            Doc(
+                """
+                API description shown in the OpenAPI schema and Swagger UI.
+                Supports Markdown.
+
+                Example:
+                ```python
+                app = FastHTTP(description="My awesome API")
+                ```
+                """
+            ),
+        ] = "",
         concurrency: Annotated[
             int | None,
             Doc(
@@ -440,6 +480,9 @@ class FastHTTP:
         self.proxy = proxy
         self.base_url = base_url
         self.docs_base_url = docs_base_url
+        self.title = title
+        self.version = version
+        self.description = description
         self.generate_startup_uuid = generate_startup_uuid
         self.startup_uuid_version = startup_uuid_version
 
@@ -1386,6 +1429,9 @@ class ASGIApp:
                 schema = generate_openapi_schema(
                     self.fasthttp,
                     server_url=self.docs_urls["request_url"],
+                    title=self.fasthttp.title,
+                    version=self.fasthttp.version,
+                    description=self.fasthttp.description,
                 )
                 self._openapi_cache = orjson.dumps(schema, option=orjson.OPT_INDENT_2)
             await self._send_raw_json(send, self._openapi_cache)
