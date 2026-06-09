@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from fasthttp.app import FastHTTP
+    from fasthttp.auth import BasicAuth, BearerAuth, DigestAuth
     from fasthttp.routing import Route
 
 
@@ -258,6 +259,40 @@ def _normalize_path(url: str) -> str:
     return api_path
 
 
+def _get_security_scheme_name(auth: BasicAuth | BearerAuth | DigestAuth) -> str:
+    """Return the securityScheme key for a given auth object."""
+    from fasthttp.auth import BasicAuth, BearerAuth, DigestAuth
+
+    if isinstance(auth, BearerAuth):
+        return "bearerAuth"
+    if isinstance(auth, BasicAuth):
+        return "basicAuth"
+    if isinstance(auth, DigestAuth):
+        return "digestAuth"
+    return "auth"
+
+
+def _collect_security_schemes(
+    routes: list[Route],
+) -> dict[str, Any]:
+    """Build components/securitySchemes from auth objects used in routes."""
+    from fasthttp.auth import BasicAuth, BearerAuth, DigestAuth
+
+    schemes: dict[str, Any] = {}
+
+    for route in routes:
+        if route.auth is None:
+            continue
+        if isinstance(route.auth, BearerAuth) and "bearerAuth" not in schemes:
+            schemes["bearerAuth"] = {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
+        elif isinstance(route.auth, BasicAuth) and "basicAuth" not in schemes:
+            schemes["basicAuth"] = {"type": "http", "scheme": "basic"}
+        elif isinstance(route.auth, DigestAuth) and "digestAuth" not in schemes:
+            schemes["digestAuth"] = {"type": "http", "scheme": "digest"}
+
+    return schemes
+
+
 def generate_openapi_schema(  # noqa: C901
     app: Annotated[
         FastHTTP,
@@ -276,6 +311,18 @@ def generate_openapi_schema(  # noqa: C901
             """
         ),
     ] = None,
+    title: Annotated[
+        str,
+        Doc("API title shown in the OpenAPI schema and Swagger UI."),
+    ] = "FastHTTP API",
+    version: Annotated[
+        str,
+        Doc("API version string."),
+    ] = "1.0.0",
+    description: Annotated[
+        str,
+        Doc("API description. Supports Markdown."),
+    ] = "",
 ) -> dict[str, Any]:
     """
     Generate OpenAPI 3.0 schema from FastHTTP application.
@@ -290,6 +337,7 @@ def generate_openapi_schema(  # noqa: C901
     routes = app.routes
 
     schemas = _collect_schemas(routes)
+    security_schemes = _collect_security_schemes(routes)
 
     paths: dict[str, Any] = {}
 
@@ -312,6 +360,10 @@ def generate_openapi_schema(  # noqa: C901
 
         if handler and hasattr(handler, "__doc__") and handler.__doc__:
             operation["description"] = _extract_docstring(handler)
+
+        if route.auth is not None:
+            scheme_name = _get_security_scheme_name(route.auth)
+            operation["security"] = [{scheme_name: []}]
 
         if route.params:
             operation["parameters"] = [
@@ -378,17 +430,19 @@ def generate_openapi_schema(  # noqa: C901
         else:
             paths[path_key] = path_item
 
+    info: dict[str, Any] = {"title": title, "version": version}
+    if description:
+        info["description"] = description
+
+    components: dict[str, Any] = {"schemas": schemas}
+    if security_schemes:
+        components["securitySchemes"] = security_schemes
+
     openapi_schema: dict[str, Any] = {
         "openapi": "3.0.3",
-        "info": {
-            "title": "FastHTTP API",
-            "description": "HTTP Client API documentation",
-            "version": "1.0.0",
-        },
+        "info": info,
         "paths": paths,
-        "components": {
-            "schemas": schemas,
-        },
+        "components": components,
     }
 
     if server_url:
