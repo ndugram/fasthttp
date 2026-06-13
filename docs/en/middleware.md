@@ -163,6 +163,32 @@ app = FastHTTP(
 
 Caches GET requests in memory with LRU eviction.
 
+### Retry
+
+FastHTTP comes with built-in `RetryMiddleware` for automatic retries with exponential backoff:
+
+```python
+from fasthttp import FastHTTP, RetryMiddleware
+
+app = FastHTTP(
+    middleware=RetryMiddleware(
+        max_retries=3,
+        retry_on={429, 500, 502, 503, 504},
+        backoff_factor=0.5,
+    )
+)
+```
+
+Automatically retries failed requests on connection errors, timeouts, or specific HTTP status codes.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `max_retries` | `int` | `3` | Maximum number of retry attempts |
+| `retry_on` | `set[int]` | `{429, 500, 502, 503, 504}` | HTTP status codes that trigger a retry |
+| `backoff_factor` | `float` | `0.5` | Multiplier for exponential backoff delay |
+| `max_delay` | `float` | `30.0` | Maximum delay between retries in seconds |
+| `retry_exceptions` | `tuple[type[Exception], ...]` | `(Exception,)` | Exception types that trigger a retry |
+
 ### Response modification
 
 ```python

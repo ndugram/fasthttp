@@ -10,6 +10,7 @@ from .middleware import (
     DummyCookieJar,
     MiddlewareChain,
     MiddlewareManager,
+    RetryMiddleware,
     SessionMiddleware,
 )
 from .routing import Router
@@ -28,6 +29,7 @@ __all__ = (
     "FastHTTP",
     "MiddlewareChain",
     "MiddlewareManager",
+    "RetryMiddleware",
     "Router",
     "SessionMiddleware",
     "__version__",
