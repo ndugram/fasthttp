@@ -457,6 +457,8 @@ class HTTPClient:
                 if attempt < max_attempts - 1:
                     continue
                 return None
+            except FastHTTPError:
+                raise
             except Exception as e:  # noqa: BLE001
                 last_error = e
                 if self.middleware_manager:
