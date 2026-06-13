@@ -33,8 +33,8 @@ def make_route(
     return Route(method=method, url=url, handler=handler, params=params)  # type: ignore
 
 
-def make_response(status: int = 200, text: str = "ok") -> Response:
-    return Response(status=status, text=text, headers={}, method="GET")
+def make_response(status: int = 200, text: str = "ok", headers: dict | None = None) -> Response:
+    return Response(status=status, text=text, headers=headers or {}, method="GET")
 
 
 class SimpleMiddleware(BaseMiddleware):
@@ -881,3 +881,207 @@ class TestMiddlewareIntegration:
         resp2 = make_response(text="new-data")
         result2 = await mm.process_after_response(resp2, route, config2)  # type: ignore
         assert result2.text == "data"
+
+
+# ---------------------------------------------------------------------------
+# RetryMiddleware
+# ---------------------------------------------------------------------------
+
+
+from fasthttp.middleware.retry import RetryMiddleware, RetrySignal, _retry_state
+
+
+class TestRetryMiddleware:
+    def test_init_defaults(self):
+        mw = RetryMiddleware()
+        assert mw.max_retries == 3
+        assert mw.retry_on == {429, 500, 502, 503, 504}
+        assert mw.backoff_factor == 0.5
+        assert mw.max_delay == 30.0
+
+    def test_init_custom(self):
+        mw = RetryMiddleware(
+            max_retries=5,
+            retry_on={429, 503},
+            backoff_factor=1.0,
+            max_delay=60.0,
+        )
+        assert mw.max_retries == 5
+        assert mw.retry_on == {429, 503}
+        assert mw.backoff_factor == 1.0
+        assert mw.max_delay == 60.0
+
+    def test_should_retry_status(self):
+        mw = RetryMiddleware(retry_on={429, 500})
+        assert mw._should_retry_status(429) is True
+        assert mw._should_retry_status(500) is True
+        assert mw._should_retry_status(200) is False
+        assert mw._should_retry_status(404) is False
+
+    def test_should_retry_exception(self):
+        mw = RetryMiddleware(retry_exceptions=(ConnectionError, TimeoutError))
+        assert mw._should_retry_exception(ConnectionError()) is True
+        assert mw._should_retry_exception(TimeoutError()) is True
+        assert mw._should_retry_exception(ValueError()) is False
+
+    def test_should_retry_exception_default(self):
+        mw = RetryMiddleware()
+        assert mw._should_retry_exception(ConnectionError()) is True
+        assert mw._should_retry_exception(TimeoutError()) is True
+        assert mw._should_retry_exception(RuntimeError()) is True
+
+    def test_calculate_delay_exponential(self):
+        mw = RetryMiddleware(backoff_factor=0.5, max_delay=30.0)
+        assert mw._calculate_delay(0, None) == 0.5
+        assert mw._calculate_delay(1, None) == 1.0
+        assert mw._calculate_delay(2, None) == 2.0
+        assert mw._calculate_delay(3, None) == 4.0
+
+    def test_calculate_delay_max_cap(self):
+        mw = RetryMiddleware(backoff_factor=1.0, max_delay=5.0)
+        assert mw._calculate_delay(10, None) == 5.0
+
+    def test_calculate_delay_respects_retry_after(self):
+        mw = RetryMiddleware(backoff_factor=0.5, max_delay=30.0)
+        resp = make_response(headers={"retry-after": "2.5"})
+        assert mw._calculate_delay(0, resp) == 2.5
+
+    def test_calculate_delay_retry_after_capped(self):
+        mw = RetryMiddleware(backoff_factor=0.5, max_delay=3.0)
+        resp = make_response(headers={"retry-after": "100"})
+        assert mw._calculate_delay(0, resp) == 3.0
+
+    def test_calculate_delay_retry_after_invalid_ignored(self):
+        mw = RetryMiddleware(backoff_factor=0.5, max_delay=30.0)
+        resp = make_response(headers={"retry-after": "abc"})
+        assert mw._calculate_delay(0, resp) == 0.5
+
+    @pytest.mark.asyncio
+    async def test_request_initializes_state(self):
+        mw = RetryMiddleware(max_retries=5)
+        _retry_state.set(None)
+        await mw.request("GET", "https://example.com", {})
+        state = _retry_state.get()
+        assert state is not None
+        assert state["attempt"] == 0
+        assert state["max"] == 5
+        _retry_state.set(None)
+
+    @pytest.mark.asyncio
+    async def test_request_preserves_existing_state(self):
+        mw = RetryMiddleware(max_retries=5)
+        _retry_state.set({"attempt": 2, "max": 5})
+        await mw.request("GET", "https://example.com", {})
+        state = _retry_state.get()
+        assert state["attempt"] == 2
+        _retry_state.set(None)
+
+    @pytest.mark.asyncio
+    async def test_response_raises_on_retryable_status(self):
+        mw = RetryMiddleware(max_retries=3, retry_on={500})
+        _retry_state.set({"attempt": 0, "max": 3})
+        resp = make_response(status=500)
+
+        with pytest.raises(RetrySignal):
+            await mw.response(resp)
+
+        state = _retry_state.get()
+        assert state["attempt"] == 1
+        _retry_state.set(None)
+
+    @pytest.mark.asyncio
+    async def test_response_raises_until_max_retries(self):
+        mw = RetryMiddleware(max_retries=2, retry_on={500})
+        _retry_state.set({"attempt": 2, "max": 2})
+        resp = make_response(status=500)
+
+        result = await mw.response(resp)
+        assert result.status == 500
+        _retry_state.set(None)
+
+    @pytest.mark.asyncio
+    async def test_response_passes_non_retryable_status(self):
+        mw = RetryMiddleware(retry_on={500})
+        _retry_state.set({"attempt": 0, "max": 3})
+        resp = make_response(status=200)
+
+        result = await mw.response(resp)
+        assert result.status == 200
+        _retry_state.set(None)
+
+    @pytest.mark.asyncio
+    async def test_response_no_state_passthrough(self):
+        mw = RetryMiddleware()
+        _retry_state.set(None)
+        resp = make_response(status=500)
+
+        result = await mw.response(resp)
+        assert result.status == 500
+
+    @pytest.mark.asyncio
+    async def test_on_error_raises_on_retryable_exception(self):
+        mw = RetryMiddleware(max_retries=3)
+        _retry_state.set({"attempt": 0, "max": 3})
+
+        with pytest.raises(RetrySignal):
+            await mw.on_error(ConnectionError("refused"), make_route(), {})
+
+        state = _retry_state.get()
+        assert state["attempt"] == 1
+        _retry_state.set(None)
+
+    @pytest.mark.asyncio
+    async def test_on_error_raises_until_max_retries(self):
+        mw = RetryMiddleware(max_retries=2)
+        _retry_state.set({"attempt": 2, "max": 2})
+
+        await mw.on_error(ConnectionError("refused"), make_route(), {})
+        _retry_state.set(None)
+
+    @pytest.mark.asyncio
+    async def test_on_error_no_state_passthrough(self):
+        mw = RetryMiddleware()
+        _retry_state.set(None)
+
+        await mw.on_error(ConnectionError(), make_route(), {})
+
+    @pytest.mark.asyncio
+    async def test_on_error_non_retryable_passthrough(self):
+        mw = RetryMiddleware(retry_exceptions=(ConnectionError,))
+        _retry_state.set({"attempt": 0, "max": 3})
+
+        await mw.on_error(ValueError("bad"), make_route(), {})
+        state = _retry_state.get()
+        assert state["attempt"] == 0
+        _retry_state.set(None)
+
+    def test_retry_signal(self):
+        exc = RetrySignal("503")
+        assert exc.reason == "503"
+        assert "503" in str(exc)
+
+    def test_retry_signal_is_exception(self):
+        assert issubclass(RetrySignal, Exception)
+
+
+class TestRetryMiddlewareIntegration:
+    def test_fasthttp_accepts_retry_middleware(self):
+        from fasthttp import FastHTTP
+
+        app = FastHTTP(middleware=[RetryMiddleware()])
+        assert len(app.middleware_manager.middlewares) == 1
+        assert isinstance(app.middleware_manager.middlewares[0], RetryMiddleware)
+
+    def test_retry_with_other_middleware(self):
+        from fasthttp import FastHTTP
+
+        app = FastHTTP(middleware=[SimpleMiddleware("a"), RetryMiddleware()])
+        assert len(app.middleware_manager.middlewares) == 2
+
+    def test_retry_priority_high(self):
+        mw = RetryMiddleware()
+        assert mw.__priority__ == 1000
+
+    def test_retry_methods_none(self):
+        mw = RetryMiddleware()
+        assert mw.__methods__ is None
