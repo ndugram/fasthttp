@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar
 
 from annotated_doc import Doc
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Sequence
 
     from fasthttp.response import Response
     from fasthttp.routing import Route
