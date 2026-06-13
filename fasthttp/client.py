@@ -24,6 +24,7 @@ from .exceptions import (
     FastHTTPTimeoutError,
     log_success,
 )
+from .middleware.retry import RetrySignal
 from .response import Response
 from .routing import Route
 
@@ -293,6 +294,8 @@ class HTTPClient:
         route: Route,
         config: dict,
         timeout_config: httpx.Timeout,
+        *,
+        raise_errors: bool = False,
     ) -> tuple[httpx.Response, float] | None:
         if route.skip_request:
             return None
@@ -314,8 +317,12 @@ class HTTPClient:
             elapsed = (time.perf_counter() - start) * 1000
             return resp, elapsed
         except httpx.ConnectError as e:
+            if raise_errors:
+                raise
             await self._handle_error(route, config, e, FastHTTPConnectionError)
         except httpx.TimeoutException as e:
+            if raise_errors:
+                raise
             await self._handle_error(
                 route,
                 config,
@@ -324,18 +331,22 @@ class HTTPClient:
                 timeout=config.get("timeout", "default"),
             )
         except SecurityError as e:
+            if raise_errors:
+                raise
             if self.security:
                 self.security.release_slot()
                 await self.security.post_request(
                     route.url, route.method, success=False, error=e
                 )
             self.logger.error("Security error: %s", e)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
+            if raise_errors:
+                raise
             await self._handle_error(route, config, e, FastHTTPRequestError)
 
         return None
 
-    async def send(self, client: httpx.AsyncClient, route: Route) -> Response | None:
+    async def send(self, client: httpx.AsyncClient, route: Route) -> Response | None:  # noqa: C901
         if not self._validate_request(route):
             return None
 
@@ -359,63 +370,118 @@ class HTTPClient:
         timeout_config = self._get_timeout_config(config)
         self._log_request(route, config)
 
-        result = await self._execute_request(client, route, config, timeout_config)
+        retry_middleware = self._get_retry_middleware()
+        max_attempts = (retry_middleware.max_retries + 1) if retry_middleware else 1
+        last_error: Exception | None = None
 
-        if route.skip_request:
-            empty_response = Response(
-                status=200,
-                text="",
-                headers={},
-                method=route.method,
-            )
-            empty_response._url = route.url  # noqa: SLF001
-            empty_response._response_model = route.response_model  # noqa: SLF001
-            handler_result = await route.handler(empty_response)
-            return await self._process_handler_result(empty_response, handler_result)
+        for attempt in range(max_attempts):
+            try:
+                result = await self._execute_request(
+                    client, route, config, timeout_config, raise_errors=True
+                )
 
-        if not result:
-            return None
+                if route.skip_request:
+                    empty_response = Response(
+                        status=200,
+                        text="",
+                        headers={},
+                        method=route.method,
+                    )
+                    empty_response._url = route.url  # noqa: SLF001
+                    empty_response._response_model = route.response_model  # noqa: SLF001
+                    handler_result = await route.handler(empty_response)
+                    return await self._process_handler_result(
+                        empty_response, handler_result
+                    )
 
-        resp, elapsed = result
-        try:
-            await self._check_response_security(route, resp)
-        except SecurityError as e:
-            self.logger.error("Response security check failed: %s", e)
-            if self.security:
-                self.security.release_slot()
-            return None
+                if not result:
+                    return None
 
-        if resp.status_code >= 400:
-            error_model = route.responses.get(resp.status_code)
-            if error_model:
-                if isinstance(error_model, dict):
-                    error_model = error_model.get("model")
-                if error_model:
-                    response = self._build_response(route, config, resp)
+                resp, elapsed = result
+
+                try:
+                    await self._check_response_security(route, resp)
+                except SecurityError as e:
+                    self.logger.error("Response security check failed: %s", e)
+                    if self.security:
+                        self.security.release_slot()
+                    return None
+
+                if resp.status_code >= 400:
+                    if self.middleware_manager:
+                        built = self._build_response(route, config, resp)
+                        try:
+                            await self.middleware_manager.process_after_response(
+                                built, route, config  # type: ignore
+                            )
+                        except RetrySignal:
+                            if attempt < max_attempts - 1:
+                                continue
+                            return None
+
+                    error_model = route.responses.get(resp.status_code)
+                    if error_model:
+                        if isinstance(error_model, dict):
+                            error_model = error_model.get("model")
+                        if error_model:
+                            response = self._build_response(route, config, resp)
+                            try:
+                                error_data = response.json()
+                                validated = error_model.model_validate(error_data)
+                                response._handler_result = validated  # noqa: SLF001
+                                handler_result = await route.handler(response)
+                                return await self._process_handler_result(
+                                    response, handler_result
+                                )
+                            except Exception:  # noqa: S110, BLE001
+                                pass
+                    await self._handle_bad_status(route, config, resp)
+                    return None
+
+                log_success(route.url, route.method, resp.status_code, elapsed)
+
+                response = self._build_response(route, config, resp)
+                response._response_model = route.response_model  # noqa: SLF001
+
+                if self.middleware_manager:
+                    response = await self.middleware_manager.process_after_response(
+                        response,
+                        route,
+                        config,  # type: ignore
+                    )
+
+                handler_result = await route.handler(response)
+                return await self._process_handler_result(response, handler_result)
+
+            except RetrySignal:
+                if attempt < max_attempts - 1:
+                    continue
+                return None
+            except Exception as e:  # noqa: BLE001
+                last_error = e
+                if self.middleware_manager:
                     try:
-                        error_data = response.json()
-                        validated = error_model.model_validate(error_data)
-                        response._handler_result = validated  # noqa: SLF001
-                        handler_result = await route.handler(response)
-                        return await self._process_handler_result(
-                            response, handler_result
+                        await self.middleware_manager.process_on_error(
+                            e, route, config  # type: ignore
                         )
-                    except Exception:  # noqa: S110, BLE001
-                        pass
-            await self._handle_bad_status(route, config, resp)
+                    except RetrySignal:
+                        if attempt < max_attempts - 1:
+                            continue
+                        return None
+                break
+
+        if last_error is not None:
+            self.logger.error("Request failed after retries: %s", last_error)
+
+        return None
+
+    def _get_retry_middleware(self) -> Any:  # noqa: ANN401
+        """Find RetryMiddleware in the middleware chain if present."""
+        from fasthttp.middleware.retry import RetryMiddleware
+
+        if not self.middleware_manager:
             return None
-
-        log_success(route.url, route.method, resp.status_code, elapsed)
-
-        response = self._build_response(route, config, resp)
-        response._response_model = route.response_model  # noqa: SLF001
-
-        if self.middleware_manager:
-            response = await self.middleware_manager.process_after_response(
-                response,
-                route,
-                config,  # type: ignore
-            )
-
-        handler_result = await route.handler(response)
-        return await self._process_handler_result(response, handler_result)
+        for mw in self.middleware_manager.middlewares:
+            if isinstance(mw, RetryMiddleware):
+                return mw
+        return None
