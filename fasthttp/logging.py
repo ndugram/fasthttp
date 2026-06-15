@@ -97,7 +97,18 @@ def setup_logger(*, debug: bool = False) -> logging.Logger:
     logger = logging.getLogger(LOGGER_NAME)
 
     if logger.handlers:
-        logger.handlers[0].setLevel(logging.DEBUG if debug else logging.INFO)
+        if not any(isinstance(h.formatter, ColorFormatter) for h in logger.handlers):
+            handler = logging.StreamHandler(sys.stdout)
+            handler.setLevel(logging.DEBUG if debug else logging.INFO)
+            handler.setFormatter(
+                ColorFormatter(
+                    "%(asctime)s │ %(levelname)s │ %(name)s │ %(message)s"
+                )
+            )
+            logger.addHandler(handler)
+            logger.propagate = False
+        else:
+            logger.handlers[0].setLevel(logging.DEBUG if debug else logging.INFO)
         return logger
 
     logger.setLevel(logging.DEBUG)
@@ -105,9 +116,9 @@ def setup_logger(*, debug: bool = False) -> logging.Logger:
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG if debug else logging.INFO)
 
-    formatter = ColorFormatter("%(asctime)s │ %(levelname)s │ %(name)s │ %(message)s")
-
-    handler.setFormatter(formatter)
+    handler.setFormatter(
+        ColorFormatter("%(asctime)s │ %(levelname)s │ %(name)s │ %(message)s")
+    )
     logger.addHandler(handler)
     logger.propagate = False
 
