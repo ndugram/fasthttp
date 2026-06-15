@@ -45,7 +45,7 @@ Key features:
 - **Simple** — define HTTP requests as decorated async functions, no boilerplate.
 - **Typed** — full type annotations throughout; validate responses with <a href="https://docs.pydantic.dev/" target="_blank">Pydantic</a> models.
 - **Logged** — colorful, structured request/response logs with timing, built-in.
-- **Complete** — GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, and GraphQL out of the box.
+- **Complete** — GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, GraphQL, and **WebSocket** out of the box.
 - **Extensible** — middleware, dependency injection, routers, lifespan hooks.
 - **Interactive** — built-in Swagger UI via `app.web_run()` to browse and execute requests in the browser.
 - **HTTP/2** — optional HTTP/2 support, with automatic fallback to HTTP/1.1.
@@ -450,6 +450,32 @@ if __name__ == "__main__":
 </details>
 
 <details markdown="1">
+<summary>With WebSocket...</summary>
+
+Use `@app.ws()` to connect to a WebSocket endpoint and exchange messages in real time:
+
+```python
+from fasthttp import FastHTTP, WebSocket
+
+app = FastHTTP()
+
+
+@app.ws(url="wss://echo.websocket.org")
+async def echo(ws: WebSocket) -> None:
+    await ws.send("Hello from fasthttp!")
+    msg = await ws.recv()
+    print(f"Received: {msg}")
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+Supports auto-reconnect with exponential backoff, `async for` streaming, and works alongside HTTP routes in the same `app.run()`.
+
+</details>
+
+<details markdown="1">
 <summary>With GraphQL...</summary>
 
 Use `@app.graphql` to send queries and mutations. The handler returns the query body; FastHTTP sends it and gives you the parsed response:
@@ -498,6 +524,29 @@ app = FastHTTP(http2=True)
 ```
 
 Servers that don't support HTTP/2 fall back to HTTP/1.1 automatically.
+
+## WebSocket
+
+Connect to WebSocket endpoints with the same decorator API:
+
+```python
+from fasthttp import FastHTTP, WebSocket
+
+app = FastHTTP()
+
+
+@app.ws(url="wss://echo.websocket.org")
+async def echo(ws: WebSocket) -> None:
+    await ws.send("Hello!")
+    msg = await ws.recv()
+    print(f"Received: {msg}")
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+See the [WebSocket tutorial](https://fasthttp.ndugram.dev/en/latest/tutorial/websocket/) for details.
 
 ## CLI
 

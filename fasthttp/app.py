@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args, get_origin
 import httpx
 import orjson
 from annotated_doc import Doc
+from websockets import connect as ws_connect
+from websockets.exceptions import ConnectionClosed as WSConnClosed
 
 from .client import HTTPClient
 from .events import ErrorHook, EventHooks, RequestHook, ResponseHook
@@ -43,6 +45,7 @@ from .openapi.swagger import get_not_found_html, get_swagger_html
 from .openapi.urls import build_docs_urls
 from .routing import Route, Router
 from .security import Security
+from .websocket import WebSocket as FastHTTPWebSocket
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -527,6 +530,8 @@ class FastHTTP:
                 self.startup_uuid = str(uuid.uuid4())
 
         self.concurrency = concurrency
+
+        self._ws_routes: list[dict] = []
 
         self.event_hooks = EventHooks()
 
@@ -1109,6 +1114,86 @@ class FastHTTP:
 
         return decorator
 
+    def ws(
+        self,
+        url: Annotated[
+            str,
+            Doc(
+                """
+                WebSocket endpoint URL (must start with ``ws://`` or ``wss://``).
+                """
+            ),
+        ],
+        *,
+        reconnect: Annotated[
+            bool,
+            Doc(
+                """
+                Automatically reconnect when the connection drops.
+
+                When enabled, the client will keep retrying until
+                ``max_retries`` is reached.
+                """
+            ),
+        ] = False,
+        max_retries: Annotated[
+            int,
+            Doc(
+                """
+                Maximum number of reconnection attempts (ignored when
+                ``reconnect`` is False).
+
+                Set to ``-1`` for unlimited retries.
+                """
+            ),
+        ] = 0,
+        tags: Annotated[
+            list[str] | None,
+            Doc(
+                """
+                Tags for grouping and filtering requests.
+                """
+            ),
+        ] = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """
+        Decorator for registering a WebSocket connection handler.
+
+        The decorated async function receives a :class:`WebSocket` instance
+        that can be used to send and receive messages over the connection.
+
+        Example:
+        .. code-block:: python
+
+            from fasthttp import FastHTTP
+
+            app = FastHTTP()
+
+            @app.ws(url="wss://echo.websocket.org")
+            async def echo(ws: WebSocket):
+                await ws.send("Hello!")
+                msg = await ws.recv()
+                print(f"Received: {msg}")
+        """
+        def decorator(func: Callable[..., object]) -> Callable[..., object]:
+            validate_handler(func=func)
+            resolved_url = url
+            if self.base_url and not url.startswith(("ws://", "wss://")):
+                resolved_url = self._resolve_url(url)
+            self._ws_routes.append(
+                {
+                    "url": resolved_url,
+                    "handler": func,
+                    "reconnect": reconnect,
+                    "max_retries": max_retries,
+                    "tags": tags or [],
+                }
+            )
+            self.logger.debug("Registered WebSocket: %s", url)
+            return func
+
+        return decorator
+
     def on_request(
         self,
         func: Annotated[
@@ -1194,11 +1279,17 @@ class FastHTTP:
                 elapsed,
             )
 
-    async def _run(self, routes: list[Route] | None = None) -> None:
+    async def _run(self, routes: list[Route] | None = None) -> None:  # noqa: C901
         routes = routes or self.routes
-        total = len(routes)
+        http_total = len(routes)
+        ws_total = len(self._ws_routes)
+        total = http_total + ws_total
 
-        self.logger.info("Sending %d requests", total)
+        self.logger.info("Running %d routes", total)
+        if http_total:
+            self.logger.info("HTTP requests: %d", http_total)
+        if ws_total:
+            self.logger.info("WebSocket connections: %d", ws_total)
         if self.http2_enabled:
             self.logger.info("HTTP/2 enabled")
         if self.proxy:
@@ -1218,34 +1309,87 @@ class FastHTTP:
                         return await self._run_route(client, route)
                 return await self._run_route(client, route)
 
-            if total > 1:
-                if sys.version_info >= (3, 11):
-                    try:
-                        async with asyncio.TaskGroup() as tg:
-                            tg_tasks = [
-                                tg.create_task(_guarded(route))
-                                for route in routes
-                            ]
-                        results = [t.result() for t in tg_tasks]
-                    except BaseExceptionGroup as eg:  # noqa: F821
-                        raise eg.exceptions[0] from None
+            ws_futures = [
+                asyncio.ensure_future(self._run_ws(ws_route))
+                for ws_route in self._ws_routes
+            ]
+
+            if http_total > 0:
+                if http_total > 1:
+                    if sys.version_info >= (3, 11):
+                        try:
+                            async with asyncio.TaskGroup() as tg:
+                                tg_tasks = [
+                                    tg.create_task(_guarded(route))
+                                    for route in routes
+                                ]
+                            results = [t.result() for t in tg_tasks]
+                        except BaseExceptionGroup as eg:  # noqa: F821
+                            raise eg.exceptions[0] from None
+                    else:
+                        results = await asyncio.gather(
+                            *[_guarded(route) for route in routes]
+                        )
+
+                    for route, elapsed, result in results:
+                        self._log_result(route, elapsed, result)
                 else:
-                    results = await asyncio.gather(
-                        *[_guarded(route) for route in routes]
-                    )
-
-                for route, elapsed, result in results:
+                    route, elapsed, result = await _guarded(routes[0])
                     self._log_result(route, elapsed, result)
-            else:
-                route, elapsed, result = await _guarded(routes[0])
-                self._log_result(route, elapsed, result)
 
-        total_time = time.perf_counter() - start_all
-        self.logger.info("Done in %.2fs", total_time)
+            total_time = time.perf_counter() - start_all
+            self.logger.info("Done in %.2fs", total_time)
+
+
+            if ws_futures:
+                self.logger.info(
+                    "WebSocket connections active. Press Ctrl+C to stop."
+                )
+                await asyncio.gather(*ws_futures, return_exceptions=True)
 
     async def _run_with_lifespan(self, routes: list[Route]) -> None:
         async with self.lifespan(self):  # type: ignore
             await self._run(routes)
+
+    async def _run_ws(self, ws_route: dict) -> None:
+        """Connect and run a single WebSocket handler."""
+
+        url: str = ws_route["url"]
+        handler = ws_route["handler"]
+        max_retries: int = ws_route.get("max_retries", 0)
+        attempt = 0
+
+        self.logger.info("WebSocket connecting: %s", url)
+
+        while True:
+            try:
+                async with ws_connect(url) as conn:
+                    self.logger.info("✔ WebSocket connected: %s", url)
+                    ws = FastHTTPWebSocket(connection=conn, logger=self.logger)
+                    await handler(ws)
+                self.logger.info("WebSocket closed: %s", url)
+                break
+            except WSConnClosed as exc:
+                if max_retries == -1 or attempt < max_retries:
+                    attempt += 1
+                    wait = min(2 ** attempt, 30)
+                    self.logger.warning(
+                        "WS disconnected (attempt %d), reconnecting in %ds…",
+                        attempt,
+                        wait,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+                self.logger.error(
+                    "WS max retries reached for %s: %s", url, exc
+                )
+                break
+            except OSError as exc:
+                self.logger.error("WS connection failed for %s: %s", url, exc)
+                break
+            except Exception as exc:  # noqa: BLE001
+                self.logger.error("WS error for %s: %s", url, exc)
+                break
 
     async def _run_route(
         self, client: httpx.AsyncClient, route: Route

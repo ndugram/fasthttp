@@ -118,6 +118,8 @@ nav:
         - en/tutorial/graphql/index.md
         - en/tutorial/graphql/queries.md
         - en/tutorial/graphql/mutations.md
+      - WebSocket:
+        - en/tutorial/websocket/index.md
       - OpenAPI:
         - en/tutorial/openapi/index.md
         - en/tutorial/openapi/swagger-ui.md
@@ -181,6 +183,8 @@ nav:
         - ru/tutorial/graphql/index.md
         - ru/tutorial/graphql/queries.md
         - ru/tutorial/graphql/mutations.md
+      - WebSocket:
+        - ru/tutorial/websocket/index.md
       - OpenAPI:
         - ru/tutorial/openapi/index.md
         - ru/tutorial/openapi/swagger-ui.md
