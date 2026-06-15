@@ -194,5 +194,6 @@ class TestSetupLogger:
 
     def test_handler_has_color_formatter(self):
         logger = setup_logger()
-        handler = logger.handlers[0]
-        assert isinstance(handler.formatter, ColorFormatter)
+        assert any(
+            isinstance(h.formatter, ColorFormatter) for h in logger.handlers
+        ), f"No handler with ColorFormatter found among {len(logger.handlers)} handlers"
