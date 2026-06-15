@@ -12,6 +12,7 @@ import orjson
 from annotated_doc import Doc
 
 from .client import HTTPClient
+from .events import ErrorHook, EventHooks, RequestHook, ResponseHook
 from .graphql.client import create_graphql_client
 from .helpers.route_inspect import (
     check_annotated_parameters,
@@ -527,6 +528,8 @@ class FastHTTP:
 
         self.concurrency = concurrency
 
+        self.event_hooks = EventHooks()
+
         self.client = HTTPClient(
             self.request_configs,
             self.logger,
@@ -534,6 +537,7 @@ class FastHTTP:
             self.security,
             self.startup_uuid,
             raise_for_status=self.raise_for_status,
+            event_hooks=self.event_hooks,
         )
 
     def _check_annotated_parameters(
@@ -762,6 +766,7 @@ class FastHTTP:
             dependencies=dependencies,
         )
         self.routes.extend(routes)
+        self.event_hooks.merge(router.event_hooks)
         self.logger.debug("Included router: %d routes", len(routes))
 
     def get(
@@ -1104,6 +1109,66 @@ class FastHTTP:
 
         return decorator
 
+    def on_request(
+        self,
+        func: Annotated[
+            RequestHook,
+            Doc("Async function called before each request."),
+        ],
+    ) -> RequestHook:
+        """
+        Register a hook that runs before each request.
+
+        Example:
+            ```python
+            @app.on_request
+            async def log_request(route: Route, config: dict) -> None:
+                print(f"→ {route.method} {route.url}")
+            ```
+        """
+        self.event_hooks.on_request(func)
+        return func
+
+    def on_response(
+        self,
+        func: Annotated[
+            ResponseHook,
+            Doc("Async function called after each response."),
+        ],
+    ) -> ResponseHook:
+        """
+        Register a hook that runs after each response.
+
+        Example:
+            ```python
+            @app.on_response
+            async def log_response(response: Response) -> None:
+                print(f"← {response.status}")
+            ```
+        """
+        self.event_hooks.on_response(func)
+        return func
+
+    def on_error(
+        self,
+        func: Annotated[
+            ErrorHook,
+            Doc("Async function called on error."),
+        ],
+    ) -> ErrorHook:
+        """
+        Register a hook that runs when an error occurs.
+
+        Example:
+            ```python
+            @app.on_error
+            async def log_error(error: Exception, route: Route) -> None:
+                print(f"✖ {error}")
+            ```
+        """
+        self.event_hooks.on_error(func)
+        return func
+
     def _log_result(
         self, route: Route, elapsed: float, result: Response | None
     ) -> None:
@@ -1162,7 +1227,7 @@ class FastHTTP:
                                 for route in routes
                             ]
                         results = [t.result() for t in tg_tasks]
-                    except BaseExceptionGroup as eg:
+                    except BaseExceptionGroup as eg:  # noqa: F821
                         raise eg.exceptions[0] from None
                 else:
                     results = await asyncio.gather(

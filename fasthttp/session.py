@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 import httpx
 
 from .client import HTTPClient
+from .events import ErrorHook, EventHooks, RequestHook, ResponseHook
 from .helpers.routing import apply_base_url
 from .logging import setup_logger
 from .middleware import (
@@ -109,6 +110,7 @@ class AsyncSession:
         self.http2_enabled = http2
         self.proxy = proxy
         self.logger = setup_logger(debug=debug)
+        self.event_hooks = EventHooks()
 
         if middleware is None:
             normalized: list[BaseMiddleware] | MiddlewareChain = []
@@ -141,6 +143,7 @@ class AsyncSession:
             self.logger,
             self._middleware_manager,
             self._security,
+            event_hooks=self.event_hooks,
         )
 
         self._client: httpx.AsyncClient | None = None
@@ -161,6 +164,21 @@ class AsyncSession:
 
     async def __aexit__(self, *_: object) -> None:
         await self.close()
+
+    def on_request(self, func: RequestHook) -> RequestHook:
+        """Register a hook that runs before each request."""
+        self.event_hooks.on_request(func)
+        return func
+
+    def on_response(self, func: ResponseHook) -> ResponseHook:
+        """Register a hook that runs after each response."""
+        self.event_hooks.on_response(func)
+        return func
+
+    def on_error(self, func: ErrorHook) -> ErrorHook:
+        """Register a hook that runs when an error occurs."""
+        self.event_hooks.on_error(func)
+        return func
 
     def _resolve_url(self, url: str) -> str:
         return apply_base_url(url=url, base_url=self.base_url)

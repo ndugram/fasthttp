@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .auth import BasicAuth, BearerAuth, DigestAuth
+from .events import ErrorHook, EventHooks, RequestHook, ResponseHook
 from .helpers.route_inspect import validate_handler
 from .helpers.routing import join_prefix as _join_prefix
 from .helpers.routing import resolve_url as _resolve_url
@@ -197,6 +198,7 @@ class Router:
         self.dependencies: list[Any] = dependencies or []
         self._route_defs: list[_RouteDef] = []
         self._include_defs: list[_IncludeDef] = []
+        self.event_hooks = EventHooks()
 
     def include_router(
         self,
@@ -455,6 +457,59 @@ class Router:
             auth=auth,
             responses=responses,
         )
+
+    def on_request(
+        self,
+        func: RequestHook,
+    ) -> RequestHook:
+        """
+        Register a hook that runs before each request.
+
+        Example:
+            ```python
+            router = Router(base_url="https://api.example.com")
+
+            @router.on_request
+            async def log_request(route: Route, config: dict) -> None:
+                print(f"→ {route.method} {route.url}")
+            ```
+        """
+        self.event_hooks.on_request(func)
+        return func
+
+    def on_response(
+        self,
+        func: ResponseHook,
+    ) -> ResponseHook:
+        """
+        Register a hook that runs after each response.
+
+        Example:
+            ```python
+            @router.on_response
+            async def log_response(response: Response) -> None:
+                print(f"← {response.status}")
+            ```
+        """
+        self.event_hooks.on_response(func)
+        return func
+
+    def on_error(
+        self,
+        func: ErrorHook,
+    ) -> ErrorHook:
+        """
+        Register a hook that runs when an error occurs.
+
+        Example:
+            ```python
+            @router.on_error
+            async def log_error(error: Exception, route: Route) -> None:
+                print(f"✖ {error}")
+            ```
+        """
+        self.event_hooks.on_error(func)
+        return func
 
     def build_routes(
         self,

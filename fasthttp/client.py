@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import httpx
 from annotated_doc import Doc
@@ -27,6 +27,9 @@ from .exceptions import (
 from .middleware.retry import RetrySignal
 from .response import Response
 from .routing import Route
+
+if TYPE_CHECKING:
+    from .events import EventHooks
 
 
 class HTTPClient:
@@ -103,6 +106,14 @@ class HTTPClient:
                 """
             ),
         ] = False,
+        event_hooks: Annotated[
+            "EventHooks | None",
+            Doc(
+                """
+                Optional EventHooks instance for request/response lifecycle hooks.
+                """
+            ),
+        ] = None,
     ) -> None:
         self.request_configs = request_configs
         self.logger = logger
@@ -110,6 +121,7 @@ class HTTPClient:
         self.security = security
         self.startup_uuid = startup_uuid
         self.raise_for_status = raise_for_status
+        self.event_hooks = event_hooks
 
     def _validate_request(self, route: Route) -> bool:
         if not route.request_model:
@@ -353,6 +365,9 @@ class HTTPClient:
         config = self.request_configs.get(route.method, {})
         config = await self._prepare_config(route, config)
 
+        if self.event_hooks:
+            await self.event_hooks.process_request(route, config)
+
         if "_fasthttp_cached_response" in config:
             cached = config["_fasthttp_cached_response"]
             handler_result = await route.handler(cached)
@@ -450,6 +465,9 @@ class HTTPClient:
                         config,  # type: ignore
                     )
 
+                if self.event_hooks:
+                    await self.event_hooks.process_response(response)
+
                 handler_result = await route.handler(response)
                 return await self._process_handler_result(response, handler_result)
 
@@ -461,6 +479,8 @@ class HTTPClient:
                 raise
             except Exception as e:  # noqa: BLE001
                 last_error = e
+                if self.event_hooks:
+                    await self.event_hooks.process_error(e, route)
                 if self.middleware_manager:
                     try:
                         await self.middleware_manager.process_on_error(

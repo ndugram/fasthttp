@@ -229,6 +229,86 @@ debug.__enabled__ = False   # отключить
 debug.__enabled__ = True    # включить обратно
 ```
 
+## Event Hooks
+
+Event hooks — более простая альтернатива middleware для типовых задач: логирование, тайминг, обработка ошибок. Это декораторы на приложении, роутере или сессии.
+
+### `on_request`
+
+Вызывается перед каждым запросом:
+
+```python
+from fasthttp import FastHTTP
+
+app = FastHTTP()
+
+@app.on_request
+async def log_request(route, config):
+    print(f"→ {route.method} {route.url}")
+```
+
+### `on_response`
+
+Вызывается после каждого успешного ответа:
+
+```python
+@app.on_response
+async def log_response(response):
+    print(f"← {response.status}")
+```
+
+### `on_error`
+
+Вызывается при ошибке:
+
+```python
+@app.on_error
+async def track_error(error, route):
+    print(f"✖ {error} на {route.url}")
+```
+
+### С Router
+
+Event hooks роутера мержатся в приложение через `include_router()`:
+
+```python
+from fasthttp import FastHTTP, Router
+
+router = Router(base_url="https://api.example.com")
+
+@router.on_request
+async def router_hook(route, config):
+    print(f"[router] → {route.url}")
+
+app = FastHTTP()
+app.include_router(router)
+# router_hook будет вызываться для всех запросов этого роутера
+```
+
+### С AsyncSession
+
+```python
+from fasthttp import AsyncSession
+
+async with AsyncSession() as session:
+    @session.on_request
+    async def inject_auth(route, config):
+        config["headers"]["Authorization"] = "Bearer token"
+
+    resp = await session.get("https://api.example.com")
+```
+
+### Middleware vs Event Hooks
+
+| Возможность | Middleware | Event Hooks |
+|-------------|------------|-------------|
+| Модификация запроса | ✅ Да | ✅ Да |
+| Модификация ответа | ✅ Да | ❌ Нет |
+| Обработка ошибок | ✅ Да | ✅ Да |
+| Контроль порядка | ✅ Приоритет | ❌ Порядок регистрации |
+| Фильтрация по методам | ✅ `__methods__` | ❌ Нет |
+| Сложность | Выше | Ниже |
+
 ## Сравнение с Dependencies
 
 | Особенность | Middleware | Dependencies |

@@ -3,6 +3,7 @@ from .__meta__ import __version__
 from .app import FastHTTP
 from .auth import BasicAuth, BearerAuth, DigestAuth
 from .dependencies import Depends
+from .events import EventHooks
 from .middleware import (
     BaseMiddleware,
     CacheMiddleware,
@@ -26,6 +27,7 @@ __all__ = (
     "Depends",
     "DigestAuth",
     "DummyCookieJar",
+    "EventHooks",
     "FastHTTP",
     "MiddlewareChain",
     "MiddlewareManager",
