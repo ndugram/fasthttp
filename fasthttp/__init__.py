@@ -16,6 +16,7 @@ from .middleware import (
 )
 from .routing import Router
 from .session import AsyncSession
+from .websocket import WebSocket, WebSocketMessage
 
 __all__ = (
     "AsyncSession",
@@ -34,6 +35,8 @@ __all__ = (
     "RetryMiddleware",
     "Router",
     "SessionMiddleware",
+    "WebSocket",
+    "WebSocketMessage",
     "__version__",
     "status",
 )
