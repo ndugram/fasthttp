@@ -184,12 +184,16 @@ class TestSetupLogger:
 
     def test_debug_mode_sets_handler_level(self):
         logger = setup_logger(debug=True)
-        handler = logger.handlers[0]
+        handler = next(
+            h for h in logger.handlers if isinstance(h.formatter, ColorFormatter)
+        )
         assert handler.level == logging.DEBUG
 
     def test_non_debug_sets_info_level(self):
         logger = setup_logger(debug=False)
-        handler = logger.handlers[0]
+        handler = next(
+            h for h in logger.handlers if isinstance(h.formatter, ColorFormatter)
+        )
         assert handler.level == logging.INFO
 
     def test_handler_has_color_formatter(self):
