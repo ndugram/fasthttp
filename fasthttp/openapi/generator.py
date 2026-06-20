@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from fasthttp.app import FastHTTP
-    from fasthttp.auth import BasicAuth, BearerAuth, DigestAuth
+    from fasthttp.auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
     from fasthttp.routing import Route
 
 
@@ -259,16 +259,18 @@ def _normalize_path(url: str) -> str:
     return api_path
 
 
-def _get_security_scheme_name(auth: BasicAuth | BearerAuth | DigestAuth) -> str:
+def _get_security_scheme_name(
+    auth: BasicAuth | BearerAuth | DigestAuth | OAuth2ClientCredentials,
+) -> str:
     """Return the securityScheme key for a given auth object."""
-    from fasthttp.auth import BasicAuth, BearerAuth, DigestAuth
-
     if isinstance(auth, BearerAuth):
         return "bearerAuth"
     if isinstance(auth, BasicAuth):
         return "basicAuth"
     if isinstance(auth, DigestAuth):
         return "digestAuth"
+    if isinstance(auth, OAuth2ClientCredentials):
+        return "oauth2ClientCredentials"
     return "auth"
 
 
@@ -276,8 +278,6 @@ def _collect_security_schemes(
     routes: list[Route],
 ) -> dict[str, Any]:
     """Build components/securitySchemes from auth objects used in routes."""
-    from fasthttp.auth import BasicAuth, BearerAuth, DigestAuth
-
     schemes: dict[str, Any] = {}
 
     for route in routes:
@@ -289,6 +289,16 @@ def _collect_security_schemes(
             schemes["basicAuth"] = {"type": "http", "scheme": "basic"}
         elif isinstance(route.auth, DigestAuth) and "digestAuth" not in schemes:
             schemes["digestAuth"] = {"type": "http", "scheme": "digest"}
+        elif isinstance(route.auth, OAuth2ClientCredentials) and "oauth2ClientCredentials" not in schemes:
+            schemes["oauth2ClientCredentials"] = {
+                "type": "oauth2",
+                "flows": {
+                    "clientCredentials": {
+                        "tokenUrl": route.auth.token_url,
+                        "scopes": {s: "" for s in route.auth.scopes} if route.auth.scopes else {},
+                    }
+                },
+            }
 
     return schemes
 

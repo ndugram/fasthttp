@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 
     from pydantic import BaseModel
 
-    from .auth import BasicAuth, BearerAuth, DigestAuth
+    from .auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
     from .response import Response
     from .types import RequestsOptinal
 
@@ -523,7 +523,7 @@ class FastHTTP:
         if self.generate_startup_uuid:
             if self.startup_uuid_version == "v7":
                 if sys.version_info >= (3, 13):
-                    self.startup_uuid = str(uuid.uuid7())
+                    self.startup_uuid = str(uuid.uuid7()) # type: ignore
                 else:
                     self.startup_uuid = str(uuid.uuid4())
             else:
@@ -652,7 +652,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
@@ -784,7 +784,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -811,7 +811,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -839,7 +839,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -867,7 +867,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -895,7 +895,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -922,7 +922,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
@@ -948,7 +948,7 @@ class FastHTTP:
         tags: list[str] | None = None,
         dependencies: list | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(

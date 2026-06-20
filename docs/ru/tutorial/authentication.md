@@ -72,6 +72,44 @@ if __name__ == "__main__":
     app.run()
 ```
 
+## OAuth2ClientCredentials
+
+Получает токен через грант **Client Credentials** и автоматически обновляет его до истечения срока действия:
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.auth import OAuth2ClientCredentials
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+auth = OAuth2ClientCredentials(
+    token_url="https://auth.example.com/oauth/token",
+    client_id="my-client",
+    client_secret="my-secret",
+    scopes=["read", "write"],
+)
+
+
+@app.get("https://api.example.com/users", auth=auth)
+async def get_users(resp: Response) -> list:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+Токен запрашивается лениво (при первом запросе) и кешируется. FastHTTP автоматически запрашивает новый токен за 60 секунд до истечения текущего, основываясь на поле `expires_in` в ответе токен-эндпоинта.
+
+| Параметр | Обязательный | Описание |
+|----------|-------------|----------|
+| `token_url` | Да | URL токен-эндпоинта OAuth2 |
+| `client_id` | Да | Идентификатор клиента |
+| `client_secret` | Да | Секрет клиента |
+| `scopes` | Нет | Список строк запрашиваемых разрешений |
+| `extra` | Нет | Дополнительные поля, отправляемые в теле запроса токена |
+
 ## Auth в роутерах
 
 Параметр `auth` работает на всех декораторах `Router`:

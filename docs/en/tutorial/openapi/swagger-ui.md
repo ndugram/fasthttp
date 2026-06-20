@@ -150,6 +150,7 @@ FastHTTP emits the following scheme entries automatically:
 | `BearerAuth` | `bearerAuth` | `http / bearer / JWT` |
 | `BasicAuth` | `basicAuth` | `http / basic` |
 | `DigestAuth` | `digestAuth` | `http / digest` |
+| `OAuth2ClientCredentials` | `oauth2ClientCredentials` | `oauth2 / clientCredentials` |
 
 Schemes are only added to the schema when at least one route uses the corresponding `auth=` class.
 

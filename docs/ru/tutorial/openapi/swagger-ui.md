@@ -138,6 +138,7 @@ FastHTTP добавляет схемы автоматически:
 | `BearerAuth` | `bearerAuth` | `http / bearer / JWT` |
 | `BasicAuth` | `basicAuth` | `http / basic` |
 | `DigestAuth` | `digestAuth` | `http / digest` |
+| `OAuth2ClientCredentials` | `oauth2ClientCredentials` | `oauth2 / clientCredentials` |
 
 Схема добавляется в документ только если хотя бы один маршрут использует соответствующий `auth=`.
 
