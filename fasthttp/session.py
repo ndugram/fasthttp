@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import secrets
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import httpx
 
@@ -130,7 +130,7 @@ class AsyncSession:
         )
 
         base_config = {"headers": dict(self._session_headers), "timeout": timeout}
-        self._request_configs: dict[str, dict] = {
+        self._request_configs: dict[str, dict[str, Any]] = {
             method: dict(base_config)
             for method in ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS")
         }
@@ -188,8 +188,8 @@ class AsyncSession:
         method: HTTPMethod,
         url: str,
         *,
-        params: dict | None = None,
-        json: dict | None = None,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         headers: dict[str, str] | None = None,
         timeout: float | None = None,
@@ -220,7 +220,7 @@ class AsyncSession:
         self,
         url: str,
         *,
-        params: dict | None = None,
+        params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         timeout: float | None = None,
     ) -> Response | None:
@@ -235,7 +235,7 @@ class AsyncSession:
         self,
         url: str,
         *,
-        json: dict | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         headers: dict[str, str] | None = None,
         timeout: float | None = None,
@@ -251,7 +251,7 @@ class AsyncSession:
         self,
         url: str,
         *,
-        json: dict | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         headers: dict[str, str] | None = None,
         timeout: float | None = None,
@@ -267,7 +267,7 @@ class AsyncSession:
         self,
         url: str,
         *,
-        json: dict | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         headers: dict[str, str] | None = None,
         timeout: float | None = None,
@@ -283,7 +283,7 @@ class AsyncSession:
         self,
         url: str,
         *,
-        json: dict | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         headers: dict[str, str] | None = None,
         timeout: float | None = None,
@@ -299,7 +299,7 @@ class AsyncSession:
         self,
         url: str,
         *,
-        params: dict | None = None,
+        params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         timeout: float | None = None,
     ) -> Response | None:
@@ -314,7 +314,7 @@ class AsyncSession:
         self,
         url: str,
         *,
-        params: dict | None = None,
+        params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         timeout: float | None = None,
     ) -> Response | None:
@@ -327,11 +327,11 @@ class AsyncSession:
 
     async def request(
         self,
-        method: str,
+        method: HTTPMethod,
         url: str,
         *,
-        params: dict | None = None,
-        json: dict | None = None,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         headers: dict[str, str] | None = None,
         timeout: float | None = None,
@@ -353,7 +353,7 @@ class AsyncSession:
     @asynccontextmanager
     async def stream(
         self,
-        method: str,
+        method: HTTPMethod,
         url: str,
         *,
         headers: dict[str, str] | None = None,
