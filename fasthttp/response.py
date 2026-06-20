@@ -41,11 +41,11 @@ class Response:
         self,
         status: Annotated[int, Doc("HTTP status code (e.g. 200, 404, 500).")],
         text: Annotated[str, Doc("Raw response body as a string.")],
-        headers: Annotated[dict, Doc("HTTP response headers returned by the server.")],
+        headers: Annotated[dict[str, str], Doc("HTTP response headers returned by the server.")],
         method: Annotated[str | None, Doc("HTTP method used for the request.")] = None,
-        req_headers: Annotated[dict | None, Doc("HTTP headers sent with the request.")] = None,
-        query: Annotated[dict | None, Doc("Query parameters encoded into the request URL.")] = None,
-        req_json: Annotated[dict | None, Doc("JSON body sent with the request.")] = None,
+        req_headers: Annotated[dict[str, str] | None, Doc("HTTP headers sent with the request.")] = None,
+        query: Annotated[dict[str, Any] | None, Doc("Query parameters encoded into the request URL.")] = None,
+        req_json: Annotated[dict[str, Any] | None, Doc("JSON body sent with the request.")] = None,
         req_data: Annotated[object | None, Doc("Raw body or form data sent with the request.")] = None,
         content: Annotated[bytes | None, Doc("Raw response body as bytes.")] = None,
     ) -> None:
@@ -80,21 +80,21 @@ class Response:
         self._method = value
 
     @property
-    def req_headers(self) -> dict | None:
+    def req_headers(self) -> dict[str, str] | None:
         """HTTP headers sent with the request."""
         return self._req_headers
 
     @req_headers.setter
-    def req_headers(self, value: dict | None) -> None:
+    def req_headers(self, value: dict[str, str] | None) -> None:
         self._req_headers = value
 
     @property
-    def query(self) -> dict | None:
+    def query(self) -> dict[str, Any] | None:
         """Query parameters encoded into the request URL."""
         return self._query
 
     @query.setter
-    def query(self, value: dict | None) -> None:
+    def query(self, value: dict[str, Any] | None) -> None:
         self._query = value
 
     @property
@@ -111,7 +111,7 @@ class Response:
             return self._response_model.model_validate_json(self.text)  # type: ignore[union-attr]
         return orjson.loads(self.text)
 
-    def req_json(self) -> dict | None:
+    def req_json(self) -> dict[str, Any] | None:
         """Return the JSON body that was sent with the request."""
         return self._req_json
 

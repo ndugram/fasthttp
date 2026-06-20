@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
     from fasthttp.response import Response
     from fasthttp.routing import Route
-    from fasthttp.types import RequestsOptinal
+    from fasthttp.types import RequestsOptional
 
 
 class BaseMiddleware:
@@ -110,7 +110,7 @@ class BaseMiddleware:
             Doc("The route that failed."),
         ],
         config: Annotated[
-            RequestsOptinal,
+            RequestsOptional,
             Doc("Request configuration that was used."),
         ],
     ) -> Annotated[
@@ -199,7 +199,7 @@ class MiddlewareManager:
             Doc("The route being executed."),
         ],
         config: Annotated[
-            RequestsOptinal,
+            RequestsOptional,
             Doc("Initial request configuration."),
         ],
     ) -> Annotated[
@@ -226,7 +226,7 @@ class MiddlewareManager:
             Doc("The route that was executed."),
         ],
         config: Annotated[  # noqa: ARG002
-            RequestsOptinal,
+            RequestsOptional,
             Doc("Request configuration that was used."),
         ],
     ) -> Annotated[
@@ -250,7 +250,7 @@ class MiddlewareManager:
             Doc("The route that failed."),
         ],
         config: Annotated[
-            RequestsOptinal,
+            RequestsOptional,
             Doc("Request configuration that was used."),
         ],
     ) -> Annotated[

@@ -8,6 +8,8 @@ import httpx
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+    from .types import OAuth2Scope
+
 
 class BasicAuth:
     """HTTP Basic authentication (username + password)."""
@@ -53,7 +55,7 @@ class OAuth2ClientCredentials:
         token_url: str,
         client_id: str,
         client_secret: str,
-        scopes: list[str] | None = None,
+        scopes: list[OAuth2Scope] | None = None,
         extra: dict[str, str] | None = None,
     ) -> None:
         self.token_url = token_url
