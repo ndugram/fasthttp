@@ -252,11 +252,10 @@ jobs:
         run: |
           TAG="v${{ needs.prepare.outputs.version }}"
 
-          MESSAGE="🚀 *fasthttp-client ${TAG} released*
+          HEADER="🚀 *fasthttp-client ${TAG} released*"
+          FOOTER="👤 ${{ github.actor }} · 🕐 ${{ github.event.head_commit.timestamp }}"
 
-${AI_SUMMARY}
-
-👤 ${{ github.actor }} · 🕐 ${{ github.event.head_commit.timestamp }}"
+          MESSAGE=$(printf '%s\n\n%s\n\n%s' "$HEADER" "$AI_SUMMARY" "$FOOTER")
 
           KEYBOARD='{"inline_keyboard":[[{"text":"📦 PyPI","url":"https://pypi.org/project/fasthttp-client/"},{"text":"📖 Docs","url":"https://fasthttp.ndugram.dev"},{"text":"💻 GitHub","url":"https://github.com/'${GITHUB_REPOSITORY}'/releases/tag/'${TAG}'"}]]}'
 
