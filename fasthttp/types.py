@@ -6,6 +6,20 @@ HTTPMethod: TypeAlias = Literal[
     "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"
 ]
 
+OAuth2Scope: TypeAlias = Literal[
+    "openid",
+    "profile",
+    "email",
+    "address",
+    "phone",
+    "offline_access",
+    "read",
+    "write",
+    "admin",
+    "api",
+]
+
+
 
 class JSONResponse:
     """
@@ -18,11 +32,11 @@ class JSONResponse:
     including primitive values, lists, and nested objects.
     """
 
-    Primutive: TypeAlias = str | int | float | bool | None
-    Value: TypeAlias = Primutive | list["Value"] | dict[str, "Value"]
+    Primitive: TypeAlias = str | int | float | bool | None
+    Value: TypeAlias = Primitive | list["Value"] | dict[str, "Value"]
 
 
-class RequestsOptinal(TypedDict, total=False):
+class RequestsOptional(TypedDict, total=False):
     """
     Optional request configuration.
 
