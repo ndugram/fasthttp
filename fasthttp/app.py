@@ -54,7 +54,7 @@ if TYPE_CHECKING:
 
     from .auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
     from .response import Response
-    from .types import RequestsOptinal
+    from .types import HTTPMethod, RequestsOptional
 
 
 class FastHTTP:
@@ -131,7 +131,7 @@ class FastHTTP:
         ] = False,
         get_request: (
             Annotated[
-                RequestsOptinal | None,
+                RequestsOptional | None,
                 Doc(
                     """
                 Default configuration for GET requests.
@@ -144,7 +144,7 @@ class FastHTTP:
         ) = None,
         post_request: (
             Annotated[
-                RequestsOptinal | None,
+                RequestsOptional | None,
                 Doc(
                     """
                 Default configuration for POST requests.
@@ -158,7 +158,7 @@ class FastHTTP:
         ) = None,
         put_request: (
             Annotated[
-                RequestsOptinal | None,
+                RequestsOptional | None,
                 Doc(
                     """
                 Default configuration for PUT requests.
@@ -172,7 +172,7 @@ class FastHTTP:
         ) = None,
         patch_request: (
             Annotated[
-                RequestsOptinal | None,
+                RequestsOptional | None,
                 Doc(
                     """
                Default configuration for PATCH requests.
@@ -185,7 +185,7 @@ class FastHTTP:
         ) = None,
         delete_request: (
             Annotated[
-                RequestsOptinal | None,
+                RequestsOptional | None,
                 Doc(
                     """
                 Default configuration for DELETE requests.
@@ -198,7 +198,7 @@ class FastHTTP:
         ) = None,
         head_request: (
             Annotated[
-                RequestsOptinal | None,
+                RequestsOptional | None,
                 Doc(
                     """
                 Default configuration for HEAD requests.
@@ -211,7 +211,7 @@ class FastHTTP:
         ) = None,
         options_request: (
             Annotated[
-                RequestsOptinal | None,
+                RequestsOptional | None,
                 Doc(
                     """
                 Default configuration for OPTIONS requests.
@@ -368,7 +368,7 @@ class FastHTTP:
             ),
         ] = False,
         startup_uuid_version: Annotated[
-            str,
+            Literal["v4", "v7"],
             Doc(
                 """
                 The version of UUID to generate on startup if `generate_startup_uuid` is True.
@@ -642,15 +642,15 @@ class FastHTTP:
     def _add_route(
         self,
         *,
-        method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
+        method: HTTPMethod,
         url: str,
-        params: dict | None = None,
-        json: dict | None = None,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
-        dependencies: list | None = None,
+        dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
@@ -717,7 +717,7 @@ class FastHTTP:
             ),
         ] = None,
         dependencies: Annotated[
-            list | None,
+            list[Any] | None,
             Doc(
                 """
                 Optional dependencies prepended before router dependencies.
@@ -778,11 +778,11 @@ class FastHTTP:
         self,
         url: str,
         *,
-        params: dict | None = None,
+        params: dict[str, Any] | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
-        dependencies: list | None = None,
+        dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
@@ -804,12 +804,12 @@ class FastHTTP:
         self,
         url: str,
         *,
-        json: dict | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
-        dependencies: list | None = None,
+        dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
@@ -832,12 +832,12 @@ class FastHTTP:
         self,
         url: str,
         *,
-        json: dict | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
-        dependencies: list | None = None,
+        dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
@@ -860,12 +860,12 @@ class FastHTTP:
         self,
         url: str,
         *,
-        json: dict | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
-        dependencies: list | None = None,
+        dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
@@ -888,12 +888,12 @@ class FastHTTP:
         self,
         url: str,
         *,
-        json: dict | None = None,
+        json: dict[str, Any] | None = None,
         data: object | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
-        dependencies: list | None = None,
+        dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
@@ -916,11 +916,11 @@ class FastHTTP:
         self,
         url: str,
         *,
-        params: dict | None = None,
+        params: dict[str, Any] | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
-        dependencies: list | None = None,
+        dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
@@ -942,11 +942,11 @@ class FastHTTP:
         self,
         url: str,
         *,
-        params: dict | None = None,
+        params: dict[str, Any] | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
-        dependencies: list | None = None,
+        dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
