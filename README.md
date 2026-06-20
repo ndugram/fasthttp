@@ -131,7 +131,7 @@ The `resp` object gives you access to status, headers, and body. `resp.json()` r
     "headers": {
         "Accept": "*/*",
         "Host": "httpbin.org",
-        "User-Agent": "python-httpx/0.28.1"
+        "User-Agent": "fasthttp/1.3.22"
     },
     "origin": "...",
     "url": "https://httpbin.org/get"
