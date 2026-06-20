@@ -168,6 +168,12 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
       - uses: PyO3/maturin-action@v1
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
@@ -193,14 +199,64 @@ jobs:
           prerelease: false
           token: ${{ secrets.GH_TOKEN }}
 
+      - name: Generate release summary
+        id: summary
+        run: |
+          TAG="v${{ needs.prepare.outputs.version }}"
+
+          PREV_TAG=$(git tag --sort=-version:refname | head -1)
+
+          if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$TAG" ]; then
+            CHANGES=$(git log --oneline "$PREV_TAG..HEAD" 2>/dev/null || echo "")
+          else
+            CHANGES=$(git log --oneline -30 2>/dev/null || echo "Initial release")
+          fi
+
+          if [ -z "$CHANGES" ]; then
+            CHANGES="Minor fixes and improvements"
+          fi
+
+          PROMPT="Generate 2-4 concise bullet points summarizing the changes in this fasthttp-client release. Write in the same language as the commit messages. Focus on user-facing features and fixes:\n\n${CHANGES}"
+
+          RESPONSE=$(curl -s -X POST "https://openrouter.ai/api/v1/chat/completions" \
+            -H "Authorization: Bearer ${{ secrets.OPENROUTER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg model "openai/gpt-oss-120b:free" \
+              --arg prompt "$PROMPT" \
+              '{model: $model, messages: [{role: "user", content: $prompt}], max_tokens: 300}')")
+
+          AI_TEXT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // ""')
+
+          if [ -z "$AI_TEXT" ]; then
+            AI_TEXT="$CHANGES"
+          fi
+
+          AI_HTML=$(echo "$AI_TEXT" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g')
+
+          {
+            echo "AI_SUMMARY<<EOF"
+            echo "$AI_TEXT"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
+          {
+            echo "AI_SUMMARY_HTML<<EOF"
+            echo "$AI_HTML"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
+          echo "summary_generated=true" >> "$GITHUB_OUTPUT"
+
       - name: Telegram — released
         run: |
           TAG="v${{ needs.prepare.outputs.version }}"
+
           MESSAGE="🚀 *fasthttp-client ${TAG} released*
 
-          ⚡ Async HTTP client with middleware, routing & OpenAPI support
+${AI_SUMMARY}
 
-          👤 ${{ github.actor }} · 🕐 ${{ github.event.head_commit.timestamp }}"
+👤 ${{ github.actor }} · 🕐 ${{ github.event.head_commit.timestamp }}"
 
           KEYBOARD='{"inline_keyboard":[[{"text":"📦 PyPI","url":"https://pypi.org/project/fasthttp-client/"},{"text":"📖 Docs","url":"https://fasthttp.ndugram.dev"},{"text":"💻 GitHub","url":"https://github.com/'${GITHUB_REPOSITORY}'/releases/tag/'${TAG}'"}]]}'
 
@@ -226,54 +282,74 @@ jobs:
             <html>
             <head>
               <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <style>
-                body { margin: 0; padding: 0; background: #0d1117; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-                .wrap { max-width: 560px; margin: 40px auto; background: #161b22; border-radius: 12px; overflow: hidden; border: 1px solid #30363d; }
-                .hero { background: linear-gradient(135deg, #238636 0%, #1a7f37 100%); padding: 32px 32px 24px; }
-                .hero h1 { margin: 0; color: #fff; font-size: 24px; font-weight: 700; }
-                .hero .tag { display: inline-block; margin-top: 8px; background: rgba(255,255,255,.15); color: #fff; border-radius: 20px; padding: 4px 14px; font-size: 13px; font-weight: 600; }
-                .body { padding: 28px 32px; }
-                .desc { color: #8b949e; font-size: 14px; line-height: 1.6; margin: 0 0 24px; }
-                .meta { display: flex; gap: 24px; margin-bottom: 28px; }
+                body { margin: 0; padding: 0; background: #f4f6f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+                .container { max-width: 580px; margin: 0 auto; padding: 24px 16px; }
+                .card { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+                .header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 36px 32px 28px; text-align: center; }
+                .header-icon { font-size: 40px; margin-bottom: 8px; display: block; }
+                .header h1 { margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+                .header .sub { color: rgba(255,255,255,0.85); font-size: 14px; margin-top: 4px; }
+                .badge { display: inline-block; margin-top: 12px; background: rgba(255,255,255,0.2); color: #ffffff; border-radius: 20px; padding: 5px 16px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; }
+                .body { padding: 32px; }
+                .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #4f46e5; margin: 0 0 16px; }
+                .desc { color: #374151; font-size: 15px; line-height: 1.7; margin: 0 0 28px; }
+                .changes { background: #f8fafc; border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; border: 1px solid #e5e7eb; }
+                .changes-text { margin: 0; color: #374151; font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+                .meta-row { display: flex; gap: 16px; margin-bottom: 28px; }
                 .meta-item { flex: 1; }
-                .meta-item .label { color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 4px; }
-                .meta-item .value { color: #e6edf3; font-size: 14px; font-weight: 600; }
-                .btns { display: flex; gap: 10px; }
-                .btn { flex: 1; display: block; text-align: center; padding: 10px 0; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; }
-                .btn-primary { background: #238636; color: #fff; }
-                .btn-secondary { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
-                .footer { padding: 16px 32px; border-top: 1px solid #21262d; color: #8b949e; font-size: 12px; text-align: center; }
+                .meta-item .label { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+                .meta-item .value { color: #111827; font-size: 14px; font-weight: 600; }
+                .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+                .btn { flex: 1; min-width: 140px; display: block; text-align: center; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; }
+                .btn-p { background: #4f46e5; color: #ffffff; }
+                .btn-s { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+                .footer { padding: 20px 32px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px; text-align: center; }
+                .footer a { color: #4f46e5; text-decoration: none; }
+                @media only screen and (max-width: 480px) {
+                  .header { padding: 28px 20px 24px; }
+                  .body { padding: 24px 20px; }
+                  .footer { padding: 16px 20px; }
+                  .meta-row { flex-direction: column; gap: 12px; }
+                }
               </style>
             </head>
             <body>
-              <div class="wrap">
-                <div class="hero">
-                  <h1>fasthttp-client</h1>
-                  <span class="tag">v${{ needs.prepare.outputs.version }}</span>
-                </div>
-                <div class="body">
-                  <p class="desc">New version successfully built, published to PyPI and tagged on GitHub.</p>
-                  <div class="meta">
-                    <div class="meta-item">
-                      <div class="label">Released by</div>
-                      <div class="value">@${{ github.actor }}</div>
+              <div class="container">
+                <div class="card">
+                  <div class="header">
+                    <span class="header-icon">⚡</span>
+                    <h1>fasthttp-client</h1>
+                    <div class="sub">New release published</div>
+                    <span class="badge">v${{ needs.prepare.outputs.version }}</span>
+                  </div>
+                  <div class="body">
+                    <p class="desc">A new version has been built, published to PyPI, and tagged on GitHub.</p>
+                    <div class="changes">
+                      <div class="section-title">What's New</div>
+                      <div class="changes-text">${{ env.AI_SUMMARY_HTML }}</div>
                     </div>
-                    <div class="meta-item">
-                      <div class="label">Timestamp</div>
-                      <div class="value">${{ github.event.head_commit.timestamp }}</div>
+                    <div class="meta-row">
+                      <div class="meta-item">
+                        <div class="label">Released by</div>
+                        <div class="value">@${{ github.actor }}</div>
+                      </div>
+                      <div class="meta-item">
+                        <div class="label">Version</div>
+                        <div class="value">${{ needs.prepare.outputs.version }}</div>
+                      </div>
                     </div>
-                    <div class="meta-item">
-                      <div class="label">Commit</div>
-                      <div class="value">${{ needs.prepare.outputs.sha && needs.prepare.outputs.sha || github.sha }}</div>
+                    <div class="actions">
+                      <a class="btn btn-p" href="https://pypi.org/project/fasthttp-client/">📦 PyPI</a>
+                      <a class="btn btn-s" href="https://github.com/${{ github.repository }}/releases/tag/v${{ needs.prepare.outputs.version }}">💻 Release</a>
+                      <a class="btn btn-s" href="https://fasthttp.ndugram.dev">📖 Docs</a>
                     </div>
                   </div>
-                  <div class="btns">
-                    <a class="btn btn-primary" href="https://pypi.org/project/fasthttp-client/">📦 PyPI</a>
-                    <a class="btn btn-secondary" href="https://github.com/${{ github.repository }}/releases/tag/v${{ needs.prepare.outputs.version }}">💻 Release</a>
-                    <a class="btn btn-secondary" href="https://fasthttp.ndugram.dev">📖 Docs</a>
+                  <div class="footer">
+                    fasthttp-client · <a href="https://github.com/${{ github.repository }}">GitHub</a> · CI/CD via GitHub Actions
                   </div>
                 </div>
-                <div class="footer">fasthttp-client · GitHub Actions · ${{ github.repository }}</div>
               </div>
             </body>
             </html>
