@@ -44,7 +44,7 @@ class HTTPClient:
     def __init__(
         self,
         request_configs: Annotated[
-            dict,
+            dict[str, dict[str, Any]],
             Doc(
                 """
                 Dictionary mapping HTTP methods to default request configurations.
