@@ -19,21 +19,38 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install matplotlib requests
+        run: pip install matplotlib numpy scipy requests
 
-      - name: Generate chart
+      - name: Generate chart and collect stats
+        id: stats
         run: python .github/scripts/download_stats.py
 
-      - name: Send chart to Telegram
+      - name: Send stats to Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          YESTERDAY=$(date -d "yesterday" +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)
-          CAPTION="📦 *fasthttp-client* — daily stats (${YESTERDAY})
+          DATE="${{ steps.stats.outputs.date }}"
+          YESTERDAY="$(python3 -c "import sys; v=${{ steps.stats.outputs.yesterday_downloads }}; print(f'{v/1e6:.1f}M' if v>=1e6 else f'{v/1e3:.1f}K' if v>=1e3 else str(v))")"
+          WEEK="$(python3 -c "import sys; v=${{ steps.stats.outputs.week_downloads }}; print(f'{v/1e6:.1f}M' if v>=1e6 else f'{v/1e3:.1f}K' if v>=1e3 else str(v))")"
+          MONTH="$(python3 -c "import sys; v=${{ steps.stats.outputs.month_downloads }}; print(f'{v/1e6:.1f}M' if v>=1e6 else f'{v/1e3:.1f}K' if v>=1e3 else str(v))")"
+          AVG="${{ steps.stats.outputs.avg_daily }}"
+          TOTAL="$(python3 -c "import sys; v=${{ steps.stats.outputs.total_downloads }}; print(f'{v/1e6:.1f}M' if v>=1e6 else f'{v/1e3:.1f}K' if v>=1e3 else str(v))")"
 
-          Chart shows downloads per day for the last 30 days.
-          [PyPI](https://pypi.org/project/fasthttp-client/) · [pepy.tech](https://pepy.tech/projects/fasthttp-client)"
+          TEXT="📊 <b>fasthttp-client</b> — статистика загрузок
+          Дата: ${DATE}
 
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendPhoto" \
-            -F "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+          📥 Вчера:       <b>${YESTERDAY}</b>
+          📥 За 7 дней:   <b>${WEEK}</b>
+          📥 За 30 дней:  <b>${MONTH}</b>
+          📊 В среднем:   <b>${AVG}/день</b>
+          🏆 Всего:       <b>${TOTAL}</b>
+
+          🔗 <a href=\"https://pypi.org/project/fasthttp-client/\">PyPI</a> · <a href=\"https://pepy.tech/projects/fasthttp-client\">pepy.tech</a>"
+
+          # Send photo with caption
+          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto" \
+            -F "chat_id=${CHAT_ID}" \
             -F "photo=@stats.png" \
-            -F "caption=${CAPTION}" \
-            -F "parse_mode=Markdown"
+            -F "caption=${TEXT}" \
+            -F "parse_mode=HTML"
