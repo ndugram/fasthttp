@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .auth import BasicAuth, BearerAuth, DigestAuth
+from .auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
 from .events import ErrorHook, EventHooks, RequestHook, ResponseHook
 from .helpers.route_inspect import validate_handler
 from .helpers.routing import join_prefix as _join_prefix
@@ -73,8 +73,8 @@ class Route(BaseModel):
     raise_for_status: bool = False
     """When True, raises FastHTTPBadStatusError on 4xx/5xx for this route only."""
 
-    auth: BasicAuth | DigestAuth | BearerAuth | None = None
-    """Authentication for this route (BasicAuth, DigestAuth, or BearerAuth)."""
+    auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None
+    """Authentication for this route (BasicAuth, DigestAuth, BearerAuth, or OAuth2ClientCredentials)."""
 
     responses: dict[int, dict[Literal["model"], type[BaseModel]]] = Field(
         default_factory=dict
@@ -108,7 +108,7 @@ class Route(BaseModel):
             dependencies: list[Any] | None = None,
             skip_request: bool = False,
             raise_for_status: bool = False,
-            auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+            auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
             responses: dict[int, dict[Literal["model"], type[BaseModel]]]
             | None = None,
         ) -> None:
@@ -146,7 +146,7 @@ class _RouteDef:
     dependencies: list[Any]
     skip_request: bool
     raise_for_status: bool
-    auth: BasicAuth | DigestAuth | BearerAuth | None
+    auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None
     responses: dict[int, dict[Literal["model"], type[BaseModel]]]
 
 
@@ -234,7 +234,7 @@ class Router:
         dependencies: list[Any] | None = None,
         skip_request: bool = False,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
@@ -271,7 +271,7 @@ class Router:
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a GET route on the router."""
@@ -299,7 +299,7 @@ class Router:
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a POST route on the router."""
@@ -328,7 +328,7 @@ class Router:
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a PUT route on the router."""
@@ -357,7 +357,7 @@ class Router:
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a PATCH route on the router."""
@@ -386,7 +386,7 @@ class Router:
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a DELETE route on the router."""
@@ -414,7 +414,7 @@ class Router:
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a HEAD route on the router."""
@@ -441,7 +441,7 @@ class Router:
         tags: list[str] | None = None,
         dependencies: list[Any] | None = None,
         raise_for_status: bool = False,
-        auth: BasicAuth | DigestAuth | BearerAuth | None = None,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering an OPTIONS route on the router."""
