@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 from annotated_doc import Doc
+
+if TYPE_CHECKING:
+    from fasthttp.types import HTTPMethod
 
 logger = logging.getLogger("fasthttp.exceptions")
 
@@ -48,7 +51,7 @@ class FastHTTPError(Exception):
         ) = None,
         method: (
             Annotated[
-                str,
+                HTTPMethod,
                 Doc(
                     """
                 HTTP method of the failed request.
