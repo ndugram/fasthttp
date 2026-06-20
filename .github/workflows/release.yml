@@ -216,7 +216,7 @@ jobs:
             CHANGES="Minor fixes and improvements"
           fi
 
-          PROMPT="Generate 2-4 concise bullet points summarizing the changes in this fasthttp-client release. Write in the same language as the commit messages. Focus on user-facing features and fixes:\n\n${CHANGES}"
+          PROMPT="Generate 2-4 concise bullet points summarizing the changes in this fasthttp-client release. Focus on user-facing features and fixes. Then translate the result into Russian:\n\n${CHANGES}"
 
           RESPONSE=$(curl -s -X POST "https://openrouter.ai/api/v1/chat/completions" \
             -H "Authorization: Bearer ${{ secrets.OPENROUTER_API_KEY }}" \
