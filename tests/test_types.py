@@ -1,6 +1,6 @@
 """Tests for types module."""
 
-from fasthttp.types import JSONResponse, RequestsOptinal
+from fasthttp.types import JSONResponse, RequestsOptional
 
 
 class TestJSONResponse:
@@ -9,7 +9,7 @@ class TestJSONResponse:
     def test_json_response_primitive_types(self) -> None:
         """Test JSONResponse primitive type aliases."""
         # These are type aliases, so we can verify they exist
-        assert hasattr(JSONResponse, "Primutive")
+        assert hasattr(JSONResponse, "Primitive")
         assert hasattr(JSONResponse, "Value")
 
     def test_json_response_value_can_be_primitive(self) -> None:
@@ -26,30 +26,30 @@ class TestJSONResponse:
         assert "JSON response type definitions" in JSONResponse.__doc__
 
 
-class TestRequestsOptinal:
-    """Tests for RequestsOptinal TypedDict."""
+class TestRequestsOptional:
+    """Tests for RequestsOptional TypedDict."""
 
     def test_requests_optional_exists(self) -> None:
-        """Test RequestsOptinal type exists."""
-        assert RequestsOptinal is not None
+        """Test RequestsOptional type exists."""
+        assert RequestsOptional is not None
 
     def test_requests_optional_has_headers(self) -> None:
-        """Test RequestsOptinal has headers field."""
+        """Test RequestsOptional has headers field."""
         # TypedDict fields are checked at type-check time
         # We can verify the class annotations exist
-        assert "headers" in RequestsOptinal.__annotations__
+        assert "headers" in RequestsOptional.__annotations__
 
     def test_requests_optional_has_timeout(self) -> None:
-        """Test RequestsOptinal has timeout field."""
-        assert "timeout" in RequestsOptinal.__annotations__
+        """Test RequestsOptional has timeout field."""
+        assert "timeout" in RequestsOptional.__annotations__
 
     def test_requests_optional_has_allow_redirects(self) -> None:
-        """Test RequestsOptinal has allow_redirects field."""
-        assert "allow_redirects" in RequestsOptinal.__annotations__
+        """Test RequestsOptional has allow_redirects field."""
+        assert "allow_redirects" in RequestsOptional.__annotations__
 
     def test_requests_optional_can_be_created(self) -> None:
-        """Test RequestsOptinal can be instantiated with fields."""
-        config: RequestsOptinal = {
+        """Test RequestsOptional can be instantiated with fields."""
+        config: RequestsOptional = {
             "headers": {"Content-Type": "application/json"},
             "timeout": 30.0,
             "allow_redirects": True,
@@ -60,23 +60,23 @@ class TestRequestsOptinal:
         assert config["allow_redirects"] is True
 
     def test_requests_optional_partial_fields(self) -> None:
-        """Test RequestsOptinal can have partial fields (all optional)."""
-        config1: RequestsOptinal = {"timeout": 60.0}
+        """Test RequestsOptional can have partial fields (all optional)."""
+        config1: RequestsOptional = {"timeout": 60.0}
         assert config1["timeout"] == 60.0
 
-        config2: RequestsOptinal = {"headers": {"Authorization": "Bearer token"}}
+        config2: RequestsOptional = {"headers": {"Authorization": "Bearer token"}}
         assert "Authorization" in config2["headers"]
 
-        config3: RequestsOptinal = {"allow_redirects": False}
+        config3: RequestsOptional = {"allow_redirects": False}
         assert config3["allow_redirects"] is False
 
     def test_requests_optional_docstring(self) -> None:
-        """Test RequestsOptinal has proper docstring."""
-        assert RequestsOptinal.__doc__ is not None
-        assert "Optional request configuration" in RequestsOptinal.__doc__
+        """Test RequestsOptional has proper docstring."""
+        assert RequestsOptional.__doc__ is not None
+        assert "Optional request configuration" in RequestsOptional.__doc__
 
     def test_requests_optional_total_false(self) -> None:
-        """Test that RequestsOptinal has total=False (all fields optional)."""
+        """Test that RequestsOptional has total=False (all fields optional)."""
         # Verify that all fields are indeed optional by creating empty dict
-        config: RequestsOptinal = {}
+        config: RequestsOptional = {}
         assert config == {}
