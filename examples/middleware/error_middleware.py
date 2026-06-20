@@ -2,7 +2,7 @@ from fasthttp import FastHTTP
 from fasthttp.middleware import BaseMiddleware
 from fasthttp.response import Response
 from fasthttp.routing import Route
-from fasthttp.types import RequestsOptinal
+from fasthttp.types import RequestsOptional
 
 
 class ErrorTrackingMiddleware(BaseMiddleware):
@@ -15,7 +15,7 @@ class ErrorTrackingMiddleware(BaseMiddleware):
         self.error_count = 0
 
     async def on_error(
-        self, error: Exception, route: Route, config: RequestsOptinal
+        self, error: Exception, route: Route, config: RequestsOptional
     ) -> None:
         self.error_count += 1
         print(f"Error #{self.error_count}: {error.__class__.__name__}")
