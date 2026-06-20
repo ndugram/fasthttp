@@ -12,7 +12,7 @@ from .base import BaseMiddleware
 if TYPE_CHECKING:
     from fasthttp.response import Response
     from fasthttp.routing import Route
-    from fasthttp.types import RequestsOptinal
+    from fasthttp.types import RequestsOptional
 
 _retry_state: ContextVar[dict[str, Any] | None] = ContextVar(
     "retry_state", default=None
@@ -152,7 +152,7 @@ class RetryMiddleware(BaseMiddleware):
         self,
         error: Exception,
         route: Route,  # noqa: ARG002
-        config: RequestsOptinal,  # noqa: ARG002
+        config: RequestsOptional,  # noqa: ARG002
     ) -> None:
         state = _retry_state.get()
         if state is None:
