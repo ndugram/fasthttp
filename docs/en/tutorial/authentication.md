@@ -72,6 +72,44 @@ if __name__ == "__main__":
     app.run()
 ```
 
+## OAuth2ClientCredentials
+
+Acquires a token from the token endpoint using the **Client Credentials** grant type and automatically refreshes it before expiry:
+
+```python
+from fasthttp import FastHTTP
+from fasthttp.auth import OAuth2ClientCredentials
+from fasthttp.response import Response
+
+app = FastHTTP()
+
+auth = OAuth2ClientCredentials(
+    token_url="https://auth.example.com/oauth/token",
+    client_id="my-client",
+    client_secret="my-secret",
+    scopes=["read", "write"],
+)
+
+
+@app.get("https://api.example.com/users", auth=auth)
+async def get_users(resp: Response) -> list:
+    return resp.json()
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+The token is fetched lazily on the first request and cached. FastHTTP automatically requests a new token 60 seconds before the current one expires, based on the `expires_in` field in the token response.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `token_url` | Yes | OAuth2 token endpoint URL |
+| `client_id` | Yes | Client identifier |
+| `client_secret` | Yes | Client secret |
+| `scopes` | No | List of scope strings to request |
+| `extra` | No | Additional key-value pairs sent in the token request body |
+
 ## Auth on Routers
 
 The `auth` parameter works on all `Router` decorators:
