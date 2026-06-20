@@ -22,7 +22,7 @@ except ImportError:
 if TYPE_CHECKING:
     from fasthttp.response import Response
     from fasthttp.routing import Route
-    from fasthttp.types import RequestsOptinal
+    from fasthttp.types import RequestsOptional
 
 
 class CacheEntry:
@@ -136,7 +136,7 @@ class CacheMiddleware(BaseMiddleware):
         self,
         error: Exception,  # noqa: ARG002
         route: Route,  # noqa: ARG002
-        config: RequestsOptinal,  # noqa: ARG002
+        config: RequestsOptional,  # noqa: ARG002
     ) -> None:
         key, _ = self._state.get()
         if key is not None:
