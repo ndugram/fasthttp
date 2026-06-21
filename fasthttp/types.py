@@ -18,7 +18,10 @@ OAuth2Scope: TypeAlias = Literal[
     "admin",
     "api",
 ]
-
+DefaultEncoding: TypeAlias = Literal[
+    "utf-8", "ascii", "latin-1", "iso-8859-1", "utf-16", "cp1251",
+    "cp1252", "koi8-r", "gbk", "big5", "shift_jis", "euc-jp",
+]
 
 
 class JSONResponse:

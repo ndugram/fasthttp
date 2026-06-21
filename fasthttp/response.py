@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import datetime
 import xml.etree.ElementTree as ET
-from typing import Annotated, Any, get_args, get_origin
+from typing import TYPE_CHECKING, Annotated, Any, get_args, get_origin
 
 import orjson
 from annotated_doc import Doc
+
+from .exceptions import FastHTTPBadStatusError
+
+if TYPE_CHECKING:
+    import httpx
 
 try:
     from fasthttp._core import extract_assets  # type: ignore
@@ -48,6 +54,11 @@ class Response:
         req_json: Annotated[dict[str, Any] | None, Doc("JSON body sent with the request.")] = None,
         req_data: Annotated[object | None, Doc("Raw body or form data sent with the request.")] = None,
         content: Annotated[bytes | None, Doc("Raw response body as bytes.")] = None,
+        *,
+        history: Annotated[list[Response] | None, Doc("List of intermediate responses from redirects.")] = None,
+        elapsed: Annotated[datetime.timedelta | None, Doc("Time taken for the request.")] = None,
+        http_version: Annotated[str | None, Doc("HTTP version used (e.g. HTTP/1.1, HTTP/2).")] = None,
+        reason_phrase: Annotated[str | None, Doc("Reason phrase (e.g. OK, Not Found).")] = None,
     ) -> None:
         self.status = status
         self.text = text
@@ -61,6 +72,10 @@ class Response:
         self._req_data = req_data
         self._url: str | None = None
         self._content: bytes | None = content
+        self._history: list[Response] = history or []
+        self._elapsed = elapsed
+        self._http_version = http_version
+        self._reason_phrase = reason_phrase
 
     def _set_url(self, url: str | None) -> None:
         self._url = url
@@ -101,6 +116,67 @@ class Response:
     def path_params(self) -> dict[str, Any]:
         """Always empty — FastHTTP does not use path parameters."""
         return {}
+
+    @property
+    def history(self) -> list[Response]:
+        """List of intermediate responses from redirects (if any)."""
+        return self._history
+
+    @property
+    def elapsed(self) -> datetime.timedelta | None:
+        """Time taken for the request."""
+        return self._elapsed
+
+    @property
+    def http_version(self) -> str | None:
+        """HTTP version used (e.g. ``HTTP/1.1``, ``HTTP/2``)."""
+        return self._http_version
+
+    @property
+    def reason_phrase(self) -> str | None:
+        """Reason phrase (e.g. ``OK``, ``Not Found``)."""
+        return self._reason_phrase
+
+    @property
+    def is_success(self) -> bool:
+        """``True`` if status code is 2xx (200-299)."""
+        return 200 <= self.status < 300
+
+    @property
+    def is_redirect(self) -> bool:
+        """``True`` if status code is 3xx (300-399)."""
+        return 300 <= self.status < 400
+
+    @property
+    def is_error(self) -> bool:
+        """``True`` if status code is 4xx or 5xx (400-599)."""
+        return 400 <= self.status < 600
+
+    @property
+    def is_client_error(self) -> bool:
+        """``True`` if status code is 4xx (400-499)."""
+        return 400 <= self.status < 500
+
+    @property
+    def is_server_error(self) -> bool:
+        """``True`` if status code is 5xx (500-599)."""
+        return 500 <= self.status < 600
+
+    @property
+    def is_informational(self) -> bool:
+        """``True`` if status code is 1xx (100-199)."""
+        return 100 <= self.status < 200
+
+    def raise_for_status(self) -> None:
+        """Raise :class:`FastHTTPBadStatusError` if status code is 4xx or 5xx."""
+        if self.is_error:
+            raise FastHTTPBadStatusError(
+                message=f"HTTP {self.status}",
+                url=self._url,
+                method=self._method,
+                status_code=self.status,
+                response_body=self.text,
+            )
 
     def json(self) -> Any:  # noqa: ANN401
         """Parse the response body as JSON, validating against response_model if set."""
