@@ -54,7 +54,7 @@ if TYPE_CHECKING:
 
     from .auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
     from .response import Response
-    from .types import HTTPMethod, RequestsOptional
+    from .types import DefaultEncoding, HTTPMethod, RequestsOptional
 
 
 class FastHTTP:
@@ -476,6 +476,30 @@ class FastHTTP:
                 """
             ),
         ] = None,
+        default_encoding: Annotated[
+            DefaultEncoding | Callable[[bytes], str],
+            Doc(
+                """
+                Default encoding for decoding response text.
+
+                Used when the response lacks a charset in Content-Type.
+                Can be a string encoding name or a callable that receives
+                the raw response bytes and returns the encoding name.
+
+                Example:
+                ```python
+                app = FastHTTP(default_encoding="cp1251")
+                ```
+
+                Custom decoder:
+                ```python
+                app = FastHTTP(
+                    default_encoding=lambda b: "utf-8" if b[:3] == b"\\xef\\xbb\\xbf" else "cp1251"
+                )
+                ```
+                """
+            ),
+        ] = "utf-8",
     ) -> None:
         self.logger = setup_logger(debug=debug)
         self.routes: list[Route] = []
@@ -530,6 +554,7 @@ class FastHTTP:
                 self.startup_uuid = str(uuid.uuid4())
 
         self.concurrency = concurrency
+        self.default_encoding = default_encoding
 
         self._ws_routes: list[dict] = []
 
@@ -1302,6 +1327,7 @@ class FastHTTP:
         async with httpx.AsyncClient(
             http2=self.http2_enabled,
             proxy=self.proxy,
+            default_encoding=self.default_encoding,
         ) as client:
             async def _guarded(route: Route) -> tuple[Route, float, Response | None]:
                 if sem:
@@ -1596,6 +1622,7 @@ class ASGIApp:
                 self._shared_client = httpx.AsyncClient(
                     http2=self.fasthttp.http2_enabled,
                     proxy=self.fasthttp.proxy,
+                    default_encoding=self.fasthttp.default_encoding,
                 )
                 await send({"type": "lifespan.startup.complete"})
             elif message["type"] == "lifespan.shutdown":
