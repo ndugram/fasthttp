@@ -276,6 +276,18 @@ class HTTPClient:
     def _build_response(
         self, route: Route, config: dict, response: httpx.Response
     ) -> Response:
+        history = [
+            Response(
+                status=r.status_code,
+                text=r.text,
+                headers=dict(r.headers),
+                content=r.content,
+                http_version=r.http_version,
+                reason_phrase=r.reason_phrase,
+                elapsed=r.elapsed,
+            )
+            for r in response.history
+        ]
         resp = Response(
             status=response.status_code,
             text=response.text,
@@ -286,6 +298,10 @@ class HTTPClient:
             req_json=route.json,
             req_data=route.data,
             content=response.content,
+            history=history,
+            elapsed=response.elapsed,
+            http_version=response.http_version,
+            reason_phrase=response.reason_phrase,
         )
         resp._url = route.url  # noqa: SLF001
         return resp
