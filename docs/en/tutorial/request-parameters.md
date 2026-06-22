@@ -85,6 +85,21 @@ async def login(resp: Response) -> dict:
     return resp.json()
 ```
 
+## File Uploads
+
+Use `files` to upload files as multipart/form-data:
+
+```python
+@app.post(
+    url="https://api.example.com/upload",
+    files={"file": open("photo.jpg", "rb")},
+)
+async def upload(resp: Response) -> dict:
+    return resp.json()
+```
+
+See the full [File Uploads](file-uploads.md) guide for more examples.
+
 ## Combining Parameters
 
 You can combine multiple parameters:
