@@ -23,6 +23,12 @@
 <a href="https://codspeed.io/ndugram/fasthttp" target="_blank">
     <img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed">
 </a>
+<a href="https://pydantic.dev" target="_blank">
+    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydantic/pydantic/main/docs/badge/v2.json" alt="Pydantic v2">
+</a>
+<a href="https://github.com/ndugram/fasthttp" target="_blank">
+    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ndugram/fasthttp/main/docs/badge.json" alt="fasthttp">
+</a>
 <a href="https://github.com/ndugram/fasthttp" target="_blank">
     <img src="https://img.shields.io/github/stars/ndugram/fasthttp?style=social" alt="GitHub Stars">
 </a>
