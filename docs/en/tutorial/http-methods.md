@@ -85,6 +85,7 @@ async def allowed_methods(resp: Response) -> dict:
 | `params` | Query parameters |
 | `json` | JSON body (for POST, PUT, PATCH) |
 | `data` | Raw bytes body |
+| `files` | File uploads (multipart/form-data) |
 | `tags` | Tags for grouping |
 | `dependencies` | List of dependencies |
 | `response_model` | Pydantic model for validation |
