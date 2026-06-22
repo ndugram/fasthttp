@@ -338,6 +338,7 @@ class HTTPClient:
                 params=config.get("params", route.params),
                 json=route.json,
                 content=route.data,  # type: ignore
+                files=route.files,  # type: ignore
                 timeout=timeout_config,
                 follow_redirects=False,
                 auth=resolve_auth(route.auth),
