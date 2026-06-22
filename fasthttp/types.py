@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import io
+from os import PathLike
 from typing import Annotated, Literal, TypeAlias, TypedDict
 
 from annotated_doc import Doc
@@ -84,3 +88,17 @@ class RequestsOptional(TypedDict, total=False):
             """
         ),
     ]
+
+
+FileContent: TypeAlias = bytes | str | io.IOBase | io.RawIOBase | io.BufferedIOBase | io.TextIOBase | PathLike[str]
+
+FileTuple: TypeAlias = tuple[str, FileContent] | tuple[str, FileContent, str] | tuple[str, FileContent, str, dict[str, str]]
+
+FileUpload: TypeAlias = (
+    FileContent
+    | FileTuple
+    | dict[str, FileContent]
+    | dict[str, FileTuple]
+    | list[tuple[str, FileContent]]
+    | list[tuple[str, FileTuple]]
+)
