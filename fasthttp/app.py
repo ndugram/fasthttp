@@ -54,7 +54,7 @@ if TYPE_CHECKING:
 
     from .auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
     from .response import Response
-    from .types import DefaultEncoding, HTTPMethod, RequestsOptional
+    from .types import DefaultEncoding, FileUpload, HTTPMethod, RequestsOptional
 
 
 class FastHTTP:
@@ -561,7 +561,7 @@ class FastHTTP:
         self.event_hooks = EventHooks()
 
         self.client = HTTPClient(
-            self.request_configs,
+            self.request_configs, # type: ignore
             self.logger,
             self.middleware_manager,
             self.security,
@@ -672,6 +672,7 @@ class FastHTTP:
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         data: object | None = None,
+        files: FileUpload | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -691,6 +692,7 @@ class FastHTTP:
                     params=params,
                     json=json,
                     data=data,
+                    files=files,
                     response_model=response_model,
                     request_model=request_model,
                     tags=tags,
@@ -804,6 +806,7 @@ class FastHTTP:
         url: str,
         *,
         params: dict[str, Any] | None = None,
+        files: FileUpload | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -816,6 +819,7 @@ class FastHTTP:
             method="GET",
             url=url,
             params=params,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -831,6 +835,7 @@ class FastHTTP:
         *,
         json: dict[str, Any] | None = None,
         data: object | None = None,
+        files: FileUpload | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -844,6 +849,7 @@ class FastHTTP:
             url=url,
             json=json,
             data=data,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -859,6 +865,7 @@ class FastHTTP:
         *,
         json: dict[str, Any] | None = None,
         data: object | None = None,
+        files: FileUpload | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -872,6 +879,7 @@ class FastHTTP:
             url=url,
             json=json,
             data=data,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -887,6 +895,7 @@ class FastHTTP:
         *,
         json: dict[str, Any] | None = None,
         data: object | None = None,
+        files: FileUpload | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -900,6 +909,7 @@ class FastHTTP:
             url=url,
             json=json,
             data=data,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -915,6 +925,7 @@ class FastHTTP:
         *,
         json: dict[str, Any] | None = None,
         data: object | None = None,
+        files: FileUpload | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -928,6 +939,7 @@ class FastHTTP:
             url=url,
             json=json,
             data=data,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -942,6 +954,7 @@ class FastHTTP:
         url: str,
         *,
         params: dict[str, Any] | None = None,
+        files: FileUpload | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -954,6 +967,7 @@ class FastHTTP:
             method="HEAD",
             url=url,
             params=params,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -968,6 +982,7 @@ class FastHTTP:
         url: str,
         *,
         params: dict[str, Any] | None = None,
+        files: FileUpload | None = None,
         response_model: type | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -980,6 +995,7 @@ class FastHTTP:
             method="OPTIONS",
             url=url,
             params=params,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
