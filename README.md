@@ -11,8 +11,8 @@
 <a href="https://pypi.org/project/fasthttp-client" target="_blank">
     <img src="https://img.shields.io/pypi/v/fasthttp-client?color=%2334D058&label=pypi%20package" alt="Package version">
 </a>
-<a href="https://pypi.org/project/fasthttp-client" target="_blank">
-    <img src="https://img.shields.io/pypi/pyversions/fasthttp-client.svg?color=%2334D058" alt="Supported Python versions">
+<a href="https://www.python.org/" target="_blank">
+    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ndugram/fasthttp/main/docs/python-badge.json" alt="Python">
 </a>
 <a href="https://pypi.org/project/fasthttp-client" target="_blank">
     <img src="https://img.shields.io/pypi/dm/fasthttp-client?color=%2334D058&label=downloads" alt="Monthly downloads">
