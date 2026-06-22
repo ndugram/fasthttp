@@ -11,7 +11,7 @@ from .events import ErrorHook, EventHooks, RequestHook, ResponseHook
 from .helpers.route_inspect import validate_handler
 from .helpers.routing import join_prefix as _join_prefix
 from .helpers.routing import resolve_url as _resolve_url
-from .types import HTTPMethod  # noqa: TC001
+from .types import FileUpload, HTTPMethod  # noqa: TC001
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -54,6 +54,9 @@ class Route(BaseModel):
 
     data: object | None = None
     """Raw body or form data sent with the request."""
+
+    files: FileUpload | None = None
+    """Files to upload as multipart/form-data."""
 
     response_model: type | None = None
     """Optional Pydantic model for validating the handler result."""
@@ -102,6 +105,7 @@ class Route(BaseModel):
             params: dict[str, Any] | None = None,
             json: dict[str, Any] | None = None,
             data: object | None = None,
+            files: FileUpload | None = None,
             response_model: type | None = None,
             request_model: type[BaseModel] | None = None,
             tags: list[str] | None = None,
@@ -119,6 +123,7 @@ class Route(BaseModel):
                 params=params,
                 json=json,
                 data=data,
+                files=files,
                 response_model=response_model,
                 request_model=request_model,
                 tags=tags,
@@ -140,6 +145,7 @@ class _RouteDef:
     params: dict[str, Any] | None
     json: dict[str, Any] | None
     data: object | None
+    files: FileUpload | None
     response_model: type[BaseModel] | None
     request_model: type[BaseModel] | None
     tags: list[str]
@@ -228,6 +234,7 @@ class Router:
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         data: object | None = None,
+        files: FileUpload | None = None,
         response_model: type[BaseModel] | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -247,6 +254,7 @@ class Router:
                     params=params,
                     json=json,
                     data=data,
+                    files=files,
                     response_model=response_model,
                     request_model=request_model,
                     tags=tags or [],
@@ -266,6 +274,7 @@ class Router:
         url: str,
         *,
         params: dict[str, Any] | None = None,
+        files: FileUpload | None = None,
         response_model: type[BaseModel] | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -279,6 +288,7 @@ class Router:
             method="GET",
             url=url,
             params=params,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -294,6 +304,7 @@ class Router:
         *,
         json: dict[str, Any] | None = None,
         data: object | None = None,
+        files: FileUpload | None = None,
         response_model: type[BaseModel] | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -308,6 +319,7 @@ class Router:
             url=url,
             json=json,
             data=data,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -323,6 +335,7 @@ class Router:
         *,
         json: dict[str, Any] | None = None,
         data: object | None = None,
+        files: FileUpload | None = None,
         response_model: type[BaseModel] | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -337,6 +350,7 @@ class Router:
             url=url,
             json=json,
             data=data,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -352,6 +366,7 @@ class Router:
         *,
         json: dict[str, Any] | None = None,
         data: object | None = None,
+        files: FileUpload | None = None,
         response_model: type[BaseModel] | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -366,6 +381,7 @@ class Router:
             url=url,
             json=json,
             data=data,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -381,6 +397,7 @@ class Router:
         *,
         json: dict[str, Any] | None = None,
         data: object | None = None,
+        files: FileUpload | None = None,
         response_model: type[BaseModel] | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -395,6 +412,7 @@ class Router:
             url=url,
             json=json,
             data=data,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -409,6 +427,7 @@ class Router:
         url: str,
         *,
         params: dict[str, Any] | None = None,
+        files: FileUpload | None = None,
         response_model: type[BaseModel] | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -422,6 +441,7 @@ class Router:
             method="HEAD",
             url=url,
             params=params,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -436,6 +456,7 @@ class Router:
         url: str,
         *,
         params: dict[str, Any] | None = None,
+        files: FileUpload | None = None,
         response_model: type[BaseModel] | None = None,
         request_model: type[BaseModel] | None = None,
         tags: list[str] | None = None,
@@ -449,6 +470,7 @@ class Router:
             method="OPTIONS",
             url=url,
             params=params,
+            files=files,
             response_model=response_model,
             request_model=request_model,
             tags=tags,
@@ -548,6 +570,7 @@ class Router:
                     params=rd.params,
                     json=rd.json,
                     data=rd.data,
+                    files=rd.files,
                     response_model=rd.response_model,
                     request_model=rd.request_model,
                     tags=route_tags,

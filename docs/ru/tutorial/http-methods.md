@@ -77,6 +77,21 @@ async def allowed_methods(resp: Response) -> dict:
     return {"allow": resp.headers.get("allow", "")}
 ```
 
+## Параметры декоратора
+
+| Параметр | Описание |
+|----------|----------|
+| `url` | URL запроса (обязательный) |
+| `params` | Query параметры |
+| `json` | JSON тело (для POST, PUT, PATCH) |
+| `data` | Сырые байты |
+| `files` | Загрузка файлов (multipart/form-data) |
+| `tags` | Теги для группировки |
+| `dependencies` | Список зависимостей |
+| `response_model` | Модель Pydantic для валидации |
+| `request_model` | Модель Pydantic для валидации запроса |
+| `responses` | Модели Pydantic для ответов с ошибками |
+
 ## Возвращаемые значения
 
 Обработчики могут возвращать разные типы:

@@ -82,6 +82,7 @@ nav:
         - en/tutorial/first-steps.md
         - en/tutorial/http-methods.md
         - en/tutorial/request-parameters.md
+        - en/tutorial/file-uploads.md
         - en/tutorial/response-handling.md
         - en/tutorial/parallel-execution.md
         - en/tutorial/async-session.md
@@ -147,6 +148,7 @@ nav:
         - ru/tutorial/first-steps.md
         - ru/tutorial/http-methods.md
         - ru/tutorial/request-parameters.md
+        - ru/tutorial/file-uploads.md
         - ru/tutorial/response-handling.md
         - ru/tutorial/parallel-execution.md
         - ru/tutorial/async-session.md

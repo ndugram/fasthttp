@@ -84,3 +84,18 @@ async def with_headers(resp: Response) -> dict:
 async def slow_request(resp: Response) -> dict:
     return resp.json()
 ```
+
+## Загрузка файлов
+
+Используйте `files` для загрузки файлов как multipart/form-data:
+
+```python
+@app.post(
+    url="https://api.example.com/upload",
+    files={"file": open("photo.jpg", "rb")},
+)
+async def upload(resp: Response) -> dict:
+    return resp.json()
+```
+
+Подробное руководство см. в разделе [Загрузка файлов](file-uploads.md).
