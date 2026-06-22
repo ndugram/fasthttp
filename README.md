@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/pypi/v/fasthttp-client?color=%2334D058&label=pypi%20package" alt="Package version">
 </a>
 <a href="https://www.python.org/" target="_blank">
-    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ndugram/fasthttp/main/docs/python-badge.json" alt="Python">
+    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ndugram/fasthttp/master/docs/endpoints/python.json" alt="Python">
 </a>
 <a href="https://pypi.org/project/fasthttp-client" target="_blank">
     <img src="https://img.shields.io/pypi/dm/fasthttp-client?color=%2334D058&label=downloads" alt="Monthly downloads">
@@ -27,7 +27,7 @@
     <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydantic/pydantic/main/docs/badge/v2.json" alt="Pydantic v2">
 </a>
 <a href="https://github.com/ndugram/fasthttp" target="_blank">
-    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ndugram/fasthttp/main/docs/badge.json" alt="fasthttp">
+    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ndugram/fasthttp/master/docs/endpoints/fasthttp.json" alt="fasthttp">
 </a>
 <a href="https://github.com/ndugram/fasthttp" target="_blank">
     <img src="https://img.shields.io/github/stars/ndugram/fasthttp?style=social" alt="GitHub Stars">
