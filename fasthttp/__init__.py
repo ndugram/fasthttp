@@ -16,6 +16,7 @@ from .middleware import (
 )
 from .routing import Router
 from .session import AsyncSession
+from .sse import SSEEvent
 from .websocket import WebSocket, WebSocketMessage
 
 __all__ = (
@@ -35,6 +36,7 @@ __all__ = (
     "OAuth2ClientCredentials",
     "RetryMiddleware",
     "Router",
+    "SSEEvent",
     "SessionMiddleware",
     "WebSocket",
     "WebSocketMessage",
