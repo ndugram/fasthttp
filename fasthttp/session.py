@@ -200,7 +200,7 @@ class AsyncSession:
         if timeout is not None:
             deps.append(_timeout_dep(timeout))
 
-        return Route(
+        return Route.model_construct(
             method=method,
             url=self._resolve_url(url),
             handler=_passthrough,

@@ -207,10 +207,12 @@ class MiddlewareManager:
         Doc("Final request configuration after middleware processing."),
     ]:
         """Execute all request middleware hooks in priority order."""
+        active = self._active(self._sorted(), route.method)
+
         kwargs: dict[str, Any] = dict(config)
         kwargs.setdefault("params", route.params)
 
-        for mw in self._active(self._sorted(), route.method):
+        for mw in active:
             kwargs = await mw.request(route.method, route.url, kwargs)
 
         return kwargs
@@ -234,8 +236,12 @@ class MiddlewareManager:
         Doc("Final response after middleware processing."),
     ]:
         """Execute all response middleware hooks in reverse priority order."""
+        active = self._active(self._sorted(), route.method)
+        if not active:
+            return response
+
         current = response
-        for mw in reversed(self._active(self._sorted(), route.method)):
+        for mw in reversed(active):
             current = await mw.response(current)
         return current
 
@@ -258,5 +264,9 @@ class MiddlewareManager:
         Doc("No return value."),
     ]:
         """Execute all on_error middleware hooks in priority order."""
-        for mw in self._active(self._sorted(), route.method):
+        active = self._active(self._sorted(), route.method)
+        if not active:
+            return
+
+        for mw in active:
             await mw.on_error(error, route, config)

@@ -1,6 +1,7 @@
 import logging
 import time
 from typing import TYPE_CHECKING, Annotated, Any
+from urllib.parse import urljoin
 
 import httpx
 from annotated_doc import Doc
@@ -122,6 +123,9 @@ class HTTPClient:
         self.startup_uuid = startup_uuid
         self.raise_for_status = raise_for_status
         self.event_hooks = event_hooks
+        self._has_event_hooks = event_hooks is not None
+        self._retry_middleware: Any = None
+        self._retry_middleware_cached: bool = False
 
     def _validate_request(self, route: Route) -> bool:
         if not route.request_model:
@@ -375,6 +379,67 @@ class HTTPClient:
 
         return None
 
+    @staticmethod
+    def _is_redirect(status_code: int) -> bool:
+        return status_code in (301, 302, 303, 307, 308)
+
+    @staticmethod
+    def _redirect_method(
+        original_method: str, status_code: int
+    ) -> str:
+        if status_code == 303:
+            return "GET"
+        if status_code in (307, 308):
+            return original_method
+        if original_method in ("POST", "PUT", "PATCH", "DELETE"):
+            return "GET"
+        return original_method
+
+    async def _follow_redirect(
+        self,
+        client: httpx.AsyncClient,
+        route: Route,
+        config: dict,
+        timeout_config: httpx.Timeout,
+        resp: httpx.Response,
+    ) -> tuple[httpx.Response, float] | None:
+        location = resp.headers.get("location")
+        if not location:
+            return None
+
+        redirect_url = urljoin(str(resp.url), location)
+
+        if self.security:
+            try:
+                self.security.check_redirect(route.url, redirect_url, route.method)
+            except SecurityError as e:
+                self.logger.error("Redirect blocked: %s", e)
+                return None
+
+        new_method = self._redirect_method(route.method, resp.status_code)
+
+        start = time.perf_counter()
+        try:
+            req_kwargs: dict[str, Any] = {
+                "method": new_method,
+                "url": redirect_url,
+                "headers": config.get("headers"),
+                "timeout": timeout_config,
+                "follow_redirects": False,
+                "auth": resolve_auth(route.auth),
+            }
+            if new_method in ("POST", "PUT", "PATCH") and route.json:
+                req_kwargs["json"] = route.json
+            elif new_method in ("POST", "PUT", "PATCH") and route.data:
+                req_kwargs["content"] = route.data
+
+            new_resp = await client.request(**req_kwargs)
+            elapsed = (time.perf_counter() - start) * 1000
+            return new_resp, elapsed
+        except httpx.HTTPError as e:
+            await self._handle_error(route, config, e, FastHTTPRequestError)
+            return None
+
     async def send(self, client: httpx.AsyncClient, route: Route) -> Response | None:  # noqa: C901
         if not self._validate_request(route):
             return None
@@ -382,7 +447,7 @@ class HTTPClient:
         config = self.request_configs.get(route.method, {})
         config = await self._prepare_config(route, config)
 
-        if self.event_hooks:
+        if self._has_event_hooks:
             await self.event_hooks.process_request(route, config)
 
         if "_fasthttp_cached_response" in config:
@@ -404,6 +469,9 @@ class HTTPClient:
 
         retry_middleware = self._get_retry_middleware()
         max_attempts = (retry_middleware.max_retries + 1) if retry_middleware else 1
+        max_redirects = self.security.max_redirects if self.security else 10
+        redirect_count = 0
+        all_history: list[Response] = []
         last_error: Exception | None = None
 
         for attempt in range(max_attempts):
@@ -431,6 +499,28 @@ class HTTPClient:
 
                 resp, elapsed = result
 
+                while (
+                    self._is_redirect(resp.status_code)
+                    and redirect_count < max_redirects
+                ):
+                    redirect_count += 1
+                    history_entry = self._build_response(route, config, resp)
+                    history_entry.method = route.method
+                    all_history.append(history_entry)
+
+                    redirect_result = await self._follow_redirect(
+                        client, route, config, timeout_config, resp
+                    )
+                    if redirect_result is None:
+                        return None
+                    resp, elapsed = redirect_result
+
+                if redirect_count >= max_redirects and self._is_redirect(resp.status_code):
+                    self.logger.error(
+                        "Too many redirects (max: %d)", max_redirects
+                    )
+                    return None
+
                 try:
                     await self._check_response_security(route, resp)
                 except SecurityError as e:
@@ -442,6 +532,7 @@ class HTTPClient:
                 if resp.status_code >= 400:
                     if self.middleware_manager:
                         built = self._build_response(route, config, resp)
+                        built._url = route.url  # noqa: SLF001
                         try:
                             await self.middleware_manager.process_after_response(
                                 built, route, config  # type: ignore
@@ -457,6 +548,7 @@ class HTTPClient:
                             error_model = error_model.get("model")
                         if error_model:
                             response = self._build_response(route, config, resp)
+                            response._history = all_history  # noqa: SLF001
                             try:
                                 error_data = response.json()
                                 validated = error_model.model_validate(error_data)
@@ -474,6 +566,7 @@ class HTTPClient:
 
                 response = self._build_response(route, config, resp)
                 response._response_model = route.response_model  # noqa: SLF001
+                response._history = all_history  # noqa: SLF001
 
                 if self.middleware_manager:
                     response = await self.middleware_manager.process_after_response(
@@ -482,7 +575,7 @@ class HTTPClient:
                         config,  # type: ignore
                     )
 
-                if self.event_hooks:
+                if self._has_event_hooks:
                     await self.event_hooks.process_response(response)
 
                 handler_result = await route.handler(response)
@@ -496,7 +589,7 @@ class HTTPClient:
                 raise
             except Exception as e:  # noqa: BLE001
                 last_error = e
-                if self.event_hooks:
+                if self._has_event_hooks:
                     await self.event_hooks.process_error(e, route)
                 if self.middleware_manager:
                     try:
@@ -516,11 +609,18 @@ class HTTPClient:
 
     def _get_retry_middleware(self) -> Any:  # noqa: ANN401
         """Find RetryMiddleware in the middleware chain if present."""
+        if self._retry_middleware_cached:
+            return self._retry_middleware
+
         from fasthttp.middleware.retry import RetryMiddleware
 
-        if not self.middleware_manager:
-            return None
-        for mw in self.middleware_manager.middlewares:
-            if isinstance(mw, RetryMiddleware):
-                return mw
-        return None
+        result = None
+        if self.middleware_manager:
+            for mw in self.middleware_manager.middlewares:
+                if isinstance(mw, RetryMiddleware):
+                    result = mw
+                    break
+
+        self._retry_middleware = result
+        self._retry_middleware_cached = True
+        return result
