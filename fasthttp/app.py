@@ -45,6 +45,7 @@ from .openapi.swagger import get_not_found_html, get_swagger_html
 from .openapi.urls import build_docs_urls
 from .routing import Route, Router
 from .security import Security
+from .sse import SSEEvent
 from .websocket import WebSocket as FastHTTPWebSocket
 
 if TYPE_CHECKING:
@@ -557,6 +558,7 @@ class FastHTTP:
         self.default_encoding = default_encoding
 
         self._ws_routes: list[dict] = []
+        self._sse_routes: list[dict] = []
 
         self.event_hooks = EventHooks()
 
@@ -1235,6 +1237,95 @@ class FastHTTP:
 
         return decorator
 
+    def sse(
+        self,
+        url: Annotated[
+            str,
+            Doc(
+                """
+                SSE endpoint URL.
+                """
+            ),
+        ],
+        *,
+        headers: Annotated[
+            dict[str, str] | None,
+            Doc(
+                """
+                Additional headers sent with the SSE connection request.
+                """
+            ),
+        ] = None,
+        reconnect: Annotated[
+            bool,
+            Doc(
+                """
+                Automatically reconnect when the connection drops.
+
+                When enabled, the client will keep retrying until
+                ``max_retries`` is reached.
+                """
+            ),
+        ] = False,
+        max_retries: Annotated[
+            int,
+            Doc(
+                """
+                Maximum number of reconnection attempts (ignored when
+                ``reconnect`` is False).
+
+                Set to ``-1`` for unlimited retries.
+                """
+            ),
+        ] = 0,
+        tags: Annotated[
+            list[str] | None,
+            Doc(
+                """
+                Tags for grouping and filtering requests.
+                """
+            ),
+        ] = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """
+        Decorator for registering a Server-Sent Events (SSE) stream.
+
+        The decorated async function receives an :class:`SSEEvent` for
+        every event emitted by the server. SSE streams run alongside
+        HTTP routes and WebSocket connections in ``app.run()``.
+
+        Example:
+        .. code-block:: python
+
+            from fasthttp import FastHTTP
+            from fasthttp.sse import SSEEvent
+
+            app = FastHTTP()
+
+            @app.sse(url="https://api.example.com/events")
+            async def handle_events(event: SSEEvent) -> None:
+                print(event.data)
+        """
+        def decorator(func: Callable[..., object]) -> Callable[..., object]:
+            validate_handler(func=func)
+            resolved_url = url
+            if self.base_url and not url.startswith(("http://", "https://")):
+                resolved_url = self._resolve_url(url)
+            self._sse_routes.append(
+                {
+                    "url": resolved_url,
+                    "handler": func,
+                    "headers": headers or {},
+                    "reconnect": reconnect,
+                    "max_retries": max_retries,
+                    "tags": tags or [],
+                }
+            )
+            self.logger.debug("Registered SSE: %s", url)
+            return func
+
+        return decorator
+
     def on_request(
         self,
         func: Annotated[
@@ -1324,13 +1415,16 @@ class FastHTTP:
         routes = routes or self.routes
         http_total = len(routes)
         ws_total = len(self._ws_routes)
-        total = http_total + ws_total
+        sse_total = len(self._sse_routes)
+        total = http_total + ws_total + sse_total
 
         self.logger.info("Running %d routes", total)
         if http_total:
             self.logger.info("HTTP requests: %d", http_total)
         if ws_total:
             self.logger.info("WebSocket connections: %d", ws_total)
+        if sse_total:
+            self.logger.info("SSE streams: %d", sse_total)
         if self.http2_enabled:
             self.logger.info("HTTP/2 enabled")
         if self.proxy:
@@ -1354,6 +1448,11 @@ class FastHTTP:
             ws_futures = [
                 asyncio.ensure_future(self._run_ws(ws_route))
                 for ws_route in self._ws_routes
+            ]
+
+            sse_futures = [
+                asyncio.ensure_future(self._run_sse(sse_route))
+                for sse_route in self._sse_routes
             ]
 
             if http_total > 0:
@@ -1383,15 +1482,128 @@ class FastHTTP:
             self.logger.info("Done in %.2fs", total_time)
 
 
-            if ws_futures:
+            conn_futures = ws_futures + sse_futures
+
+            if conn_futures:
+                labels = []
+                if ws_futures:
+                    labels.append("WebSocket connections")
+                if sse_futures:
+                    labels.append("SSE streams")
                 self.logger.info(
-                    "WebSocket connections active. Press Ctrl+C to stop."
+                    "%s active. Press Ctrl+C to stop.",
+                    " and ".join(labels),
                 )
-                await asyncio.gather(*ws_futures, return_exceptions=True)
+                await asyncio.gather(*conn_futures, return_exceptions=True)
 
     async def _run_with_lifespan(self, routes: list[Route]) -> None:
         async with self.lifespan(self):  # type: ignore
             await self._run(routes)
+
+    async def _run_sse(self, sse_route: dict) -> None:
+        url = sse_route["url"]
+        handler = sse_route["handler"]
+        request_headers = sse_route.get("headers", {})
+        reconnect = sse_route.get("reconnect", False)
+        max_retries = sse_route.get("max_retries", 0)
+
+        self.logger.info("SSE connecting: %s", url)
+        attempt = 0
+        last_event_id: str | None = None
+
+        while True:
+            try:
+                async with httpx.AsyncClient(
+                    http2=self.http2_enabled,
+                    proxy=self.proxy,
+                ) as client:
+                    req_headers = dict(request_headers)
+                    req_headers.setdefault("Accept", "text/event-stream")
+                    req_headers.setdefault("Cache-Control", "no-cache")
+                    if last_event_id:
+                        req_headers["Last-Event-ID"] = last_event_id
+
+                    async with client.stream(
+                        "GET", url, headers=req_headers
+                    ) as resp:
+                        resp.raise_for_status()
+                        self.logger.info("SSE connected: %s", url)
+
+                        event_buf: list[str] = []
+                        event_type = "message"
+                        event_id: str | None = None
+
+                        async for line in resp.aiter_lines():
+                            line = line.rstrip("\r\n")
+
+                            if line == "":
+                                if event_buf:
+                                    event = SSEEvent(
+                                        event=event_type,
+                                        data="\n".join(event_buf),
+                                        id=event_id,
+                                    )
+                                    if event.id:
+                                        last_event_id = event.id
+                                    await handler(event)
+                                event_buf = []
+                                event_type = "message"
+                                event_id = None
+                                continue
+
+                            if line.startswith("data:"):
+                                event_buf.append(line[5:].lstrip())
+                            elif line.startswith("event:"):
+                                event_type = line[6:].strip()
+                            elif line.startswith("id:"):
+                                val = line[3:].strip()
+                                if val and not val.startswith("\0"):
+                                    event_id = val
+                            elif line.startswith(":"):
+                                continue
+
+                        self.logger.info("SSE stream ended: %s", url)
+                        break
+
+            except httpx.HTTPStatusError as e:
+                self.logger.error(
+                    "SSE HTTP error for %s: %d %s",
+                    url,
+                    e.response.status_code,
+                    e.response.text,
+                )
+                if reconnect and (max_retries == -1 or attempt < max_retries):
+                    attempt += 1
+                    wait = min(2**attempt, 30)
+                    self.logger.warning(
+                        "SSE reconnecting in %ds (attempt %d)...",
+                        wait,
+                        attempt,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+                break
+            except httpx.RequestError as e:
+                self.logger.error("SSE request error for %s: %s", url, e)
+                if reconnect and (max_retries == -1 or attempt < max_retries):
+                    attempt += 1
+                    wait = min(2**attempt, 30)
+                    self.logger.warning(
+                        "SSE reconnecting in %ds (attempt %d)...",
+                        wait,
+                        attempt,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+                break
+            except Exception as e:
+                self.logger.error(
+                    "SSE error for %s: %s %s",
+                    url,
+                    type(e).__name__,
+                    e,
+                )
+                break
 
     async def _run_ws(self, ws_route: dict) -> None:
         """Connect and run a single WebSocket handler."""
