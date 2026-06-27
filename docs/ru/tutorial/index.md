@@ -38,6 +38,8 @@
 - [Middleware](middleware/index.md) - Глобальная логика запросов
 - [Безопасность](security/index.md) - Встроенная защита
 - [GraphQL](graphql/index.md) - Поддержка GraphQL
+- [SSE](sse/index.md) - Server-Sent Events
+- [WebSocket](websocket/index.md) - WebSocket соединения
 - [OpenAPI](openapi/index.md) - Swagger UI
 
 ## Как использовать

@@ -13,6 +13,7 @@ All examples are tested and working.
 - **error** — automatic error handling and testing various error scenarios
 - **middleware** - test middleware for FastHTTP
 - **events** - event hooks for request/response lifecycle
+- **sse** - Server-Sent Events (real-time event streams)
 - **pydantic** - pydantic response validation examples
 - **http2** - http2 test for fasthttp
 - **tags** - grouping and filtering requests by tags

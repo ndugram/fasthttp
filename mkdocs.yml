@@ -119,6 +119,8 @@ nav:
         - en/tutorial/graphql/index.md
         - en/tutorial/graphql/queries.md
         - en/tutorial/graphql/mutations.md
+      - SSE:
+        - en/tutorial/sse/index.md
       - WebSocket:
         - en/tutorial/websocket/index.md
       - OpenAPI:
@@ -185,6 +187,8 @@ nav:
         - ru/tutorial/graphql/index.md
         - ru/tutorial/graphql/queries.md
         - ru/tutorial/graphql/mutations.md
+      - SSE:
+        - ru/tutorial/sse/index.md
       - WebSocket:
         - ru/tutorial/websocket/index.md
       - OpenAPI:

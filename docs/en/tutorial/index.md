@@ -38,6 +38,8 @@ The tutorial is divided into several sections:
 - [Middleware](middleware/index.md) - Global request logic
 - [Security](security/index.md) - Built-in protection
 - [GraphQL](graphql/index.md) - GraphQL support
+- [SSE](sse/index.md) - Server-Sent Events
+- [WebSocket](websocket/index.md) - WebSocket connections
 - [OpenAPI](openapi/index.md) - Swagger UI
 
 ## How to Use
