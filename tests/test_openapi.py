@@ -1,57 +1,72 @@
 """Tests for OpenAPI schema generation."""
 
-from pydantic import BaseModel
+from enum import Enum
+
+from pydantic import BaseModel, Field
 
 from fasthttp import FastHTTP
 from fasthttp.openapi.generator import (
+    _SchemaCollector,
     _extract_docstring,
-    _generate_parameter_schema,
-    _generate_response_schema,
-    _generate_schema_from_model,
-    _get_type_string,
     _normalize_path,
     generate_openapi_schema,
 )
 from fasthttp.response import Response
 
 
-class TestGetTypeString:
-    """Tests for _get_type_string function."""
+class TestSchemaForType:
+    """Tests for _SchemaCollector.schema_for_type (Pydantic-backed type -> schema)."""
 
-    def test_get_type_string_str(self) -> None:
-        """Test type string for str type."""
-        result = _get_type_string(str)
+    def test_schema_for_type_str(self) -> None:
+        """Test schema for str type."""
+        result = _SchemaCollector(set()).schema_for_type(str)
         assert result == {"type": "string"}
 
-    def test_get_type_string_int(self) -> None:
-        """Test type string for int type."""
-        result = _get_type_string(int)
+    def test_schema_for_type_int(self) -> None:
+        """Test schema for int type."""
+        result = _SchemaCollector(set()).schema_for_type(int)
         assert result == {"type": "integer"}
 
-    def test_get_type_string_float(self) -> None:
-        """Test type string for float type."""
-        result = _get_type_string(float)
+    def test_schema_for_type_float(self) -> None:
+        """Test schema for float type."""
+        result = _SchemaCollector(set()).schema_for_type(float)
         assert result == {"type": "number"}
 
-    def test_get_type_string_bool(self) -> None:
-        """Test type string for bool type."""
-        result = _get_type_string(bool)
+    def test_schema_for_type_bool(self) -> None:
+        """Test schema for bool type."""
+        result = _SchemaCollector(set()).schema_for_type(bool)
         assert result == {"type": "boolean"}
 
-    def test_get_type_string_list(self) -> None:
-        """Test type string for list type."""
-        result = _get_type_string(list)
-        assert result == {"type": "array"}
+    def test_schema_for_type_list(self) -> None:
+        """Test schema for list type."""
+        result = _SchemaCollector(set()).schema_for_type(list)
+        assert result["type"] == "array"
 
-    def test_get_type_string_dict(self) -> None:
-        """Test type string for dict type."""
-        result = _get_type_string(dict)
-        assert result == {"type": "object"}
+    def test_schema_for_type_dict(self) -> None:
+        """Test schema for dict type."""
+        result = _SchemaCollector(set()).schema_for_type(dict)
+        assert result["type"] == "object"
 
-    def test_get_type_string_none(self) -> None:
-        """Test type string for None type."""
-        result = _get_type_string(None)
-        assert result == {"type": "string", "nullable": True}
+    def test_schema_for_type_none(self) -> None:
+        """Test schema for NoneType."""
+        result = _SchemaCollector(set()).schema_for_type(type(None))
+        assert result == {"type": "null"}
+
+    def test_schema_for_type_enum(self) -> None:
+        """Enums resolve to a proper `enum` list instead of a plain string."""
+
+        class Color(str, Enum):
+            red = "red"
+            blue = "blue"
+
+        result = _SchemaCollector(set()).schema_for_type(Color)
+        assert result["enum"] == ["red", "blue"]
+
+    def test_schema_for_type_optional(self) -> None:
+        """Optional/Union types resolve via anyOf instead of falling back to string."""
+        result = _SchemaCollector(set()).schema_for_type(int | None)
+        types = {branch.get("type") for branch in result["anyOf"]}
+        assert types == {"integer", "null"}
 
 
 class TestExtractDocstring:
@@ -89,8 +104,8 @@ class TestExtractDocstring:
         assert "docstring" in result
 
 
-class TestGenerateSchemaFromModel:
-    """Tests for _generate_schema_from_model function."""
+class TestModelJsonSchema:
+    """Tests for _SchemaCollector's model schema generation (backed by model_json_schema)."""
 
     def test_generate_schema_basic_model(self) -> None:
         """Test generating schema from basic Pydantic model."""
@@ -99,7 +114,8 @@ class TestGenerateSchemaFromModel:
             name: str
             age: int
 
-        result = _generate_schema_from_model(UserModel)
+        collector = _SchemaCollector({UserModel})
+        result = collector.schemas["UserModel"]
 
         assert result["type"] == "object"
         assert "name" in result["properties"]
@@ -114,39 +130,82 @@ class TestGenerateSchemaFromModel:
             required_field: str
             optional_field: str | None = None
 
-        result = _generate_schema_from_model(OptionalModel)
+        collector = _SchemaCollector({OptionalModel})
+        result = collector.schemas["OptionalModel"]
 
         assert "required_field" in result["required"]
         # optional_field should not be in required list
         assert "optional_field" not in result.get("required", [])
 
+    def test_generate_schema_with_field_description(self) -> None:
+        """Descriptions from `Field(description=...)` are preserved via Pydantic."""
 
-class TestGenerateParameterSchema:
-    """Tests for _generate_parameter_schema function."""
+        class DescribedModel(BaseModel):
+            name: str = Field(description="the user's name")
 
-    def test_generate_parameter_schema_basic(self) -> None:
-        """Test generating parameter schema from params dict."""
-        params = {"page": "1", "limit": "10"}
+        collector = _SchemaCollector({DescribedModel})
+        result = collector.schemas["DescribedModel"]
 
-        result = _generate_parameter_schema(params)
+        assert result["properties"]["name"]["description"] == "the user's name"
+
+    def test_generate_schema_with_enum_field(self) -> None:
+        """Enum fields resolve to a shared $ref + enum values, not a plain string."""
+
+        class Role(str, Enum):
+            admin = "admin"
+            user = "user"
+
+        class Account(BaseModel):
+            role: Role
+
+        collector = _SchemaCollector({Account})
+
+        assert collector.schemas["Role"]["enum"] == ["admin", "user"]
+        assert collector.schemas["Account"]["properties"]["role"] == {
+            "$ref": "#/components/schemas/Role"
+        }
+
+    def test_generate_schema_with_nested_model(self) -> None:
+        """Nested models are discovered automatically and added to components/schemas."""
+
+        class Address(BaseModel):
+            city: str
+
+        class Person(BaseModel):
+            name: str
+            address: Address
+
+        collector = _SchemaCollector({Person})
+
+        assert "Address" in collector.schemas
+        assert collector.schemas["Person"]["properties"]["address"] == {
+            "$ref": "#/components/schemas/Address"
+        }
+
+
+class TestSchemaForValue:
+    """Tests for _SchemaCollector.schema_for_value (used for query params & raw bodies)."""
+
+    def test_schema_for_value_scalar(self) -> None:
+        """Test generating schema from a scalar value."""
+        result = _SchemaCollector(set()).schema_for_value("1")
+        assert result == {"type": "string"}
+
+    def test_schema_for_value_dict(self) -> None:
+        """Test generating schema from a dict value."""
+        result = _SchemaCollector(set()).schema_for_value({"page": 1, "limit": 10})
 
         assert result["type"] == "object"
-        assert "page" in result["properties"]
-        assert "limit" in result["properties"]
-        assert result["required"] == ["page", "limit"]
-
-    def test_generate_parameter_schema_none(self) -> None:
-        """Test generating parameter schema from None."""
-        result = _generate_parameter_schema(None)
-        assert result == {}
+        assert result["properties"]["page"] == {"type": "integer"}
+        assert result["properties"]["limit"] == {"type": "integer"}
 
 
-class TestGenerateResponseSchema:
-    """Tests for _generate_response_schema function."""
+class TestResponseSchema:
+    """Tests for _SchemaCollector.response_schema."""
 
     def test_generate_response_schema_none(self) -> None:
         """Test generating response schema without model."""
-        result = _generate_response_schema(None)
+        result = _SchemaCollector(set()).response_schema(None)
 
         assert result["description"] == "Successful response"
 
@@ -157,7 +216,7 @@ class TestGenerateResponseSchema:
             id: int
             name: str
 
-        result = _generate_response_schema(ResponseModel)
+        result = _SchemaCollector({ResponseModel}).response_schema(ResponseModel)
 
         assert "content" in result
         assert "application/json" in result["content"]
