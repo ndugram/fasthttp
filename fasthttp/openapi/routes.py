@@ -92,6 +92,7 @@ async def handle_not_found(
     html = get_not_found_html(
         docs_url=urls["docs_url"],
         openapi_url=urls["openapi_url"],
+        redoc_url=urls["redoc_url"],
     )
     return Response(
         status=status.HTTP_404_NOT_FOUND,
