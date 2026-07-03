@@ -1,4 +1,5 @@
 import re
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 try:
     from fasthttp._core import mask_cookie as _rs_mask_cookie  # type: ignore
@@ -89,7 +90,14 @@ class SecretsMasking:
     def mask_url(self, url: str) -> str:
         if _RUST:
             return _rs_mask_url(url)  # type: ignore[possibly-unbound]
-        return url
+        parsed = urlsplit(url)
+        if not parsed.query:
+            return url
+        masked_params = [
+            (key, "*****" if self.should_mask_value(key) else value)
+            for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        ]
+        return urlunsplit(parsed._replace(query=urlencode(masked_params)))
 
     def mask_log_message(self, message: str) -> str:
         if _RUST:
