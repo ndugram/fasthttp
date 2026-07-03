@@ -63,8 +63,8 @@ class Route(BaseModel):
     files: FileUpload | None = None
     """Files to upload as multipart/form-data."""
 
-    response_model: type | None = None
-    """Optional Pydantic model for validating the handler result."""
+    response_model: Any = None
+    """Optional Pydantic model (or `list[Model]`) for validating the handler result."""
 
     request_model: type[BaseModel] | None = None
     """Optional Pydantic model for validating request data before sending."""
@@ -111,7 +111,7 @@ class Route(BaseModel):
             json: dict[str, Any] | None = None,
             data: object | None = None,
             files: FileUpload | None = None,
-            response_model: type | None = None,
+            response_model: Any = None,
             request_model: type[BaseModel] | None = None,
             tags: list[str] | None = None,
             dependencies: list[Any] | None = None,
