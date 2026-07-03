@@ -49,7 +49,7 @@ from .sse import SSEEvent
 from .websocket import WebSocket as FastHTTPWebSocket
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Coroutine
 
     from pydantic import BaseModel
 
@@ -1500,6 +1500,67 @@ class FastHTTP:
         async with self.lifespan(self):  # type: ignore
             await self._run(routes)
 
+    async def _stream_sse(
+        self,
+        url: str,
+        handler: Callable[[SSEEvent], Coroutine[Any, Any, object]],
+        request_headers: dict[str, str],
+        last_event_id: str | None,
+    ) -> str | None:
+        """Open one SSE connection and dispatch events until the stream ends.
+
+        Returns the last seen event id, used to resume via ``Last-Event-ID``
+        if the caller decides to reconnect.
+        """
+        async with httpx.AsyncClient(
+            http2=self.http2_enabled,
+            proxy=self.proxy,
+        ) as client:
+            req_headers = dict(request_headers)
+            req_headers.setdefault("Accept", "text/event-stream")
+            req_headers.setdefault("Cache-Control", "no-cache")
+            if last_event_id:
+                req_headers["Last-Event-ID"] = last_event_id
+
+            async with client.stream("GET", url, headers=req_headers) as resp:
+                resp.raise_for_status()
+                self.logger.info("SSE connected: %s", url)
+
+                event_buf: list[str] = []
+                event_type = "message"
+                event_id: str | None = None
+
+                async for line in resp.aiter_lines():
+                    line = line.rstrip("\r\n")
+
+                    if line == "":
+                        if event_buf:
+                            event = SSEEvent(
+                                event=event_type,
+                                data="\n".join(event_buf),
+                                id=event_id,
+                            )
+                            if event.id:
+                                last_event_id = event.id
+                            await handler(event)
+                        event_buf = []
+                        event_type = "message"
+                        event_id = None
+                        continue
+
+                    if line.startswith("data:"):
+                        event_buf.append(line[5:].lstrip())
+                    elif line.startswith("event:"):
+                        event_type = line[6:].strip()
+                    elif line.startswith("id:"):
+                        val = line[3:].strip()
+                        if val and not val.startswith("\0"):
+                            event_id = val
+                    elif line.startswith(":"):
+                        continue
+
+        return last_event_id
+
     async def _run_sse(self, sse_route: dict) -> None:
         url = sse_route["url"]
         handler = sse_route["handler"]
@@ -1513,58 +1574,11 @@ class FastHTTP:
 
         while True:
             try:
-                async with httpx.AsyncClient(
-                    http2=self.http2_enabled,
-                    proxy=self.proxy,
-                ) as client:
-                    req_headers = dict(request_headers)
-                    req_headers.setdefault("Accept", "text/event-stream")
-                    req_headers.setdefault("Cache-Control", "no-cache")
-                    if last_event_id:
-                        req_headers["Last-Event-ID"] = last_event_id
-
-                    async with client.stream(
-                        "GET", url, headers=req_headers
-                    ) as resp:
-                        resp.raise_for_status()
-                        self.logger.info("SSE connected: %s", url)
-
-                        event_buf: list[str] = []
-                        event_type = "message"
-                        event_id: str | None = None
-
-                        async for line in resp.aiter_lines():
-                            line = line.rstrip("\r\n")
-
-                            if line == "":
-                                if event_buf:
-                                    event = SSEEvent(
-                                        event=event_type,
-                                        data="\n".join(event_buf),
-                                        id=event_id,
-                                    )
-                                    if event.id:
-                                        last_event_id = event.id
-                                    await handler(event)
-                                event_buf = []
-                                event_type = "message"
-                                event_id = None
-                                continue
-
-                            if line.startswith("data:"):
-                                event_buf.append(line[5:].lstrip())
-                            elif line.startswith("event:"):
-                                event_type = line[6:].strip()
-                            elif line.startswith("id:"):
-                                val = line[3:].strip()
-                                if val and not val.startswith("\0"):
-                                    event_id = val
-                            elif line.startswith(":"):
-                                continue
-
-                        self.logger.info("SSE stream ended: %s", url)
-                        break
-
+                last_event_id = await self._stream_sse(
+                    url, handler, request_headers, last_event_id
+                )
+                self.logger.info("SSE stream ended: %s", url)
+                break
             except httpx.HTTPStatusError as e:
                 self.logger.error(
                     "SSE HTTP error for %s: %d %s",
@@ -1572,31 +1586,9 @@ class FastHTTP:
                     e.response.status_code,
                     e.response.text,
                 )
-                if reconnect and (max_retries == -1 or attempt < max_retries):
-                    attempt += 1
-                    wait = min(2**attempt, 30)
-                    self.logger.warning(
-                        "SSE reconnecting in %ds (attempt %d)...",
-                        wait,
-                        attempt,
-                    )
-                    await asyncio.sleep(wait)
-                    continue
-                break
             except httpx.RequestError as e:
                 self.logger.error("SSE request error for %s: %s", url, e)
-                if reconnect and (max_retries == -1 or attempt < max_retries):
-                    attempt += 1
-                    wait = min(2**attempt, 30)
-                    self.logger.warning(
-                        "SSE reconnecting in %ds (attempt %d)...",
-                        wait,
-                        attempt,
-                    )
-                    await asyncio.sleep(wait)
-                    continue
-                break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.logger.error(
                     "SSE error for %s: %s %s",
                     url,
@@ -1604,6 +1596,15 @@ class FastHTTP:
                     e,
                 )
                 break
+
+            if not (reconnect and (max_retries == -1 or attempt < max_retries)):
+                break
+            attempt += 1
+            wait = min(2**attempt, 30)
+            self.logger.warning(
+                "SSE reconnecting in %ds (attempt %d)...", wait, attempt
+            )
+            await asyncio.sleep(wait)
 
     async def _run_ws(self, ws_route: dict) -> None:
         """Connect and run a single WebSocket handler."""
