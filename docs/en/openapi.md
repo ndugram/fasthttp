@@ -109,6 +109,7 @@ app.web_run(base_url="/api")
 
 This serves the documentation endpoints at:
 - `http://127.0.0.1:8000/api/docs`
+- `http://127.0.0.1:8000/api/redoc`
 - `http://127.0.0.1:8000/api/openapi.json`
 - `http://127.0.0.1:8000/api/request`
 
@@ -133,6 +134,18 @@ async def get_data(resp: Response) -> dict:
 ### View Response
 
 ![Swagger UI Response](../photo/swagger_ui_check_web.png)
+
+### Dark Mode
+
+Swagger UI includes a dark theme toggle in the top-right corner:
+
+![Swagger UI Dark Mode](../photo/swagger_dark.png)
+
+### ReDoc
+
+A clean, read-only alternative view is served at `/redoc`:
+
+![ReDoc](../photo/redoc.png)
 
 ### 404 Page
 
