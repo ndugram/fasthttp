@@ -24,13 +24,15 @@ app.web_run()
 After running, open in browser:
 
 - **Swagger UI**: `http://127.0.0.1:8000/docs`
+- **ReDoc**: `http://127.0.0.1:8000/redoc`
 - **OpenAPI Schema**: `http://127.0.0.1:8000/openapi.json`
 
 ## Available Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `/docs` | Swagger UI interface |
+| `/docs` | Swagger UI interface (dark mode toggle in the top-right corner) |
+| `/redoc` | ReDoc — clean, read-only alternative view |
 | `/openapi.json` | OpenAPI schema in JSON |
 | `/request` | Proxy for executing requests |
 
