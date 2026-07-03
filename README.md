@@ -183,6 +183,14 @@ Click **Try it out** to execute the request directly from the browser and see th
 
 <img src="docs/photo/swagger_ui_check_execute.png">
 
+Swagger UI also ships with a dark theme (toggle in the top-right corner):
+
+<img src="docs/photo/swagger_dark.png">
+
+Prefer a clean, read-only view? FastHTTP also serves [ReDoc](https://github.com/Redocly/redoc) at `/redoc`:
+
+<img src="docs/photo/redoc.png">
+
 ### Upgrade the example
 
 Now modify `main.py` to get more out of FastHTTP. Each upgrade below builds on the previous one.

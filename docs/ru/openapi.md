@@ -109,6 +109,7 @@ app.web_run(base_url="/api")
 
 В этом случае endpoints документации будут доступны по адресам:
 - `http://127.0.0.1:8000/api/docs`
+- `http://127.0.0.1:8000/api/redoc`
 - `http://127.0.0.1:8000/api/openapi.json`
 - `http://127.0.0.1:8000/api/request`
 
@@ -133,6 +134,18 @@ async def get_data(resp: Response) -> dict:
 ### Просмотр ответа
 
 ![Swagger UI Response](../photo/swagger_ui_check_web.png)
+
+### Тёмная тема
+
+В Swagger UI есть переключатель тёмной темы в правом верхнем углу:
+
+![Swagger UI Dark Mode](../photo/swagger_dark.png)
+
+### ReDoc
+
+Альтернативный read-only просмотр схемы доступен по адресу `/redoc`:
+
+![ReDoc](../photo/redoc.png)
 
 ### Страница 404
 

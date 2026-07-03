@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import inspect
 from typing import TYPE_CHECKING, Annotated, Any, get_args, get_origin
+from urllib.parse import urlparse
 
 from annotated_doc import Doc
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
+from pydantic.fields import FieldInfo
+from pydantic.json_schema import models_json_schema
 
 from fasthttp.auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
 
@@ -12,43 +15,8 @@ if TYPE_CHECKING:
     from fasthttp.app import FastHTTP
     from fasthttp.routing import Route
 
-
-def _get_type_string(annotation: Any) -> dict[str, Any] | None:  # noqa: ANN401
-    """Convert Python type annotation to OpenAPI type string."""
-    if annotation is None:
-        return {"type": "string", "nullable": True}
-
-    origin = get_origin(annotation)
-    args = get_args(annotation)
-
-    if origin is Annotated:
-        return _get_type_string(args[0])
-
-    if origin is list:
-        item_type = _get_type_string(args[0]) if args else None
-        if item_type:
-            return {"type": "array", "items": item_type}
-        return {"type": "array"}
-
-    if origin is dict:
-        return {"type": "object"}
-
-    type_map = {
-        str: "string",
-        int: "integer",
-        float: "number",
-        bool: "boolean",
-        list: "array",
-        dict: "object",
-    }
-
-    if annotation in type_map:
-        return {"type": type_map[annotation]}
-
-    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
-        return {"$ref": f"#/components/schemas/{annotation.__name__}"}
-
-    return None
+REF_TEMPLATE = "#/components/schemas/{model}"
+_EXAMPLE_TYPES = (str, int, float, bool)
 
 
 def _extract_docstring(func: Any) -> str:  # noqa: ANN401
@@ -61,179 +29,177 @@ def _extract_docstring(func: Any) -> str:  # noqa: ANN401
     return ""
 
 
-def _generate_schema_from_model(model: type[BaseModel]) -> dict[str, Any]:
-    """Generate OpenAPI schema from Pydantic model."""
-    schema: dict[str, Any] = {
-        "type": "object",
-        "properties": {},
-        "required": [],
-    }
+def _iter_field_models(annotation: Any) -> list[type[BaseModel]]:  # noqa: ANN401
+    """Recursively find Pydantic models reachable through a type annotation."""
+    origin = get_origin(annotation)
 
-    for name, field in model.model_fields.items():
-        field_info = field.annotation
+    if origin is Annotated:
+        return _iter_field_models(get_args(annotation)[0])
 
-        description = None
-        if field_info and get_origin(field_info) is Annotated:
-            annotations = get_args(field_info)
-            for ann in annotations:
-                if isinstance(ann, Doc):
-                    description = ann._doc  # type: ignore # noqa: SLF001
+    if origin is not None:
+        models: list[type[BaseModel]] = []
+        for arg in get_args(annotation):
+            models.extend(_iter_field_models(arg))
+        return models
 
-        type_schema = _get_type_string(field.annotation)
-        if type_schema:
-            prop_schema = type_schema.copy()
-            if description:
-                prop_schema["description"] = description
-            if field.is_required():
-                schema["required"].append(name)
-            schema["properties"][name] = prop_schema
-        else:
-            schema["properties"][name] = {"type": "string"}
+    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+        return [annotation]
 
-    if not schema["required"]:
-        del schema["required"]
-
-    return schema
+    return []
 
 
-def _generate_parameter_schema(params: dict | None) -> dict[str, Any]:
-    """Generate OpenAPI parameter schema from params dict."""
-    if not params:
-        return {}
-
-    properties = {}
-    required = []
-
-    for name, value in params.items():
-        properties[name] = _get_type_string(type(value)) or {"type": "string"}
-        required.append(name)
-
-    return {
-        "type": "object",
-        "properties": properties,
-        "required": required,
-    }
+def _collect_model_closure(
+    model: type[BaseModel], seen: set[type[BaseModel]]
+) -> None:
+    """Walk a model's fields to find every nested Pydantic model it references."""
+    if model in seen:
+        return
+    seen.add(model)
+    for field in model.model_fields.values():
+        for nested in _iter_field_models(field.annotation):
+            _collect_model_closure(nested, seen)
 
 
-def _generate_response_schema(
-    response_model: type[BaseModel] | None,
-) -> dict[str, Any]:
-    """Generate OpenAPI response schema from response model."""
-    if not response_model:
-        return {"description": "Successful response"}
+def _doc_description(field: FieldInfo) -> str | None:
+    """Read a `Doc(...)` annotation from field metadata (annotated-doc convention)."""
+    for meta in field.metadata:
+        if isinstance(meta, Doc):
+            return meta.documentation
+    return None
 
-    origin = get_origin(response_model)
-    args = get_args(response_model)
 
-    if origin is list and args:
-        item_model = args[0]
-        if isinstance(item_model, type) and issubclass(item_model, BaseModel):
+class _SchemaCollector:
+    """
+    Builds `components/schemas` using Pydantic's own JSON Schema
+    generation instead of a hand-written type mapper — this gives
+    correct handling of enums, unions, constraints, defaults, and
+    nested models for free.
+    """
+
+    def __init__(self, top_level_models: set[type[BaseModel]]) -> None:
+        self.schemas: dict[str, Any] = {}
+        self._refs: dict[type[BaseModel], dict[str, Any]] = {}
+
+        closure: set[type[BaseModel]] = set()
+        for model in top_level_models:
+            _collect_model_closure(model, closure)
+
+        if closure:
+            key_map, top = models_json_schema(
+                [(model, "serialization") for model in closure],
+                ref_template=REF_TEMPLATE,
+            )
+            self.schemas.update(top.get("$defs", {}))
+            for (model, _mode), ref in key_map.items():
+                self._refs[model] = ref
+            self._backfill_doc_descriptions(closure)
+
+    def _backfill_doc_descriptions(self, models: set[type[BaseModel]]) -> None:
+        """Fill in descriptions from `Doc(...)` metadata where Pydantic found none."""
+        for model in models:
+            schema = self.schemas.get(model.__name__)
+            if not schema:
+                continue
+            properties = schema.get("properties", {})
+            for name, field in model.model_fields.items():
+                prop = properties.get(name)
+                if prop is None or "description" in prop:
+                    continue
+                doc = _doc_description(field)
+                if doc:
+                    prop["description"] = doc
+
+    def ref_for_model(self, model: type[BaseModel]) -> dict[str, Any]:
+        """Return (and lazily register) a `$ref` for a model outside the original closure."""
+        if model not in self._refs:
+            closure: set[type[BaseModel]] = set()
+            _collect_model_closure(model, closure)
+            key_map, top = models_json_schema(
+                [(m, "serialization") for m in closure],
+                ref_template=REF_TEMPLATE,
+            )
+            self.schemas.update(top.get("$defs", {}))
+            for (m, _mode), ref in key_map.items():
+                self._refs[m] = ref
+            self._backfill_doc_descriptions(closure)
+        return self._refs[model]
+
+    def schema_for_type(self, annotation: Any) -> dict[str, Any]:  # noqa: ANN401
+        """Return an OpenAPI schema for an arbitrary Python type via `TypeAdapter`."""
+        try:
+            adapter = TypeAdapter(annotation)
+            schema = adapter.json_schema(ref_template=REF_TEMPLATE)
+        except Exception:  # noqa: BLE001
+            return {"type": "object"}
+        defs = schema.pop("$defs", None) or {}
+        for name, def_schema in defs.items():
+            self.schemas.setdefault(name, def_schema)
+        return schema
+
+    def schema_for_value(self, value: Any) -> dict[str, Any]:  # noqa: ANN401
+        """Infer a best-effort schema from a concrete runtime value (query params, raw bodies)."""
+        if isinstance(value, BaseModel):
+            return self.ref_for_model(type(value))
+        if isinstance(value, dict):
+            return {
+                "type": "object",
+                "properties": {k: self.schema_for_value(v) for k, v in value.items()},
+            }
+        if isinstance(value, (list, tuple)):
+            if value:
+                return {"type": "array", "items": self.schema_for_value(value[0])}
+            return {"type": "array"}
+        return self.schema_for_type(type(value))
+
+    def response_schema(self, model: type | None) -> dict[str, Any]:
+        """Build a `responses.200`-style schema for a route's `response_model`."""
+        if model is None:
+            return {"description": "Successful response"}
+
+        origin = get_origin(model)
+        if origin is list:
+            args = get_args(model)
+            item = args[0] if args else None
+            if isinstance(item, type) and issubclass(item, BaseModel):
+                item_schema = self.ref_for_model(item)
+            elif item is not None:
+                item_schema = self.schema_for_type(item)
+            else:
+                item_schema = {}
             return {
                 "description": "Successful response",
                 "content": {
                     "application/json": {
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": f"#/components/schemas/{item_model.__name__}"
-                            },
-                        }
+                        "schema": {"type": "array", "items": item_schema}
                     }
                 },
             }
+
+        if isinstance(model, type) and issubclass(model, BaseModel):
+            return {
+                "description": "Successful response",
+                "content": {
+                    "application/json": {"schema": self.ref_for_model(model)}
+                },
+            }
+
         return {
             "description": "Successful response",
-            "content": {"application/json": {"schema": {"type": "array"}}},
+            "content": {"application/json": {"schema": self.schema_for_type(model)}},
         }
 
-    try:
-        if isinstance(response_model, type) and issubclass(response_model, BaseModel):
-            return {
-                "description": "Successful response",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": f"#/components/schemas/{response_model.__name__}"
-                        }
-                    }
-                },
-            }
-    except TypeError:
-        pass
-
-    return {"description": "Successful response"}
-
-
-def _generate_error_response_schema(
-    status_code: int,
-    model: type[BaseModel] | None,
-) -> dict[str, Any]:
-    """Generate OpenAPI error response schema."""
-    if not model:
+    def error_response_schema(
+        self, status_code: int, model: type[BaseModel] | None
+    ) -> dict[str, Any]:
+        """Build an error response schema (e.g. for `responses={404: {"model": ...}}`)."""
+        if not model:
+            return {"description": f"Error response (HTTP {status_code})"}
         return {
             "description": f"Error response (HTTP {status_code})",
+            "content": {
+                "application/json": {"schema": self.ref_for_model(model)}
+            },
         }
-
-    return {
-        "description": f"Error response (HTTP {status_code})",
-        "content": {
-            "application/json": {
-                "schema": {"$ref": f"#/components/schemas/{model.__name__}"}
-            }
-        },
-    }
-
-
-def _collect_schemas(routes: list[Route]) -> dict[str, Any]:  # noqa: C901
-    """Collect all Pydantic schemas from routes."""
-    schemas: dict[str, Any] = {}
-
-    for route in routes:
-        if route.response_model:
-            model = route.response_model
-            origin = get_origin(model)
-            if origin is list:
-                args = get_args(model)
-                if args:
-                    model = args[0]
-
-            try:
-                if (
-                    isinstance(model, type)
-                    and issubclass(model, BaseModel)
-                    and model.__name__ not in schemas
-                ):
-                    schemas[model.__name__] = _generate_schema_from_model(model)
-            except TypeError:
-                pass
-
-        if route.request_model:
-            model = route.request_model
-            try:
-                if (
-                    isinstance(model, type)
-                    and issubclass(model, BaseModel)
-                    and model.__name__ not in schemas
-                ):
-                    schemas[model.__name__] = _generate_schema_from_model(model)
-            except TypeError:
-                pass
-
-        if route.responses:
-            for _, response_config in route.responses.items():
-                model = response_config.get("model")
-                try:
-                    if (
-                        model
-                        and isinstance(model, type)
-                        and issubclass(model, BaseModel)
-                        and model.__name__ not in schemas
-                    ):
-                        schemas[model.__name__] = _generate_schema_from_model(model)
-                except TypeError:
-                    pass
-
-    return schemas
 
 
 def _normalize_path(url: str) -> str:
@@ -243,8 +209,6 @@ def _normalize_path(url: str) -> str:
     Converts full URLs like https://example.com/api/users
     to /example.com/api/users format.
     """
-    from urllib.parse import urlparse
-
     parsed = urlparse(url)
     host = parsed.netloc.replace(":", "_")
     path = parsed.path
@@ -275,9 +239,7 @@ def _get_security_scheme_name(
     return "auth"
 
 
-def _collect_security_schemes(
-    routes: list[Route],
-) -> dict[str, Any]:
+def _collect_security_schemes(routes: list[Route]) -> dict[str, Any]:
     """Build components/securitySchemes from auth objects used in routes."""
     schemes: dict[str, Any] = {}
 
@@ -285,23 +247,55 @@ def _collect_security_schemes(
         if route.auth is None:
             continue
         if isinstance(route.auth, BearerAuth) and "bearerAuth" not in schemes:
-            schemes["bearerAuth"] = {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
+            schemes["bearerAuth"] = {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
         elif isinstance(route.auth, BasicAuth) and "basicAuth" not in schemes:
             schemes["basicAuth"] = {"type": "http", "scheme": "basic"}
         elif isinstance(route.auth, DigestAuth) and "digestAuth" not in schemes:
             schemes["digestAuth"] = {"type": "http", "scheme": "digest"}
-        elif isinstance(route.auth, OAuth2ClientCredentials) and "oauth2ClientCredentials" not in schemes:
+        elif (
+            isinstance(route.auth, OAuth2ClientCredentials)
+            and "oauth2ClientCredentials" not in schemes
+        ):
             schemes["oauth2ClientCredentials"] = {
                 "type": "oauth2",
                 "flows": {
                     "clientCredentials": {
                         "tokenUrl": route.auth.token_url,
-                        "scopes": {s: "" for s in route.auth.scopes} if route.auth.scopes else {},
+                        "scopes": {s: "" for s in route.auth.scopes}
+                        if route.auth.scopes
+                        else {},
                     }
                 },
             }
 
     return schemes
+
+
+def _route_models(route: Route) -> list[type[BaseModel]]:
+    """Every Pydantic model directly referenced by a route (unwrapped from list[...])."""
+    models: list[type[BaseModel]] = []
+
+    if route.response_model:
+        model = route.response_model
+        if get_origin(model) is list:
+            args = get_args(model)
+            model = args[0] if args else None
+        if isinstance(model, type) and issubclass(model, BaseModel):
+            models.append(model)
+
+    if route.request_model:
+        models.append(route.request_model)
+
+    for response_config in (route.responses or {}).values():
+        model = response_config.get("model")
+        if isinstance(model, type) and issubclass(model, BaseModel):
+            models.append(model)
+
+    return models
 
 
 def generate_openapi_schema(  # noqa: C901
@@ -347,7 +341,11 @@ def generate_openapi_schema(  # noqa: C901
     """
     routes = app.routes
 
-    schemas = _collect_schemas(routes)
+    top_level_models: set[type[BaseModel]] = set()
+    for route in routes:
+        top_level_models.update(_route_models(route))
+
+    collector = _SchemaCollector(top_level_models)
     security_schemes = _collect_security_schemes(routes)
 
     paths: dict[str, Any] = {}
@@ -364,7 +362,7 @@ def generate_openapi_schema(  # noqa: C901
         operation: dict[str, Any] = {
             "summary": summary,
             "operationId": f"{route.method.lower()}_{route.url.replace('https://', '').replace('http://', '').replace('/', '_').replace(':', '').replace('.', '_')}",
-            "tags": route.tags or ["Default"],
+            "tags": route.tags or [urlparse(route.url).netloc or "default"],
             "responses": {},
             "x-original-url": route.url,
         }
@@ -377,56 +375,52 @@ def generate_openapi_schema(  # noqa: C901
             operation["security"] = [{scheme_name: []}]
 
         if route.params:
-            operation["parameters"] = [
-                {
+            parameters = []
+            for name, value in route.params.items():
+                param: dict[str, Any] = {
                     "name": name,
                     "in": "query",
-                    "schema": _get_type_string(type(value)),
                     "required": True,
+                    "schema": collector.schema_for_value(value),
                 }
-                for name, value in route.params.items()
-            ]
+                if isinstance(value, _EXAMPLE_TYPES):
+                    param["example"] = value
+                parameters.append(param)
+            operation["parameters"] = parameters
 
         if route.json or route.data or route.request_model:
-            request_body: dict[str, Any] = {
-                "required": True,
-                "content": {},
-            }
+            request_body: dict[str, Any] = {"required": True, "content": {}}
 
             if route.request_model:
                 request_body["content"] = {
                     "application/json": {
-                        "schema": {
-                            "$ref": f"#/components/schemas/{route.request_model.__name__}"
-                        }
+                        "schema": collector.ref_for_model(route.request_model)
                     }
                 }
             elif route.json:
                 request_body["content"] = {
                     "application/json": {
-                        "schema": _get_type_string(type(route.json))
-                        or {"type": "object"}
+                        "schema": collector.schema_for_value(route.json),
+                        "example": route.json,
                     }
                 }
             else:
-                request_body["content"] = {"text/plain": {"schema": {"type": "string"}}}
+                content: dict[str, Any] = {"schema": {"type": "string"}}
+                if isinstance(route.data, str):
+                    content["example"] = route.data
+                request_body["content"] = {"text/plain": content}
 
             operation["requestBody"] = request_body
 
-        if route.response_model:
-            operation["responses"]["200"] = _generate_response_schema(
-                route.response_model  # type: ignore
-            )
-        else:
-            operation["responses"]["200"] = {
-                "description": "Successful response",
-            }
+        operation["responses"]["200"] = collector.response_schema(
+            route.response_model
+        )
 
         if route.responses:
             for status_code, response_config in route.responses.items():
                 model = response_config.get("model")
                 operation["responses"][str(status_code)] = (
-                    _generate_error_response_schema(status_code, model)
+                    collector.error_response_schema(status_code, model)
                 )
         else:
             operation["responses"]["400"] = {"description": "Bad request"}
@@ -445,7 +439,7 @@ def generate_openapi_schema(  # noqa: C901
     if description:
         info["description"] = description
 
-    components: dict[str, Any] = {"schemas": schemas}
+    components: dict[str, Any] = {"schemas": collector.schemas}
     if security_schemes:
         components["securitySchemes"] = security_schemes
 

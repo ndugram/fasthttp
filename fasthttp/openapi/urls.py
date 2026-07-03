@@ -28,6 +28,7 @@ def build_docs_urls(base_url: str = "") -> dict[str, str]:
     Returns a dictionary with:
     - base_url
     - docs_url
+    - redoc_url
     - openapi_url
     - request_url
     """
@@ -35,6 +36,7 @@ def build_docs_urls(base_url: str = "") -> dict[str, str]:
     return {
         "base_url": prefix,
         "docs_url": f"{prefix}/docs",
+        "redoc_url": f"{prefix}/redoc",
         "openapi_url": f"{prefix}/openapi.json",
         "request_url": f"{prefix}/request",
     }

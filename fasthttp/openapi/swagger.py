@@ -361,6 +361,7 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             <div class="logo">fast<span>http</span></div>
             <nav class="nav">
                 <a href="__FASTHTTP_DOCS_URL__">__FASTHTTP_DOCS_URL__</a>
+                <a href="__FASTHTTP_REDOC_URL__">__FASTHTTP_REDOC_URL__</a>
                 <a href="__FASTHTTP_OPENAPI_URL__">__FASTHTTP_OPENAPI_URL__</a>
             </nav>
             <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
@@ -382,6 +383,7 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
             <p class="subtitle">The page you're looking for doesn't exist or has been moved.</p>
             <div class="links">
                 <a href="__FASTHTTP_DOCS_URL__" class="btn btn-primary">GET __FASTHTTP_DOCS_URL__</a>
+                <a href="__FASTHTTP_REDOC_URL__" class="btn btn-outline">GET __FASTHTTP_REDOC_URL__</a>
                 <a href="__FASTHTTP_OPENAPI_URL__" class="btn btn-outline">GET __FASTHTTP_OPENAPI_URL__</a>
             </div>
         </div>
@@ -402,10 +404,15 @@ NOT_FOUND_HTML = """<!DOCTYPE html>
 
 
 def get_not_found_html(
-    *, docs_url: str = "/docs", openapi_url: str = "/openapi.json"
+    *,
+    docs_url: str = "/docs",
+    openapi_url: str = "/openapi.json",
+    redoc_url: str = "/redoc",
 ) -> str:
-    return NOT_FOUND_HTML.replace("__FASTHTTP_DOCS_URL__", docs_url).replace(
-        "__FASTHTTP_OPENAPI_URL__", openapi_url
+    return (
+        NOT_FOUND_HTML.replace("__FASTHTTP_DOCS_URL__", docs_url)
+        .replace("__FASTHTTP_OPENAPI_URL__", openapi_url)
+        .replace("__FASTHTTP_REDOC_URL__", redoc_url)
     )
 
 
@@ -417,16 +424,29 @@ SWAGGER_HTML = """<!DOCTYPE html>
     <title>FastHTTP API Docs</title>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui.css">
     <style>
-        body { margin: 0; padding: 0; }
+        :root {
+            --bg-secondary: #ffffff;
+            --border-color: #e0e0e0;
+            --text-primary: #1e1e1e;
+            --color-brand-blue: #2e73ff;
+        }
+        [data-theme="dark"] {
+            --bg-secondary: #1e1e1e;
+            --border-color: #333333;
+            --text-primary: #f4f4f4;
+        }
+        html { background-color: var(--bg-secondary); }
+        body { margin: 0; padding: 0; background-color: var(--bg-secondary); }
         .topbar { display: none; }
         .swagger-header {
             display: flex;
             align-items: center;
             justify-content: flex-end;
             padding: 12px 20px;
-            background: #fff;
-            border-bottom: 1px solid #e0e0e0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
             gap: 12px;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
         .swagger-links {
             display: flex;
@@ -437,34 +457,205 @@ SWAGGER_HTML = """<!DOCTYPE html>
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 36px;
+            gap: 6px;
             height: 36px;
+            padding: 0 12px;
             border-radius: 8px;
-            background: #f4f4f4;
-            color: #1e1e1e;
+            background: rgba(46, 115, 255, 0.1);
+            color: var(--text-primary);
+            font: 600 13px/1 system-ui, sans-serif;
             transition: all 0.2s ease;
             text-decoration: none;
         }
         .swagger-link:hover {
-            background: #2e73ff;
+            background: var(--color-brand-blue);
             color: #fff;
         }
         .swagger-link svg {
             width: 18px;
             height: 18px;
             fill: currentColor;
+            flex-shrink: 0;
+        }
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(46, 115, 255, 0.1);
+            border: none;
+            cursor: pointer;
+        }
+        .theme-toggle svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-primary);
+        }
+        .theme-toggle .sun-icon { display: none; }
+        [data-theme="dark"] .theme-toggle .sun-icon { display: block; }
+        [data-theme="dark"] .theme-toggle .moon-icon { display: none; }
+
+        /* Swagger UI dark theme — targets the actual swagger-ui-dist classes
+           instead of a blanket CSS filter, so brand colors, method badges and
+           the JSON viewer keep their real (already dark-friendly) styling. */
+        [data-theme="dark"] #swagger-ui,
+        [data-theme="dark"] .swagger-ui {
+            background: #1a1a1a;
+            color: #e5e5e5;
+        }
+        [data-theme="dark"] .swagger-ui .info .title,
+        [data-theme="dark"] .swagger-ui .info li,
+        [data-theme="dark"] .swagger-ui .info p,
+        [data-theme="dark"] .swagger-ui .info table,
+        [data-theme="dark"] .swagger-ui label,
+        [data-theme="dark"] .swagger-ui .opblock-tag,
+        [data-theme="dark"] .swagger-ui .opblock-tag small,
+        [data-theme="dark"] .swagger-ui .opblock .opblock-summary-operation-id,
+        [data-theme="dark"] .swagger-ui .opblock .opblock-summary-path,
+        [data-theme="dark"] .swagger-ui .opblock .opblock-summary-path__deprecated,
+        [data-theme="dark"] .swagger-ui .opblock .opblock-summary-description,
+        [data-theme="dark"] .swagger-ui .tab li,
+        [data-theme="dark"] .swagger-ui .response-col_status,
+        [data-theme="dark"] .swagger-ui .response-col_links,
+        [data-theme="dark"] .swagger-ui table thead tr td,
+        [data-theme="dark"] .swagger-ui table thead tr th,
+        [data-theme="dark"] .swagger-ui .parameter__name,
+        [data-theme="dark"] .swagger-ui .parameter__type,
+        [data-theme="dark"] .swagger-ui .parameter__in,
+        [data-theme="dark"] .swagger-ui .parameter__deprecated,
+        [data-theme="dark"] .swagger-ui .prop-format,
+        [data-theme="dark"] .swagger-ui .model-title,
+        [data-theme="dark"] .swagger-ui .model,
+        [data-theme="dark"] .swagger-ui .model-toggle,
+        [data-theme="dark"] .swagger-ui section.models h4,
+        [data-theme="dark"] .swagger-ui .servers-title,
+        [data-theme="dark"] .swagger-ui .servers > label {
+            color: #e5e5e5;
+        }
+        [data-theme="dark"] .swagger-ui .opblock-tag {
+            border-color: #3a3a3a;
+        }
+        [data-theme="dark"] .swagger-ui .opblock-tag:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        [data-theme="dark"] .swagger-ui .opblock {
+            background: #232323;
+        }
+        [data-theme="dark"] .swagger-ui .opblock .opblock-section-header {
+            background: #262626;
+            box-shadow: none;
+            border-bottom: 1px solid #3a3a3a;
+        }
+        [data-theme="dark"] .swagger-ui .opblock .opblock-section-header h4,
+        [data-theme="dark"] .swagger-ui .opblock .opblock-section-header label {
+            color: #e5e5e5;
+        }
+        [data-theme="dark"] .swagger-ui .scheme-container {
+            background: #232323;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+        }
+        [data-theme="dark"] .swagger-ui table tbody tr td {
+            border-bottom: 1px solid #333333;
+            color: #cfcfcf;
+        }
+        [data-theme="dark"] .swagger-ui .parameters-col_description p,
+        [data-theme="dark"] .swagger-ui .response-col_description__inner p,
+        [data-theme="dark"] .swagger-ui .opblock-description-wrapper p,
+        [data-theme="dark"] .swagger-ui .markdown p,
+        [data-theme="dark"] .swagger-ui .renderedMarkdown p,
+        [data-theme="dark"] .swagger-ui .response-content-type {
+            color: #cfcfcf;
+        }
+        [data-theme="dark"] .swagger-ui select,
+        [data-theme="dark"] .swagger-ui input[type=text],
+        [data-theme="dark"] .swagger-ui input[type=password],
+        [data-theme="dark"] .swagger-ui input[type=search],
+        [data-theme="dark"] .swagger-ui textarea {
+            background: #1e1e1e;
+            color: #e5e5e5;
+            border-color: #3a3a3a;
+        }
+        [data-theme="dark"] .swagger-ui .model-box,
+        [data-theme="dark"] .swagger-ui .body-param textarea {
+            background: #1e1e1e;
+        }
+        [data-theme="dark"] .swagger-ui .prop-type {
+            color: #7aa2ff;
+        }
+        [data-theme="dark"] .swagger-ui .btn {
+            background: #2a2a2a;
+            color: #e5e5e5;
+            border-color: #4a4a4a;
+        }
+        [data-theme="dark"] .swagger-ui .btn.authorize {
+            background: transparent;
+            color: #49cc90;
+        }
+        [data-theme="dark"] .swagger-ui .dialog-ux .modal-ux {
+            background: #232323;
+            border-color: #3a3a3a;
+        }
+        [data-theme="dark"] .swagger-ui .dialog-ux .modal-ux-header,
+        [data-theme="dark"] .swagger-ui .dialog-ux .modal-ux-content {
+            border-color: #3a3a3a;
+        }
+        [data-theme="dark"] .swagger-ui .dialog-ux .modal-ux-header h3,
+        [data-theme="dark"] .swagger-ui .dialog-ux .modal-ux-content p,
+        [data-theme="dark"] .swagger-ui .dialog-ux .modal-ux-content h4,
+        [data-theme="dark"] .swagger-ui .dialog-ux .modal-ux-content label,
+        [data-theme="dark"] .swagger-ui .dialog-ux .close-modal svg {
+            color: #e5e5e5;
+            fill: #e5e5e5;
+        }
+        [data-theme="dark"] .swagger-ui .markdown code,
+        [data-theme="dark"] .swagger-ui .renderedMarkdown code {
+            background: rgba(255, 255, 255, 0.08);
+            color: #c792ea;
+        }
+        [data-theme="dark"] .swagger-ui .opblock-tag svg,
+        [data-theme="dark"] .swagger-ui .opblock-summary-control svg,
+        [data-theme="dark"] .swagger-ui .model-toggle,
+        [data-theme="dark"] .swagger-ui svg.arrow {
+            fill: #e5e5e5;
         }
     </style>
 </head>
 <body>
+    <script>
+        (function() {
+            const saved = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'dark' || (!saved && prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+            window.toggleTheme = function() {
+                const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('theme', next);
+            };
+        })();
+    </script>
     <div class="swagger-header">
         <div class="swagger-links">
+            <a href="__FASTHTTP_REDOC_URL__" class="swagger-link">ReDoc</a>
+            <a href="__FASTHTTP_OPENAPI_URL__" class="swagger-link">OpenAPI JSON</a>
             <a href="https://github.com/ndugram/fasthttp" class="swagger-link" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
                 <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
                 </svg>
             </a>
         </div>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+            <svg class="moon-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+            </svg>
+            <svg class="sun-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="5"/>
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+        </button>
     </div>
     <div id="swagger-ui"></div>
     <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui-bundle.js" charset="UTF-8"></script>
@@ -489,6 +680,9 @@ SWAGGER_HTML = """<!DOCTYPE html>
                     spec: schema,
                     dom_id: "#swagger-ui",
                     deepLinking: true,
+                    filter: true,
+                    persistAuthorization: true,
+                    requestSnippetsEnabled: true,
                     presets: [
                         SwaggerUIBundle.presets.apis,
                         SwaggerUIStandalonePreset
@@ -576,8 +770,35 @@ SWAGGER_HTML = """<!DOCTYPE html>
 
 
 def get_swagger_html(
-    *, openapi_url: str = "/openapi.json", request_url: str = "/request"
+    *,
+    openapi_url: str = "/openapi.json",
+    request_url: str = "/request",
+    redoc_url: str = "/redoc",
 ) -> str:
-    return SWAGGER_HTML.replace("__FASTHTTP_OPENAPI_URL__", openapi_url).replace(
-        "__FASTHTTP_REQUEST_URL__", request_url
+    return (
+        SWAGGER_HTML.replace("__FASTHTTP_OPENAPI_URL__", openapi_url)
+        .replace("__FASTHTTP_REQUEST_URL__", request_url)
+        .replace("__FASTHTTP_REDOC_URL__", redoc_url)
     )
+
+
+REDOC_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastHTTP API Docs — ReDoc</title>
+    <style>
+        body { margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <redoc spec-url="__FASTHTTP_OPENAPI_URL__"></redoc>
+    <script src="https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js"></script>
+</body>
+</html>
+"""
+
+
+def get_redoc_html(*, openapi_url: str = "/openapi.json") -> str:
+    return REDOC_HTML.replace("__FASTHTTP_OPENAPI_URL__", openapi_url)

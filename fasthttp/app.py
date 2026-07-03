@@ -41,7 +41,7 @@ from .middleware import (
     SessionMiddleware,
 )
 from .openapi.generator import generate_openapi_schema
-from .openapi.swagger import get_not_found_html, get_swagger_html
+from .openapi.swagger import get_not_found_html, get_redoc_html, get_swagger_html
 from .openapi.urls import build_docs_urls
 from .routing import Route, Router
 from .security import Security
@@ -1887,7 +1887,13 @@ class ASGIApp:
                 get_swagger_html(
                     openapi_url=self.docs_urls["openapi_url"],
                     request_url=self.docs_urls["request_url"],
+                    redoc_url=self.docs_urls["redoc_url"],
                 ),
+            )
+        elif path == self.docs_urls["redoc_url"]:
+            await self._send_html(
+                send,
+                get_redoc_html(openapi_url=self.docs_urls["openapi_url"]),
             )
         elif path == self.docs_urls["openapi_url"]:
             if self._openapi_cache is None:
@@ -1942,6 +1948,7 @@ class ASGIApp:
         html = get_not_found_html(
             docs_url=self.docs_urls["docs_url"],
             openapi_url=self.docs_urls["openapi_url"],
+            redoc_url=self.docs_urls["redoc_url"],
         )
         await send(
             {
@@ -2015,15 +2022,20 @@ class ASGIApp:
                 else:
                     kwargs["content"] = str(req_body)
 
+            started_at = time.perf_counter()
             if self._shared_client is not None:
                 response = await self._shared_client.request(**kwargs)
             else:
                 async with httpx.AsyncClient(proxy=self.fasthttp.proxy) as tmp:
                     response = await tmp.request(**kwargs)
+            duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
 
             result: dict[str, Any] = {
                 "status": response.status_code,
-                "headers": dict(response.headers),
+                "headers": {
+                    **dict(response.headers),
+                    "x-fasthttp-duration-ms": str(duration_ms),
+                },
                 "body": response.text,
             }
 
