@@ -6,9 +6,10 @@ from typing import TYPE_CHECKING, Annotated, Any, get_args, get_origin
 from annotated_doc import Doc
 from pydantic import BaseModel
 
+from fasthttp.auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
+
 if TYPE_CHECKING:
     from fasthttp.app import FastHTTP
-    from fasthttp.auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
     from fasthttp.routing import Route
 
 
@@ -76,7 +77,7 @@ def _generate_schema_from_model(model: type[BaseModel]) -> dict[str, Any]:
             annotations = get_args(field_info)
             for ann in annotations:
                 if isinstance(ann, Doc):
-                    description = ann._doc  # noqa: SLF001
+                    description = ann._doc  # type: ignore # noqa: SLF001
 
         type_schema = _get_type_string(field.annotation)
         if type_schema:

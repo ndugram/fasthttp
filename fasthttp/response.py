@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 import xml.etree.ElementTree as ET
 from typing import TYPE_CHECKING, Annotated, Any, get_args, get_origin
 
@@ -10,7 +9,7 @@ from annotated_doc import Doc
 from .exceptions import FastHTTPBadStatusError
 
 if TYPE_CHECKING:
-    import httpx
+    import datetime
 
 try:
     from fasthttp._core import extract_assets  # type: ignore

@@ -6,7 +6,12 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
+from .auth import (  # noqa: TC001
+    BasicAuth,
+    BearerAuth,
+    DigestAuth,
+    OAuth2ClientCredentials,
+)
 from .events import ErrorHook, EventHooks, RequestHook, ResponseHook
 from .helpers.route_inspect import validate_handler
 from .helpers.routing import join_prefix as _join_prefix

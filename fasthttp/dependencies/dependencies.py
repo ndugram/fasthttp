@@ -31,7 +31,7 @@ class Dependency(BaseModel, Generic[T]):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    func: Any  # Callable[..., T]
+    func: Any
     """Dependency function — receives (route, config) and returns modified config."""
 
     use_cache: bool = True
@@ -44,7 +44,7 @@ class Dependency(BaseModel, Generic[T]):
 
     def __init__(
         self,
-        func: Any,  # Callable[..., T]  # noqa: ANN401
+        func: Any, # noqa: ANN401
         *,
         use_cache: bool = True,
         scope: Literal["function", "request"] | None = "function",
