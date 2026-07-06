@@ -155,6 +155,33 @@ Decorator for GraphQL.
 )
 ```
 
+### exception_handler()
+
+Decorator registering a handler for a specific exception type, FastAPI-style. The handler's return value replaces the route's result instead of the request failing silently.
+
+```python
+@app.exception_handler(
+    exc_type: type[Exception],
+)
+```
+
+**Parameters:**
+- `exc_type` - exception class this handler should be invoked for
+
+**Handler signature:** `async def handler(route, exc) -> Any`
+
+**Example:**
+
+```python
+from fasthttp.exceptions import FastHTTPTimeoutError
+
+@app.exception_handler(FastHTTPTimeoutError)
+async def handle_timeout(route, exc):
+    return {"error": "timeout", "url": route.url}
+```
+
+Also available on `Router` via `@router.exception_handler(...)`. See [Event Hooks](../middleware.md#event-hooks) for `on_request`, `on_response`, `on_error`, and MRO-based dispatch details.
+
 ## AsyncSession
 
 Imperative async HTTP client — like `httpx.AsyncClient`. Returns responses directly instead of logging them.
