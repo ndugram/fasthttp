@@ -12,7 +12,7 @@ from .auth import (  # noqa: TC001
     DigestAuth,
     OAuth2ClientCredentials,
 )
-from .events import ErrorHook, EventHooks, RequestHook, ResponseHook
+from .events import ErrorHook, EventHooks, ExceptionHandler, RequestHook, ResponseHook
 from .helpers.route_inspect import validate_handler
 from .helpers.routing import join_prefix as _join_prefix
 from .helpers.routing import resolve_url as _resolve_url
@@ -111,7 +111,7 @@ class Route(BaseModel):
             json: dict[str, Any] | None = None,
             data: object | None = None,
             files: FileUpload | None = None,
-            response_model: Any = None,
+            response_model: Any = None,  # noqa: ANN401
             request_model: type[BaseModel] | None = None,
             tags: list[str] | None = None,
             dependencies: list[Any] | None = None,
@@ -537,6 +537,24 @@ class Router:
         """
         self.event_hooks.on_error(func)
         return func
+
+    def exception_handler(
+        self,
+        exc_type: type[Exception],
+    ) -> Callable[[ExceptionHandler], ExceptionHandler]:
+        """
+        Register a handler for a specific exception type, FastAPI-style.
+
+        Example:
+            ```python
+            router = Router(base_url="https://api.example.com")
+
+            @router.exception_handler(FastHTTPTimeoutError)
+            async def handle_timeout(route, exc):
+                return {"error": "timeout", "url": route.url}
+            ```
+        """
+        return self.event_hooks.exception_handler(exc_type=exc_type)
 
     def build_routes(
         self,
