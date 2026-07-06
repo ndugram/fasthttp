@@ -14,7 +14,7 @@ from websockets import connect as ws_connect
 from websockets.exceptions import ConnectionClosed as WSConnClosed
 
 from .client import HTTPClient
-from .events import ErrorHook, EventHooks, RequestHook, ResponseHook
+from .events import ErrorHook, EventHooks, ExceptionHandler, RequestHook, ResponseHook
 from .graphql.client import create_graphql_client
 from .helpers.route_inspect import (
     check_annotated_parameters,
@@ -1385,6 +1385,32 @@ class FastHTTP:
         """
         self.event_hooks.on_error(func)
         return func
+
+    def exception_handler(
+        self,
+        exc_type: Annotated[
+            type[Exception],
+            Doc("Exception class this handler should be invoked for."),
+        ],
+    ) -> Callable[[ExceptionHandler], ExceptionHandler]:
+        """
+        Register a handler for a specific exception type, FastAPI-style.
+
+        When a route raises an exception matching ``exc_type`` (or one of
+        its subclasses, resolved via MRO), the handler runs instead of the
+        request simply failing. Its return value becomes the route's
+        result, just like a normal route handler's return value.
+
+        Signature: ``async def handler(route: Route, exc: Exception) -> Any``
+
+        Example:
+            ```python
+            @app.exception_handler(FastHTTPTimeoutError)
+            async def handle_timeout(route, exc):
+                return {"error": "timeout", "url": route.url}
+            ```
+        """
+        return self.event_hooks.exception_handler(exc_type=exc_type)
 
     def _log_result(
         self, route: Route, elapsed: float, result: Response | None

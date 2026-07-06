@@ -101,6 +101,33 @@ app.include_router(
 
 Декоратор для GraphQL.
 
+### exception_handler()
+
+Декоратор, регистрирующий хендлер для конкретного типа исключения, в стиле FastAPI. Возвращаемое значение хендлера заменяет результат route вместо того, чтобы запрос просто тихо падал.
+
+```python
+@app.exception_handler(
+    exc_type: type[Exception],
+)
+```
+
+**Параметры:**
+- `exc_type` - класс исключения, для которого вызывается этот хендлер
+
+**Сигнатура хендлера:** `async def handler(route, exc) -> Any`
+
+**Пример:**
+
+```python
+from fasthttp.exceptions import FastHTTPTimeoutError
+
+@app.exception_handler(FastHTTPTimeoutError)
+async def handle_timeout(route, exc):
+    return {"error": "timeout", "url": route.url}
+```
+
+Также доступен на `Router` через `@router.exception_handler(...)`. См. [Event Hooks](../middleware.md#event-hooks) для `on_request`, `on_response`, `on_error` и деталей диспетчеризации по MRO.
+
 ## AsyncSession
 
 Императивный async HTTP-клиент — аналог `httpx.AsyncClient`. Возвращает ответы напрямую вместо логирования.

@@ -267,9 +267,35 @@ async def track_error(error, route):
     print(f"✖ {error} на {route.url}")
 ```
 
+### `exception_handler`
+
+Обработчик для конкретного типа исключения, в стиле FastAPI. В отличие от `on_error`, возвращаемое значение **заменяет результат route** вместо того, чтобы запрос просто тихо падал — запрос "восстанавливается", а не только логируется.
+
+```python
+from fasthttp.exceptions import FastHTTPTimeoutError
+
+@app.exception_handler(FastHTTPTimeoutError)
+async def handle_timeout(route, exc):
+    return {"error": "timeout", "url": route.url}
+```
+
+Хендлер принимает `(route, exc)` — тот же порядок, что и `(request, exc)` в FastAPI. Если под исключение подходит несколько зарегистрированных хендлеров (через наследование), побеждает самый специфичный:
+
+```python
+@app.exception_handler(Exception)
+async def fallback(route, exc):
+    return {"error": "unexpected"}
+
+@app.exception_handler(FastHTTPTimeoutError)
+async def timeout(route, exc):
+    return {"error": "timeout"}  # сработает для FastHTTPTimeoutError, fallback — для всего остального
+```
+
+До хендлера доходят только исключения, которые реально "вылетают" из запроса — для HTTP-статусов это значит, что у route (или у приложения) должен быть включён `raise_for_status=True`, иначе `FastHTTPBadStatusError` вообще не поднимается и перехватывать нечего.
+
 ### С Router
 
-Event hooks роутера мержатся в приложение через `include_router()`:
+Event hooks роутера, включая `exception_handler`, мержатся в приложение через `include_router()`:
 
 ```python
 from fasthttp import FastHTTP, Router
@@ -280,9 +306,13 @@ router = Router(base_url="https://api.example.com")
 async def router_hook(route, config):
     print(f"[router] → {route.url}")
 
+@router.exception_handler(FastHTTPTimeoutError)
+async def router_timeout(route, exc):
+    return {"error": "timeout", "url": route.url}
+
 app = FastHTTP()
 app.include_router(router)
-# router_hook будет вызываться для всех запросов этого роутера
+# оба хука будут вызываться для всех запросов этого роутера
 ```
 
 ### С AsyncSession
@@ -297,6 +327,8 @@ async with AsyncSession() as session:
 
     resp = await session.get("https://api.example.com")
 ```
+
+`exception_handler` доступен только на `FastHTTP` и `Router` — `AsyncSession` его не поддерживает, так как возвращает ответы напрямую вызывающему коду, а не маршрутизирует их через хендлеры.
 
 ### Middleware vs Event Hooks
 

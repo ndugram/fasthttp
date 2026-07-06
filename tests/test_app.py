@@ -568,3 +568,38 @@ class TestFastHTTPLogResult:
         # Just verify it doesn't crash
         app._log_result(route, 100.5, None)
         assert True
+
+
+class TestFastHTTPExceptionHandler:
+    """Tests for the exception_handler decorator on FastHTTP."""
+
+    def test_exception_handler_registers_in_event_hooks(self) -> None:
+        """Test that exception_handler stores the handler keyed by exception type."""
+        app = FastHTTP()
+
+        @app.exception_handler(ValueError)
+        async def handle_value_error(route, exc):
+            return {"error": str(exc)}
+
+        assert app.event_hooks.get_exception_handler(ValueError("boom")) is handle_value_error
+
+    def test_exception_handler_returns_original_func(self) -> None:
+        """Test that the decorator doesn't wrap or replace the function."""
+        app = FastHTTP()
+
+        async def handle_value_error(route, exc):
+            return None
+
+        decorated = app.exception_handler(ValueError)(handle_value_error)
+
+        assert decorated is handle_value_error
+
+    def test_exception_handler_no_match_returns_none(self) -> None:
+        """Test that an unregistered exception type resolves to no handler."""
+        app = FastHTTP()
+
+        @app.exception_handler(ValueError)
+        async def handle_value_error(route, exc):
+            return None
+
+        assert app.event_hooks.get_exception_handler(KeyError("x")) is None
