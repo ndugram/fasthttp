@@ -1,9 +1,11 @@
 from unittest.mock import AsyncMock, MagicMock
 
+import httpx
 import pytest
 
 from fasthttp.__meta__ import __version__
 from fasthttp.client import HTTPClient
+from fasthttp.events import EventHooks
 from fasthttp.exceptions import FastHTTPBadStatusError
 from fasthttp.middleware import MiddlewareManager as MM  # noqa: N817
 from fasthttp.response import Response
@@ -510,6 +512,145 @@ class TestHTTPClient:
             handler=handler,
             raise_for_status=False,
         )
+
+        result = await client.send(mock_httpx_client, route)
+
+        assert result is None
+
+
+class TestExceptionHandler:
+    """Tests for the exception_handler dispatch in HTTPClient.send()."""
+
+    @pytest.mark.asyncio
+    async def test_handler_result_replaces_default_none_on_generic_exception(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """A registered handler's return value replaces the usual None result."""
+        mock_httpx_client.request = AsyncMock(
+            side_effect=httpx.ConnectError("Connection failed")
+        )
+
+        event_hooks = EventHooks()
+
+        @event_hooks.exception_handler(exc_type=httpx.ConnectError)
+        async def handle_connect_error(route, exc):
+            return {"error": str(exc), "url": route.url}
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            event_hooks=event_hooks,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(method="GET", url="http://example.com/", handler=handler)
+
+        result = await client.send(mock_httpx_client, route)
+
+        assert result is not None
+        assert result._handler_result == {
+            "error": "Connection failed",
+            "url": "http://example.com/",
+        }
+
+    @pytest.mark.asyncio
+    async def test_handler_replaces_bad_status_error_when_raise_for_status(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """A handler for FastHTTPBadStatusError intercepts it instead of raising."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_response.headers = {}
+        mock_response.content = b"Internal Server Error"
+
+        mock_httpx_client.request = AsyncMock(return_value=mock_response)
+
+        event_hooks = EventHooks()
+
+        @event_hooks.exception_handler(exc_type=FastHTTPBadStatusError)
+        async def handle_bad_status(route, exc):
+            return {"status": exc.status_code}
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            raise_for_status=True,
+            event_hooks=event_hooks,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(method="GET", url="http://example.com/error", handler=handler)
+
+        result = await client.send(mock_httpx_client, route)
+
+        assert result is not None
+        assert result._handler_result == {"status": 500}
+
+    @pytest.mark.asyncio
+    async def test_most_specific_handler_wins_via_mro(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """When both a base and a specific handler are registered, the specific one wins."""
+        mock_httpx_client.request = AsyncMock(
+            side_effect=httpx.ConnectError("boom")
+        )
+
+        event_hooks = EventHooks()
+
+        @event_hooks.exception_handler(exc_type=Exception)
+        async def generic(route, exc):
+            return "generic"
+
+        @event_hooks.exception_handler(exc_type=httpx.ConnectError)
+        async def specific(route, exc):
+            return "specific"
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            event_hooks=event_hooks,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(method="GET", url="http://example.com/", handler=handler)
+
+        result = await client.send(mock_httpx_client, route)
+
+        assert result is not None
+        assert result._handler_result == "specific"
+
+    @pytest.mark.asyncio
+    async def test_unhandled_exception_type_still_returns_none(
+        self, mock_logger, request_configs, mock_httpx_client
+    ) -> None:
+        """No matching handler falls back to prior behavior (None)."""
+        mock_httpx_client.request = AsyncMock(
+            side_effect=httpx.TimeoutException("slow")
+        )
+
+        event_hooks = EventHooks()
+
+        @event_hooks.exception_handler(exc_type=httpx.ConnectError)
+        async def handle_connect_error(route, exc):
+            return "should not be called"
+
+        client = HTTPClient(
+            request_configs=request_configs,
+            logger=mock_logger,
+            event_hooks=event_hooks,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(method="GET", url="http://example.com/", handler=handler)
 
         result = await client.send(mock_httpx_client, route)
 
