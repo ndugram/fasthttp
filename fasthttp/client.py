@@ -1,5 +1,6 @@
 import logging
 import time
+from collections.abc import Callable, Coroutine
 from typing import TYPE_CHECKING, Annotated, Any
 from urllib.parse import urljoin
 
@@ -320,6 +321,19 @@ class HTTPClient:
         response._handler_result = handler_result  # noqa: SLF001
         return response
 
+    async def _run_exception_handler(
+        self,
+        handler: Callable[..., Coroutine[Any, Any, object]],
+        route: Route,
+        exc: Exception,
+    ) -> Response:
+        if self.security:
+            self.security.release_slot()
+        handler_result = await handler(route, exc)
+        response = Response(status=0, text="", headers={}, method=route.method)
+        response._url = route.url  # noqa: SLF001
+        return await self._process_handler_result(response, handler_result)
+
     async def _execute_request(
         self,
         client: httpx.AsyncClient,
@@ -585,12 +599,22 @@ class HTTPClient:
                 if attempt < max_attempts - 1:
                     continue
                 return None
-            except FastHTTPError:
+            except FastHTTPError as e:
+                handler = (
+                    self.event_hooks.get_exception_handler(e)
+                    if self._has_event_hooks
+                    else None
+                )
+                if handler is not None:
+                    return await self._run_exception_handler(handler, route, e)
                 raise
             except Exception as e:  # noqa: BLE001
                 last_error = e
                 if self._has_event_hooks:
                     await self.event_hooks.process_error(e, route)
+                    handler = self.event_hooks.get_exception_handler(e)
+                    if handler is not None:
+                        return await self._run_exception_handler(handler, route, e)
                 if self.middleware_manager:
                     try:
                         await self.middleware_manager.process_on_error(
