@@ -267,9 +267,35 @@ async def track_error(error, route):
     print(f"✖ {error} on {route.url}")
 ```
 
+### `exception_handler`
+
+FastAPI-style handler for a specific exception type. Unlike `on_error`, its return value **replaces the route's result** instead of the request failing silently — the request is "recovered" rather than just logged.
+
+```python
+from fasthttp.exceptions import FastHTTPTimeoutError
+
+@app.exception_handler(FastHTTPTimeoutError)
+async def handle_timeout(route, exc):
+    return {"error": "timeout", "url": route.url}
+```
+
+The handler receives `(route, exc)` — same order as FastAPI's `(request, exc)`. If several handlers match (through inheritance), the most specific registered type wins:
+
+```python
+@app.exception_handler(Exception)
+async def fallback(route, exc):
+    return {"error": "unexpected"}
+
+@app.exception_handler(FastHTTPTimeoutError)
+async def timeout(route, exc):
+    return {"error": "timeout"}  # wins for FastHTTPTimeoutError, fallback still applies to everything else
+```
+
+Only exceptions that actually propagate out of a request reach a handler — for HTTP status errors this means the route (or the app) must have `raise_for_status=True`, otherwise `FastHTTPBadStatusError` is never raised and there's nothing to intercept.
+
 ### With Router
 
-Event hooks on a router are merged into the app via `include_router()`:
+Event hooks on a router, including `exception_handler`, are merged into the app via `include_router()`:
 
 ```python
 from fasthttp import FastHTTP, Router
@@ -280,9 +306,13 @@ router = Router(base_url="https://api.example.com")
 async def router_hook(route, config):
     print(f"[router] → {route.url}")
 
+@router.exception_handler(FastHTTPTimeoutError)
+async def router_timeout(route, exc):
+    return {"error": "timeout", "url": route.url}
+
 app = FastHTTP()
 app.include_router(router)
-# router_hook will run for all requests from this router
+# both hooks will run for all requests from this router
 ```
 
 ### With AsyncSession
@@ -297,6 +327,8 @@ async with AsyncSession() as session:
 
     resp = await session.get("https://api.example.com")
 ```
+
+`exception_handler` is only available on `FastHTTP` and `Router` — `AsyncSession` does not support it, since it returns responses directly to the caller instead of routing through handlers.
 
 ### Middleware vs Event Hooks
 
