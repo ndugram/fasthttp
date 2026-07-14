@@ -442,9 +442,9 @@ class HTTPClient:
                 "follow_redirects": False,
                 "auth": resolve_auth(route.auth),
             }
-            if new_method in ("POST", "PUT", "PATCH") and route.json:
+            if new_method in ("POST", "PUT", "PATCH", "QUERY") and route.json:
                 req_kwargs["json"] = route.json
-            elif new_method in ("POST", "PUT", "PATCH") and route.data:
+            elif new_method in ("POST", "PUT", "PATCH", "QUERY") and route.data:
                 req_kwargs["content"] = route.data
 
             new_resp = await client.request(**req_kwargs)

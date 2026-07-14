@@ -43,7 +43,7 @@ class Route(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     method: HTTPMethod
-    """HTTP method for the request (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS)."""
+    """HTTP method for the request (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, QUERY)."""
 
     url: str
     """Target URL for the HTTP request. Must include scheme, host, and path."""
@@ -293,6 +293,41 @@ class Router:
             method="GET",
             url=url,
             params=params,
+            files=files,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            raise_for_status=raise_for_status,
+            auth=auth,
+            responses=responses,
+        )
+
+    def query(
+        self,
+        url: str,
+        *,
+        json: dict[str, Any] | None = None,
+        data: object | None = None,
+        files: FileUpload | None = None,
+        response_model: type[BaseModel] | None = None,
+        request_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
+        dependencies: list[Any] | None = None,
+        raise_for_status: bool = False,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """Decorator for registering a QUERY route on the router.
+
+        QUERY is safe and idempotent like GET, but carries a request body
+        (per the IETF QUERY method draft), so it accepts ``json``/``data``.
+        """
+        return self._add_route(
+            method="QUERY",
+            url=url,
+            json=json,
+            data=data,
             files=files,
             response_model=response_model,
             request_model=request_model,

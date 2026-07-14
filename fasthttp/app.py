@@ -143,6 +143,19 @@ class FastHTTP:
                 ),
             ]
         ) = None,
+        query_request: (
+            Annotated[
+                RequestsOptional | None,
+                Doc(
+                    """
+                Default configuration for QUERY requests.
+
+                Allows setting headers, timeout and other request-level
+                options that will be applied to all QUERY requests.
+                """
+                ),
+            ]
+        ) = None,
         post_request: (
             Annotated[
                 RequestsOptional | None,
@@ -532,6 +545,7 @@ class FastHTTP:
 
         self.request_configs = {
             "GET": get_request or {},
+            "QUERY": query_request or {},
             "POST": post_request or {},
             "PUT": put_request or {},
             "PATCH": patch_request or {},
@@ -821,6 +835,41 @@ class FastHTTP:
             method="GET",
             url=url,
             params=params,
+            files=files,
+            response_model=response_model,
+            request_model=request_model,
+            tags=tags,
+            dependencies=dependencies,
+            raise_for_status=raise_for_status,
+            auth=auth,
+            responses=responses,
+        )
+
+    def query(
+        self,
+        url: str,
+        *,
+        json: dict[str, Any] | None = None,
+        data: object | None = None,
+        files: FileUpload | None = None,
+        response_model: type | None = None,
+        request_model: type[BaseModel] | None = None,
+        tags: list[str] | None = None,
+        dependencies: list[Any] | None = None,
+        raise_for_status: bool = False,
+        auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
+        responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        """Decorator for registering a QUERY route.
+
+        QUERY is safe and idempotent like GET, but carries a request body
+        (per the IETF QUERY method draft), so it accepts ``json``/``data``.
+        """
+        return self._add_route(
+            method="QUERY",
+            url=url,
+            json=json,
+            data=data,
             files=files,
             response_model=response_model,
             request_model=request_model,

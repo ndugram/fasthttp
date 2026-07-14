@@ -49,6 +49,22 @@ async def patch_user(resp: Response) -> dict:
     return resp.json()
 ```
 
+## QUERY - сложные запросы на чтение с телом
+
+`QUERY` — более новый HTTP-метод (предложен в IETF-черновике `draft-ietf-httpbis-safe-method-w-body`) для операций чтения, которые не помещаются в URL. Он безопасен и идемпотентен как `GET`, но несёт JSON-тело как `POST` — удобно для сложных запросов поиска/фильтрации.
+
+```python
+@app.query(
+    url="https://api.example.com/users/search",
+    json={"role": "admin", "active": True}
+)
+async def search_users(resp: Response) -> dict:
+    return resp.json()
+```
+
+!!! note
+    `QUERY` пока поддерживается не всеми серверами и прокси — используйте его только для API, которые явно документируют поддержку `QUERY`. Также этот метод не входит в стандартный набор методов OpenAPI Path Item Object, поэтому `QUERY`-маршруты не отображаются в Swagger UI (см. [OpenAPI](openapi/index.md)), хотя и попадают в сгенерированный `/openapi.json`.
+
 ## DELETE - удаление данных
 
 ```python
@@ -83,7 +99,7 @@ async def allowed_methods(resp: Response) -> dict:
 |----------|----------|
 | `url` | URL запроса (обязательный) |
 | `params` | Query параметры |
-| `json` | JSON тело (для POST, PUT, PATCH) |
+| `json` | JSON тело (для POST, PUT, PATCH, QUERY) |
 | `data` | Сырые байты |
 | `files` | Загрузка файлов (multipart/form-data) |
 | `tags` | Теги для группировки |

@@ -100,7 +100,7 @@ COMMON_PARAMS = {
 
 def create_route_params(
     *,
-    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"],
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", "QUERY"],
     url: str,
     params: dict | None = None,
     json: dict | None = None,

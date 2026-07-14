@@ -17,6 +17,7 @@ app = FastHTTP(
     debug: bool = False,
     http2: bool = False,
     get_request: dict = {},
+    query_request: dict = {},
     post_request: dict = {},
     put_request: dict = {},
     patch_request: dict = {},
@@ -36,6 +37,7 @@ app = FastHTTP(
 | `debug` | `bool` | `False` | Режим отладки |
 | `http2` | `bool` | `False` | Использовать HTTP/2 |
 | `get_request` | `dict` | `{}` | Настройки для GET |
+| `query_request` | `dict` | `{}` | Настройки для QUERY |
 | `post_request` | `dict` | `{}` | Настройки для POST |
 | `put_request` | `dict` | `{}` | Настройки для PUT |
 | `patch_request` | `dict` | `{}` | Настройки для PATCH |
@@ -128,6 +130,25 @@ async def lifespan(app):
     request_model: type = None,
     responses: dict = None,
     get_request: dict = None,
+)
+```
+
+### @app.query()
+
+Безопасен и идемпотентен как GET, но принимает тело `json`/`data` (как POST). См. [HTTP методы](tutorial/http-methods.md).
+
+```python
+@app.query(
+    url: str,
+    json: dict = None,
+    data: bytes = None,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    request_model: type = None,
+    responses: dict = None,
+    query_request: dict = None,
 )
 ```
 

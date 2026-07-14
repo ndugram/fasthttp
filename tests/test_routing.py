@@ -319,6 +319,16 @@ class TestRouter:
         assert len(router._route_defs) == 1
         assert router._route_defs[0].method == "GET"
 
+    def test_router_query_decorator(self):
+        router = Router(base_url="https://api.example.com")
+
+        @router.query(url="/users/search", json={"role": "admin"})
+        async def search_users(_resp: Response) -> list:
+            return []
+
+        assert router._route_defs[0].method == "QUERY"
+        assert router._route_defs[0].json == {"role": "admin"}
+
     def test_router_post_decorator(self):
         router = Router(base_url="https://api.example.com")
 

@@ -143,7 +143,7 @@ async def handle_request(
                 "headers": headers,
             }
 
-            if body and method in ("POST", "PUT", "PATCH"):
+            if body and method in ("POST", "PUT", "PATCH", "QUERY"):
                 if isinstance(body, dict):
                     kwargs["json"] = body
                 else:
