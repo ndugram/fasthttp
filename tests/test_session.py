@@ -79,6 +79,21 @@ class TestAsyncSession:
         assert resp.status == 201
 
     @pytest.mark.asyncio
+    async def test_query_request_with_json(self) -> None:
+        async with AsyncSession(security=False) as session:
+            with patch.object(
+                session._http_client,
+                "send",
+                AsyncMock(return_value=_mock_resp(200, "[]")),
+            ):
+                resp = await session.query(
+                    "https://example.com/api/search", json={"role": "admin"}
+                )
+
+        assert resp is not None
+        assert resp.status == 200
+
+    @pytest.mark.asyncio
     async def test_put_request(self) -> None:
         async with AsyncSession(security=False) as session:
             with patch.object(
