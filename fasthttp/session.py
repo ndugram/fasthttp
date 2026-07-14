@@ -132,7 +132,16 @@ class AsyncSession:
         base_config = {"headers": dict(self._session_headers), "timeout": timeout}
         self._request_configs: dict[str, dict[str, Any]] = {
             method: dict(base_config)
-            for method in ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS")
+            for method in (
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "HEAD",
+                "OPTIONS",
+                "QUERY",
+            )
         }
 
         _secret = secret_key or secrets.token_bytes(32)
@@ -228,6 +237,23 @@ class AsyncSession:
             self._ensure_open(),
             self._build_route(
                 "GET", url, params=params, headers=headers, timeout=timeout
+            ),
+        )
+
+    async def query(
+        self,
+        url: str,
+        *,
+        json: dict[str, Any] | None = None,
+        data: object | None = None,
+        headers: dict[str, str] | None = None,
+        timeout: float | None = None,
+    ) -> Response | None:
+        """Send a QUERY request (safe/idempotent like GET, but with a body)."""
+        return await self._http_client.send(
+            self._ensure_open(),
+            self._build_route(
+                "QUERY", url, json=json, data=data, headers=headers, timeout=timeout
             ),
         )
 
