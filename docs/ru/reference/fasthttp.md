@@ -16,6 +16,7 @@ app = FastHTTP(
     middleware: list = [],
     base_url: str = None,
     get_request: dict = {},
+    query_request: dict = {},
     post_request: dict = {},
     put_request: dict = {},
     patch_request: dict = {},
@@ -36,6 +37,7 @@ app = FastHTTP(
 | `middleware` | `list` | `[]` | Список middleware |
 | `base_url` | `str` | `None` | Базовый URL для декораторов и роутеров |
 | `get_request` | `dict` | `{}` | Настройки GET |
+| `query_request` | `dict` | `{}` | Настройки QUERY |
 | `post_request` | `dict` | `{}` | Настройки POST |
 | `put_request` | `dict` | `{}` | Настройки PUT |
 | `patch_request` | `dict` | `{}` | Настройки PATCH |
@@ -96,6 +98,24 @@ app.include_router(
 ### get(), post(), put(), patch(), delete()
 
 Декораторы для HTTP методов.
+
+### query()
+
+Декоратор для QUERY-запросов. Безопасен и идемпотентен как GET, но принимает тело `json`/`data` (как POST).
+
+```python
+@app.query(
+    url: str,
+    json: dict = None,
+    data: bytes = None,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    request_model: type = None,
+    responses: dict = None,
+)
+```
 
 ### graphql()
 
@@ -173,6 +193,7 @@ AsyncSession(
 | Метод | Сигнатура |
 |-------|-----------|
 | `get` | `(url, *, params, headers, timeout) → Response \| None` |
+| `query` | `(url, *, json, data, headers, timeout) → Response \| None` |
 | `post` | `(url, *, json, data, headers, timeout) → Response \| None` |
 | `put` | `(url, *, json, data, headers, timeout) → Response \| None` |
 | `patch` | `(url, *, json, data, headers, timeout) → Response \| None` |
