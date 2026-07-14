@@ -39,7 +39,7 @@ The key features are:
 * **Simple**: define HTTP requests as decorated async functions, no boilerplate.
 * **Typed**: full type annotations throughout; validate responses with <a href="https://docs.pydantic.dev/" target="_blank">Pydantic</a> models.
 * **Logged**: colorful, structured request/response logs with timing, built-in.
-* **Complete**: GET, POST, PUT, PATCH, DELETE, and GraphQL out of the box.
+* **Complete**: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, QUERY, and GraphQL out of the box.
 * **Extensible**: middleware, dependency injection, routers, lifespan hooks.
 * **Interactive**: built-in Swagger UI via `app.web_run()` to browse and execute requests in the browser.
 * **HTTP/2**: optional HTTP/2 support, with automatic fallback to HTTP/1.1.
