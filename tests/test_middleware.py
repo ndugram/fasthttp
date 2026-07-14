@@ -800,7 +800,7 @@ class TestHTTPMethod:
 
         from fasthttp.types import HTTPMethod
 
-        assert len(get_args(HTTPMethod)) == 7
+        assert len(get_args(HTTPMethod)) == 8
 
 
 # ---------------------------------------------------------------------------
