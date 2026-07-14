@@ -8,7 +8,7 @@
 
 ### Начало работы
 - [Первые шаги](first-steps.md) - Установка и основные понятия
-- [HTTP методы](http-methods.md) - GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
+- [HTTP методы](http-methods.md) - GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, QUERY
 - [Параметры запроса](request-parameters.md) - Query, JSON, заголовки
 - [Обработка ответа](response-handling.md) - Работа с ответами
 
