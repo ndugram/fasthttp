@@ -49,6 +49,22 @@ async def patch_user(resp: Response) -> dict:
     return resp.json()
 ```
 
+## QUERY - Complex Reads with a Body
+
+`QUERY` is a newer HTTP method (proposed in an IETF draft, `draft-ietf-httpbis-safe-method-w-body`) for read operations that don't fit in a URL. It's safe and idempotent like `GET`, but carries a JSON body like `POST` — useful for complex search/filter requests.
+
+```python
+@app.query(
+    url="https://api.example.com/users/search",
+    json={"role": "admin", "active": True}
+)
+async def search_users(resp: Response) -> dict:
+    return resp.json()
+```
+
+!!! note
+    `QUERY` is not yet universally supported by servers and proxies — only use it against APIs that explicitly document `QUERY` support. It also isn't part of the standard OpenAPI Path Item Object method set, so `QUERY` routes won't be rendered in Swagger UI (see [OpenAPI](openapi/index.md)), even though they're included in the generated `/openapi.json`.
+
 ## DELETE - Remove Data
 
 ```python
@@ -83,7 +99,7 @@ async def allowed_methods(resp: Response) -> dict:
 |-----------|-------------|
 | `url` | Request URL (required) |
 | `params` | Query parameters |
-| `json` | JSON body (for POST, PUT, PATCH) |
+| `json` | JSON body (for POST, PUT, PATCH, QUERY) |
 | `data` | Raw bytes body |
 | `files` | File uploads (multipart/form-data) |
 | `tags` | Tags for grouping |
