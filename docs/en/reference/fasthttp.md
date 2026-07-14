@@ -16,6 +16,7 @@ app = FastHTTP(
     middleware: list = [],
     base_url: str = None,
     get_request: dict = {},
+    query_request: dict = {},
     post_request: dict = {},
     put_request: dict = {},
     patch_request: dict = {},
@@ -36,6 +37,7 @@ app = FastHTTP(
 | `middleware` | `list` | `[]` | Middleware list |
 | `base_url` | `str` | `None` | Default base URL for decorators and routers |
 | `get_request` | `dict` | `{}` | Default GET settings |
+| `query_request` | `dict` | `{}` | Default QUERY settings |
 | `post_request` | `dict` | `{}` | Default POST settings |
 | `put_request` | `dict` | `{}` | Default PUT settings |
 | `patch_request` | `dict` | `{}` | Default PATCH settings |
@@ -114,6 +116,24 @@ Decorator for GET requests.
 ```python
 @app.get(
     url: str,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    request_model: type = None,
+    responses: dict = None,
+)
+```
+
+### query()
+
+Decorator for QUERY requests. Safe and idempotent like GET, but accepts a `json`/`data` body (like POST).
+
+```python
+@app.query(
+    url: str,
+    json: dict = None,
+    data: bytes = None,
     params: dict = None,
     tags: list = [],
     dependencies: list = [],
@@ -227,6 +247,7 @@ AsyncSession(
 | Method | Signature |
 |--------|-----------|
 | `get` | `(url, *, params, headers, timeout) → Response \| None` |
+| `query` | `(url, *, json, data, headers, timeout) → Response \| None` |
 | `post` | `(url, *, json, data, headers, timeout) → Response \| None` |
 | `put` | `(url, *, json, data, headers, timeout) → Response \| None` |
 | `patch` | `(url, *, json, data, headers, timeout) → Response \| None` |
