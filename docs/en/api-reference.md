@@ -17,6 +17,7 @@ app = FastHTTP(
     debug: bool = False,
     http2: bool = False,
     get_request: dict = {},
+    query_request: dict = {},
     post_request: dict = {},
     put_request: dict = {},
     patch_request: dict = {},
@@ -34,6 +35,7 @@ app = FastHTTP(
 | `debug` | `bool` | `False` | Debug mode |
 | `http2` | `bool` | `False` | Use HTTP/2 |
 | `get_request` | `dict` | `{}` | GET settings |
+| `query_request` | `dict` | `{}` | QUERY settings |
 | `post_request` | `dict` | `{}` | POST settings |
 | `put_request` | `dict` | `{}` | PUT settings |
 | `patch_request` | `dict` | `{}` | PATCH settings |
@@ -126,6 +128,25 @@ async def lifespan(app):
     request_model: type = None,
     responses: dict = None,
     get_request: dict = None,
+)
+```
+
+### @app.query()
+
+Safe and idempotent like GET, but accepts a `json`/`data` body (like POST). See [HTTP Methods](tutorial/http-methods.md#query-complex-reads-with-a-body).
+
+```python
+@app.query(
+    url: str,
+    json: dict = None,
+    data: bytes = None,
+    params: dict = None,
+    tags: list = [],
+    dependencies: list = [],
+    response_model: type = None,
+    request_model: type = None,
+    responses: dict = None,
+    query_request: dict = None,
 )
 ```
 
@@ -510,7 +531,7 @@ The Route object represents a registered HTTP request. It contains all informati
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `method` | `str` | HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS) |
+| `method` | `str` | HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, QUERY) |
 | `url` | `str` | Full URL of the request |
 | `params` | `dict` | Query parameters |
 | `json` | `dict` | JSON body sent with request |
