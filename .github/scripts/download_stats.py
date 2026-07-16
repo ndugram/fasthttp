@@ -51,7 +51,11 @@ def _fetch(url: str, retries: int = 3) -> dict:
 
 
 def get_daily_downloads() -> tuple[list[str], list[int]]:
-    url = f"https://pypistats.org/api/packages/{PACKAGE}/overall?mirrors=false"
+    # mirrors=true reports downloads including CDN/mirror traffic, matching
+    # the lifetime total from pepy.tech. mirrors=false only counts ~27% of
+    # real downloads and made the daily/weekly/monthly figures inconsistent
+    # with the "Total" figure in the Telegram message.
+    url = f"https://pypistats.org/api/packages/{PACKAGE}/overall?mirrors=true"
     data = _fetch(url)
     rows = sorted(data["data"], key=lambda r: r["date"])
 
@@ -76,7 +80,7 @@ def get_total_downloads() -> int:
     except Exception as e:
         print(f"Failed to fetch total from pepy: {e}", file=sys.stderr)
 
-    url = f"https://pypistats.org/api/packages/{PACKAGE}/overall?mirrors=false"
+    url = f"https://pypistats.org/api/packages/{PACKAGE}/overall?mirrors=true"
     try:
         data = _fetch(url)
         return sum(row["downloads"] for row in data["data"])
