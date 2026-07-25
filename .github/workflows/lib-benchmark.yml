@@ -1,0 +1,44 @@
+name: Library Benchmark
+
+on:
+  schedule:
+    - cron: "0 13 * * *"   # every day at 13:00 UTC — 2h before Daily Download Stats (15:00 UTC)
+  workflow_dispatch:        # allow manual run
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip maturin
+          pip install -e ".[dev]"
+
+      - name: Run benchmark
+        run: python .github/scripts/lib_benchmark.py
+
+      - name: Render chart
+        run: python .github/scripts/lib_benchmark_chart.py bench_results.json
+
+      - name: Send chart to Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto" \
+            -F "chat_id=${CHAT_ID}" \
+            -F "photo=@lib_benchmark.png" \
+            -F "caption=⚡ <b>fasthttp-client</b> — сравнение скорости с requests / aiohttp / httpx" \
+            -F "parse_mode=HTML"
