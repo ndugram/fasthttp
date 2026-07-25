@@ -109,6 +109,51 @@ Methods are called automatically by `HTTPClient`.
 
 ---
 
+## `app.middleware(middleware_type)`
+
+Registers a function-based middleware, FastAPI-style. See the
+[Function-based Middleware](../tutorial/middleware/function.md) tutorial
+for the full guide.
+
+```python
+@app.middleware("http")
+async def mw(request: Request, call_next):
+    return await call_next(request)
+```
+
+| Parameter | Type | Description |
+|-----------|------|--------------|
+| `middleware_type` | `Literal["http"]` | Only `"http"` is currently supported — raises `ValueError` otherwise |
+
+The decorated function receives `(request: Request, call_next)` and must
+return (or replace) the result of `await call_next(request)`. Multiple
+registered middleware nest like a stack — the first registered is
+outermost.
+
+## Request
+
+Passed to `@app.middleware("http")` handlers. Represents the outgoing
+request before it's sent.
+
+```python
+from fasthttp import Request
+```
+
+| Attribute | Type | Description |
+|-----------|------|--------------|
+| `method` | `str` | HTTP method being sent |
+| `url` | `httpx.URL` | Structured URL (`.host`, `.port`, `.scheme`, `.path`, `.params`) |
+| `host` | `str \| None` | Shortcut for `request.url.host` |
+| `headers` | `dict[str, str]` | Mutable — reaches the outgoing request |
+| `query_params` | `dict[str, Any]` | Read-only snapshot |
+| `json` | `dict \| None` | Read-only snapshot |
+| `content` | `Any` | Read-only snapshot |
+| `route` | `Route` | The `Route` being executed |
+| `app` | `FastHTTP` | The application instance |
+| `state` | `SimpleNamespace` | Per-request scratch space |
+
+---
+
 ## CookieJar
 
 Cookie storage passed to `FastHTTP(cookie_jar=...)`. Captures `Set-Cookie` headers from responses and injects cookies into subsequent requests.
