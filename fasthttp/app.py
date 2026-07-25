@@ -43,6 +43,7 @@ from .middleware import (
 from .openapi.generator import generate_openapi_schema
 from .openapi.swagger import get_not_found_html, get_redoc_html, get_swagger_html
 from .openapi.urls import build_docs_urls
+from .request import Request
 from .routing import Route, Router
 from .security import Security
 from .sse import SSEEvent
@@ -55,7 +56,14 @@ if TYPE_CHECKING:
 
     from .auth import BasicAuth, BearerAuth, DigestAuth, OAuth2ClientCredentials
     from .response import Response
-    from .types import DefaultEncoding, FileUpload, HTTPMethod, RequestsOptional
+    from .types import (
+        CallNext,
+        DefaultEncoding,
+        FileUpload,
+        HTTPMethod,
+        HTTPMiddlewareFunc,
+        RequestsOptional,
+    )
 
 
 class FastHTTP:
@@ -573,6 +581,7 @@ class FastHTTP:
 
         self._ws_routes: list[dict] = []
         self._sse_routes: list[dict] = []
+        self._http_function_middleware: list[HTTPMiddlewareFunc] = []
 
         self.event_hooks = EventHooks()
 
@@ -1461,6 +1470,59 @@ class FastHTTP:
         """
         return self.event_hooks.exception_handler(exc_type=exc_type)
 
+    def middleware(
+        self,
+        middleware_type: Annotated[
+            Literal["http"],
+            Doc(
+                """
+                Kind of traffic the middleware applies to.
+
+                Only ``"http"`` is currently supported — it wraps every
+                plain HTTP route (``@app.get``/``@app.post``/etc). WebSocket
+                and GraphQL requests don't go through this yet, since they
+                don't run through the same HTTPClient execution path.
+                """
+            ),
+        ],
+    ) -> Callable[[HTTPMiddlewareFunc], HTTPMiddlewareFunc]:
+        """
+        Register a function-based middleware, FastAPI-style.
+
+        The decorated function receives the outgoing :class:`Request` and a
+        ``call_next`` callable. It must call and return (or replace)
+        ``await call_next(request)`` — everything before that call runs
+        before the request is sent, everything after runs once the
+        response (or ``None`` on failure) comes back.
+
+        Registered middleware wraps *around* the whole per-request
+        pipeline (retries, redirects, class-based ``BaseMiddleware``,
+        the route handler) — the first registered middleware is outermost.
+
+        Example:
+            ```python
+            @app.middleware("http")
+            async def timing(request: Request, call_next):
+                start = time.monotonic()
+                response = await call_next(request)
+                if response is not None:
+                    response.headers["X-Elapsed"] = str(time.monotonic() - start)
+                return response
+            ```
+        """
+        if middleware_type != "http":
+            msg = (
+                f"middleware type {middleware_type!r} is not supported yet — "
+                "only 'http' is currently implemented"
+            )
+            raise ValueError(msg)
+
+        def decorator(func: HTTPMiddlewareFunc) -> HTTPMiddlewareFunc:
+            self._http_function_middleware.append(func)
+            return func
+
+        return decorator
+
     def _log_result(
         self, route: Route, elapsed: float, result: Response | None
     ) -> None:
@@ -1725,9 +1787,33 @@ class FastHTTP:
         self, client: httpx.AsyncClient, route: Route
     ) -> tuple[Route, float, Response | None]:
         start = time.perf_counter()
-        result = await self.client.send(client, route)
+
+        async def call_actual(request: Request) -> Response | None:
+            return await self.client.send(client, route, extra_headers=request.headers)
+
+        handler: CallNext = call_actual
+        for mw in reversed(self._http_function_middleware):
+            handler = self._wrap_http_middleware(mw, handler)
+
+        request = Request(
+            method=route.method,
+            url=route.url,
+            route=route,
+            app=self,
+            headers={},
+        )
+        result = await handler(request)
         elapsed = (time.perf_counter() - start) * 1000
         return route, elapsed, result
+
+    @staticmethod
+    def _wrap_http_middleware(
+        mw: HTTPMiddlewareFunc, next_handler: CallNext
+    ) -> CallNext:
+        async def wrapped(request: Request) -> Response | None:
+            return await mw(request, next_handler)
+
+        return wrapped
 
     def run(self, tags: list[str] | None = None) -> None:
         """
