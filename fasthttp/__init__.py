@@ -14,6 +14,7 @@ from .middleware import (
     RetryMiddleware,
     SessionMiddleware,
 )
+from .request import Request
 from .routing import Router
 from .session import AsyncSession
 from .sse import SSEEvent
@@ -34,6 +35,7 @@ __all__ = (
     "MiddlewareChain",
     "MiddlewareManager",
     "OAuth2ClientCredentials",
+    "Request",
     "RetryMiddleware",
     "Router",
     "SSEEvent",
