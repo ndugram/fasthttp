@@ -142,13 +142,21 @@ class HTTPClient:
             self.logger.error("Request validation failed: %s", e)
             return False
 
-    async def _prepare_config(self, route: Route, config: dict) -> dict:
+    async def _prepare_config(
+        self,
+        route: Route,
+        config: dict,
+        extra_headers: dict[str, str] | None = None,
+    ) -> dict:
         config = dict(config)
         headers = dict(config.get("headers") or {})
         headers.setdefault("User-Agent", f"fasthttp/{__version__}")
 
         if self.startup_uuid:
             headers.setdefault("X-Request-ID", self.startup_uuid)
+
+        if extra_headers:
+            headers.update(extra_headers)
 
         config["headers"] = headers
 
@@ -454,12 +462,18 @@ class HTTPClient:
             await self._handle_error(route, config, e, FastHTTPRequestError)
             return None
 
-    async def send(self, client: httpx.AsyncClient, route: Route) -> Response | None:  # noqa: C901
+    async def send(  # noqa: C901
+        self,
+        client: httpx.AsyncClient,
+        route: Route,
+        *,
+        extra_headers: dict[str, str] | None = None,
+    ) -> Response | None:
         if not self._validate_request(route):
             return None
 
         config = self.request_configs.get(route.method, {})
-        config = await self._prepare_config(route, config)
+        config = await self._prepare_config(route, config, extra_headers=extra_headers)
 
         if self._has_event_hooks:
             await self.event_hooks.process_request(route, config)

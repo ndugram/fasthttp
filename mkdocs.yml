@@ -109,6 +109,7 @@ nav:
       - Middleware:
         - en/tutorial/middleware/index.md
         - en/tutorial/middleware/creating.md
+        - en/tutorial/middleware/function.md
         - en/tutorial/middleware/examples.md
       - Security:
         - en/tutorial/security/index.md
@@ -177,6 +178,7 @@ nav:
       - Middleware:
         - ru/tutorial/middleware/index.md
         - ru/tutorial/middleware/creating.md
+        - ru/tutorial/middleware/function.md
         - ru/tutorial/middleware/examples.md
       - Security:
         - ru/tutorial/security/index.md

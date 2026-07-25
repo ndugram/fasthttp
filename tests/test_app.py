@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from fasthttp import FastHTTP
+from fasthttp.request import Request
 from fasthttp.response import Response
 from fasthttp.routing import Route, Router
 
@@ -603,3 +604,125 @@ class TestFastHTTPExceptionHandler:
             return None
 
         assert app.event_hooks.get_exception_handler(KeyError("x")) is None
+
+
+class TestFastHTTPMiddlewareDecorator:
+    """Tests for the @app.middleware("http") decorator."""
+
+    @staticmethod
+    def _mock_httpx_response(status_code: int = 200) -> MagicMock:
+        import datetime
+
+        response = MagicMock()
+        response.status_code = status_code
+        response.text = '{"ok": true}'
+        response.headers = {"Content-Type": "application/json"}
+        response.content = b'{"ok": true}'
+        response.history = []
+        response.elapsed = datetime.timedelta(seconds=0.01)
+        response.http_version = "HTTP/1.1"
+        response.reason_phrase = "OK"
+        return response
+
+    def test_middleware_rejects_unsupported_type(self) -> None:
+        app = FastHTTP()
+
+        with pytest.raises(ValueError, match="'ws'"):
+            app.middleware("ws")
+
+    def test_middleware_registers_function(self) -> None:
+        app = FastHTTP()
+
+        @app.middleware("http")
+        async def mw(request: Request, call_next):
+            return await call_next(request)
+
+        assert app._http_function_middleware == [mw]
+
+    @pytest.mark.asyncio
+    async def test_middleware_mutates_headers_and_response(self) -> None:
+        app = FastHTTP(security=False)
+
+        seen_headers: dict = {}
+
+        @app.middleware("http")
+        async def add_trace_id(request: Request, call_next):
+            assert isinstance(request, Request)
+            assert request.method == "GET"
+            assert request.host == "example.com"
+            request.headers["X-Trace-Id"] = "trace-123"
+            response = await call_next(request)
+            if response is not None:
+                response.headers["X-Elapsed"] = "yes"
+            return response
+
+        @app.get(url="https://example.com/api")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        mock_client = AsyncMock()
+
+        async def fake_request(**kwargs: object) -> MagicMock:
+            seen_headers.update(kwargs.get("headers") or {})
+            return self._mock_httpx_response()
+
+        mock_client.request = fake_request
+
+        route = app.routes[0]
+        _, _, result = await app._run_route(mock_client, route)
+
+        assert "X-Trace-Id" in seen_headers
+        assert result is not None
+        assert result.headers["X-Elapsed"] == "yes"
+
+    @pytest.mark.asyncio
+    async def test_middleware_order_outer_to_inner(self) -> None:
+        app = FastHTTP(security=False)
+        calls: list[str] = []
+
+        @app.middleware("http")
+        async def outer(request: Request, call_next):
+            calls.append("outer:before")
+            response = await call_next(request)
+            calls.append("outer:after")
+            return response
+
+        @app.middleware("http")
+        async def inner(request: Request, call_next):
+            calls.append("inner:before")
+            response = await call_next(request)
+            calls.append("inner:after")
+            return response
+
+        @app.get(url="https://example.com/api")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        mock_client = AsyncMock()
+        mock_client.request = AsyncMock(return_value=self._mock_httpx_response())
+
+        route = app.routes[0]
+        await app._run_route(mock_client, route)
+
+        assert calls == ["outer:before", "inner:before", "inner:after", "outer:after"]
+
+    @pytest.mark.asyncio
+    async def test_middleware_can_short_circuit(self) -> None:
+        app = FastHTTP(security=False)
+
+        @app.middleware("http")
+        async def block(_request: Request, _call_next):
+            return None
+
+        @app.get(url="https://example.com/api")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        mock_client = AsyncMock()
+        mock_client.request = AsyncMock(return_value=self._mock_httpx_response())
+
+        route = app.routes[0]
+        _, _, result = await app._run_route(mock_client, route)
+
+        assert result is None
+        mock_client.request.assert_not_called()

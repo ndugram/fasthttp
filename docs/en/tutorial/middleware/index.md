@@ -55,6 +55,7 @@ Output:
 ## Next steps
 
 - [Creating Middleware](creating.md) — BaseMiddleware API, class attributes, pipe chaining
+- [Function-based Middleware](function.md) — `@app.middleware("http")`, FastAPI-style
 - [Examples](examples.md) — auth, logging, timing, method filtering, toggle
 
 ## Comparison with dependencies

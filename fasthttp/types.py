@@ -2,13 +2,27 @@ from __future__ import annotations
 
 import io
 from os import PathLike
-from typing import Annotated, Literal, TypeAlias, TypedDict
+from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias, TypedDict
 
 from annotated_doc import Doc
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine
+
+    from .request import Request
+    from .response import Response
 
 HTTPMethod: TypeAlias = Literal[
     "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "QUERY"
 ]
+
+CallNext: TypeAlias = "Callable[[Request], Coroutine[Any, Any, Response | None]]"
+"""Signature of the ``call_next`` callable passed to ``@app.middleware(\"http\")`` handlers."""
+
+HTTPMiddlewareFunc: TypeAlias = (
+    "Callable[[Request, CallNext], Coroutine[Any, Any, Response | None]]"
+)
+"""Signature of a function registered via ``@app.middleware(\"http\")``."""
 
 OAuth2Scope: TypeAlias = Literal[
     "openid",

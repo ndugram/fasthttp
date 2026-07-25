@@ -109,6 +109,51 @@ manager = MiddlewareManager([AuthMiddleware(), LoggingMiddleware()])
 
 ---
 
+## `app.middleware(middleware_type)`
+
+Регистрирует function-based middleware в стиле FastAPI. Полное
+руководство — в туториале
+[Function-based Middleware](../tutorial/middleware/function.md).
+
+```python
+@app.middleware("http")
+async def mw(request: Request, call_next):
+    return await call_next(request)
+```
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `middleware_type` | `Literal["http"]` | Пока поддерживается только `"http"` — иначе `ValueError` |
+
+Декорируемая функция принимает `(request: Request, call_next)` и должна
+вернуть (или заменить) результат `await call_next(request)`. Несколько
+зарегистрированных middleware вкладываются как стек — первая
+зарегистрированная становится самой внешней.
+
+## Request
+
+Передаётся в обработчики `@app.middleware("http")`. Представляет
+исходящий запрос до отправки.
+
+```python
+from fasthttp import Request
+```
+
+| Атрибут | Тип | Описание |
+|---------|-----|----------|
+| `method` | `str` | HTTP-метод отправляемого запроса |
+| `url` | `httpx.URL` | Структурированный URL (`.host`, `.port`, `.scheme`, `.path`, `.params`) |
+| `host` | `str \| None` | Шорткат для `request.url.host` |
+| `headers` | `dict[str, str]` | Мутабельно — уходит вместе с запросом |
+| `query_params` | `dict[str, Any]` | Read-only снимок |
+| `json` | `dict \| None` | Read-only снимок |
+| `content` | `Any` | Read-only снимок |
+| `route` | `Route` | Выполняемый `Route` |
+| `app` | `FastHTTP` | Экземпляр приложения |
+| `state` | `SimpleNamespace` | Scratch-пространство на один запрос |
+
+---
+
 ## CookieJar
 
 Хранилище кук, передаётся в `FastHTTP(cookie_jar=...)`. Перехватывает `Set-Cookie` из ответов и подставляет куки в последующие запросы.
