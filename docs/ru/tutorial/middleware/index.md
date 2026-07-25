@@ -56,6 +56,7 @@ app = FastHTTP(middleware=[LoggingMiddleware()])
 ## Далее
 
 - [Создание Middleware](creating.md) — API BaseMiddleware, атрибуты класса, pipe-чейнинг
+- [Function-based Middleware](function.md) — `@app.middleware("http")` в стиле FastAPI
 - [Примеры](examples.md) — auth, логирование, тайминги, фильтр по методам, toggle
 
 ## Сравнение с зависимостями
