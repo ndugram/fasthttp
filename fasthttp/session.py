@@ -217,6 +217,11 @@ class AsyncSession:
             json=json,
             data=data,
             dependencies=deps,
+            # explicit, not left to default_factory: model_construct() resolves
+            # unset defaults via inspect.signature(factory) on every call (list/dict
+            # are C builtins, so that means a compile() of their text signature too)
+            tags=[],
+            responses={},
         )
 
     def _ensure_open(self) -> httpx.AsyncClient:
