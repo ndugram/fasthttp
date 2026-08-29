@@ -261,7 +261,7 @@ class TestResponseToCurl:
     def test_basic_get(self):
         r = Response(status=200, text="", headers={}, method="GET")
         r._set_url("https://api.example.com/data")
-        assert r.to_curl() == "curl -X GET 'https://api.example.com/data'"
+        assert r.to_curl() == "curl -X GET https://api.example.com/data"
 
     def test_includes_headers(self):
         r = Response(
@@ -340,7 +340,7 @@ class TestResponseToCurl:
         )
         r._set_url("https://api.example.com/data")
         curl = r.to_curl()
-        assert "-d 'raw=body'" in curl
+        assert "-d raw=body" in curl
 
 
 class TestResponseDefaults:
