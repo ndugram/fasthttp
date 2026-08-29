@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -5,9 +6,26 @@ import orjson
 import typer
 
 from fasthttp.cli.client import CLIResponse, run_request
+from fasthttp.cli.codegen import CodegenError, generate_client, load_spec
 from fasthttp.cli.output import formatter
 
 app = typer.Typer(help="FastHTTP CLI - HTTP client from command line")
+
+
+@app.command()
+def codegen(
+    spec: str,
+    output: str = typer.Option("client.py", "-o", "--output", help="Output file path"),
+) -> None:
+    try:
+        spec_data = load_spec(spec)
+        code = generate_client(spec_data)
+    except CodegenError as e:
+        formatter.error(str(e))
+        raise typer.Exit(1) from e
+
+    Path(output).write_text(code)
+    formatter.success(f"Generated {output} from {spec}")
 
 
 def _check_https_url(url: str) -> str:
