@@ -7,6 +7,7 @@ import orjson
 from annotated_doc import Doc
 
 from .exceptions import FastHTTPBadStatusError
+from .helpers.curl import build_curl_command
 
 if TYPE_CHECKING:
     import datetime
@@ -197,6 +198,25 @@ class Response:
         if self._req_data is not None:
             return str(self._req_data)
         return None
+
+    def to_curl(self, *, reveal_secrets: bool = False) -> str:
+        """
+        Reconstruct the ``curl`` command equivalent to the request that produced
+        this response.
+
+        Sensitive headers (``Authorization``, cookies, API keys) and known
+        sensitive query params are masked by default — pass
+        ``reveal_secrets=True`` to get a command you can actually run yourself.
+        """
+
+        return build_curl_command(
+            self._method or "GET",
+            self._url or "",
+            self._req_headers,
+            self._req_json,
+            self._req_data,
+            reveal_secrets=reveal_secrets,
+        )
 
     def bytes(self) -> bytes:
         """Return raw response body as bytes."""
