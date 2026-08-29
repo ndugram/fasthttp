@@ -34,6 +34,41 @@ fasthttp patch https://api.example.com/users/1 --json '{"age": 25}'
 fasthttp delete https://api.example.com/users/1
 ```
 
+## Генерация кода
+
+### codegen
+
+Генерирует fasthttp-клиент из OpenAPI 3.x спеки (локальный файл или URL — JSON или YAML):
+
+```bash
+fasthttp codegen openapi.json -o client.py
+fasthttp codegen https://api.example.com/openapi.json -o client.py
+```
+
+Эндпоинты без path-параметров превращаются в идиоматичные `@app.get`/`@app.post` роуты.
+У fasthttp нет динамического роутинга по path-параметрам (URL роута фиксируется
+в момент декорирования), поэтому эндпоинты *с* path-параметрами (`/users/{id}`)
+генерируются как обычные функции на `AsyncSession`:
+
+```python
+@app.get(url="/pets", tags=["pets"], response_model=PetList)
+async def list_pets(resp: Response) -> dict:
+    return resp.json()
+
+async def get_pet(session: AsyncSession, petId: str) -> dict | None:
+    resp = await session.get(f"{base_url}/pets/{petId}")
+    return resp.json() if resp else None
+```
+
+Pydantic-модели генерируются из `components.schemas` — `$ref` резолвится,
+строковые enum превращаются в `Literal[...]`.
+
+!!! note "Ограничения MVP"
+    Композиция схем `oneOf`/`anyOf`/`allOf` сводится к `Any`, инлайновые
+    (безымянные) вложенные объекты — к `dict[str, Any]` вместо генерации
+    вложенной модели. YAML-спеки требуют `pip install fasthttp-client[codegen]`
+    (или напрямую `pip install pyyaml`) — для JSON ничего доп. не нужно.
+
 ## Формат вывода
 
 Второй аргумент определяет вывод:
