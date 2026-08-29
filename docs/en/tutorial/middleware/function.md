@@ -123,6 +123,22 @@ async def timing(request: Request, call_next):
     return response
 ```
 
+## Debugging with `.to_curl()`
+
+Both `Request` and `Response` have `.to_curl()` — useful for logging exactly
+what a request looked like without printing secrets:
+
+```python
+@app.middleware("http")
+async def log_curl(request: Request, call_next):
+    print(request.to_curl())
+    response = await call_next(request)
+    return response
+```
+
+Sensitive headers and JSON body fields are masked by default (`*****`) —
+pass `reveal_secrets=True` to get a command you can actually run.
+
 ## Mixing with class-based middleware
 
 Function middleware (`@app.middleware("http")`) and `BaseMiddleware`
