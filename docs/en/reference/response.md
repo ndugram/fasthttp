@@ -133,6 +133,34 @@ async def handler(resp: Response):
 
 The method parses `<link rel="stylesheet" href="...">` for CSS and `<script src="...">` for JavaScript. All URLs are normalized using `urljoin`, so relative paths are converted to absolute URLs based on the request URL.
 
+### to_curl()
+
+Reconstruct the `curl` command equivalent to the request that produced this response — handy for debugging or pasting into a bug report:
+
+```python
+curl = resp.to_curl()
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `reveal_secrets` | `bool` | `False` | Show real header/body values instead of masked ones |
+
+By default, sensitive headers (`Authorization`, cookies, API keys) and sensitive JSON body fields (`password`, `token`, `secret`, `api_key`, ...) are masked as `*****` — safe to paste into logs or an issue. Pass `reveal_secrets=True` to get a command that actually works when you run it yourself:
+
+```python
+@app.post(url="https://api.example.com/login")
+async def login(resp: Response) -> dict:
+    print(resp.to_curl())
+    # curl -X POST -H 'Authorization: *****' https://api.example.com/login
+
+    print(resp.to_curl(reveal_secrets=True))
+    # curl -X POST -H 'Authorization: Bearer eyJ...' https://api.example.com/login
+
+    return resp.json()
+```
+
 ## Example
 
 ```python
