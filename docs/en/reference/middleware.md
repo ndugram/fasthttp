@@ -152,6 +152,12 @@ from fasthttp import Request
 | `app` | `FastHTTP` | The application instance |
 | `state` | `SimpleNamespace` | Per-request scratch space |
 
+### `to_curl(*, reveal_secrets=False)`
+
+Builds the `curl` command equivalent to the request. Sensitive headers and
+JSON body fields are masked by default — same behavior as
+[`Response.to_curl()`](response.md#to_curl).
+
 ---
 
 ## CookieJar
