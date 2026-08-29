@@ -151,7 +151,7 @@ class TestGenerateModel:
 
     def test_no_properties(self):
         code = generate_model("Empty", {"type": "object"})
-        assert "class Empty(BaseModel):\n    pass" == code
+        assert code == "class Empty(BaseModel):\n    pass"
 
 
 class TestCollectModels:
@@ -195,7 +195,7 @@ class TestGenerateClient:
         code = generate_client(PETSTORE_SPEC)
         assert 'base_url = "https://api.petstore.example.com"' in code
         assert "class Pet(BaseModel):" in code
-        assert "@app.get(url=\"/pets\"" in code
+        assert '@app.get(url="/pets"' in code
         assert "async def get_pet(session: AsyncSession" in code
 
     def test_generated_client_is_importable_and_routes_registered(self, tmp_path):
