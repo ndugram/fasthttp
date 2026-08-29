@@ -55,3 +55,27 @@ fasthttp post https://api.example.com/users --json '{"name": "John"}'
 # Сохранить в файл
 fasthttp get https://api.example.com/data json -o response.json
 ```
+
+## codegen
+
+Генерирует fasthttp-клиент из OpenAPI 3.x спеки.
+
+```bash
+fasthttp codegen <spec> [options]
+```
+
+| Аргумент | Описание |
+|----------|----------|
+| `spec` | Путь или URL к OpenAPI 3.x спеке (JSON или YAML) |
+
+| Опция | Кратко | Описание | По умолчанию |
+|-------|--------|----------|--------------|
+| `--output` | `-o` | Путь к выходному файлу | `client.py` |
+
+```bash
+fasthttp codegen openapi.json -o client.py
+fasthttp codegen https://api.example.com/openapi.json -o client.py
+```
+
+Что генерируется и какие есть ограничения MVP — в разделе «Генерация кода»
+[Команд CLI](../cli/commands.md).
