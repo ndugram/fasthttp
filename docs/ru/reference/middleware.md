@@ -152,6 +152,12 @@ from fasthttp import Request
 | `app` | `FastHTTP` | Экземпляр приложения |
 | `state` | `SimpleNamespace` | Scratch-пространство на один запрос |
 
+### `to_curl(*, reveal_secrets=False)`
+
+Строит эквивалентную `curl`-команду для запроса. Чувствительные заголовки и
+поля JSON-тела маскируются по умолчанию — то же поведение, что у
+[`Response.to_curl()`](response.md#to_curl).
+
 ---
 
 ## CookieJar
