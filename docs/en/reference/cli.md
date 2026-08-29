@@ -62,10 +62,34 @@ fasthttp get https://api.example.com/data json -o response.json
 fasthttp get https://api.example.com/data --debug
 ```
 
+## codegen
+
+Generate a fasthttp client from an OpenAPI 3.x spec.
+
+```bash
+fasthttp codegen <spec> [options]
+```
+
+| Argument | Description |
+|----------|-------------|
+| `spec` | Path or URL to an OpenAPI 3.x spec (JSON or YAML) |
+
+| Option | Short | Description | Default |
+|--------|-------|--------------|---------|
+| `--output` | `-o` | Output file path | `client.py` |
+
+```bash
+fasthttp codegen openapi.json -o client.py
+fasthttp codegen https://api.example.com/openapi.json -o client.py
+```
+
+See [CLI Commands — Code Generation](../cli/commands.md#code-generation) for what gets generated and its MVP limitations.
+
 ## Help
 
 ```bash
 fasthttp --help
 fasthttp get --help
 fasthttp post --help
+fasthttp codegen --help
 ```
