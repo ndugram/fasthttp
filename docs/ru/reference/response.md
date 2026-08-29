@@ -125,6 +125,34 @@ async def handler(resp: Response):
 
 Метод парсит `<link rel="stylesheet" href="...">` для CSS и `<script src="...">` для JavaScript. Все URL нормализуются через `urljoin`, поэтому относительные пути преобразуются в абсолютные на основе URL запроса.
 
+### to_curl()
+
+Восстанавливает эквивалентную `curl`-команду для запроса, который породил этот ответ — удобно для дебага или вставки в баг-репорт:
+
+```python
+curl = resp.to_curl()
+```
+
+**Параметры:**
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `reveal_secrets` | `bool` | `False` | Показать реальные значения заголовков/тела вместо замаскированных |
+
+По умолчанию чувствительные заголовки (`Authorization`, cookies, API-ключи) и чувствительные поля JSON-тела (`password`, `token`, `secret`, `api_key`...) маскируются как `*****` — можно безопасно вставлять в логи или issue. `reveal_secrets=True` — чтобы получить команду, которая реально сработает, если запустить её самому:
+
+```python
+@app.post(url="https://api.example.com/login")
+async def login(resp: Response) -> dict:
+    print(resp.to_curl())
+    # curl -X POST -H 'Authorization: *****' https://api.example.com/login
+
+    print(resp.to_curl(reveal_secrets=True))
+    # curl -X POST -H 'Authorization: Bearer eyJ...' https://api.example.com/login
+
+    return resp.json()
+```
+
 ## Пример
 
 ```python
