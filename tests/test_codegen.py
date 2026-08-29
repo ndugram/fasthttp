@@ -111,6 +111,16 @@ class TestLoadSpec:
         with pytest.raises(CodegenError, match="not found"):
             load_spec("/no/such/spec.json")
 
+    def test_load_yaml_file(self, tmp_path):
+        yaml = pytest.importorskip("yaml")
+
+        spec_path = tmp_path / "spec.yaml"
+        spec_path.write_text(yaml.dump(PETSTORE_SPEC))
+
+        loaded = load_spec(str(spec_path))
+
+        assert loaded["info"]["title"] == "Petstore Test API"
+
 
 class TestPythonType:
     def test_string(self):
