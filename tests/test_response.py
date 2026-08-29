@@ -257,6 +257,92 @@ class TestResponseReqText:
         assert result is not None
 
 
+class TestResponseToCurl:
+    def test_basic_get(self):
+        r = Response(status=200, text="", headers={}, method="GET")
+        r._set_url("https://api.example.com/data")
+        assert r.to_curl() == "curl -X GET 'https://api.example.com/data'"
+
+    def test_includes_headers(self):
+        r = Response(
+            status=200,
+            text="",
+            headers={},
+            method="GET",
+            req_headers={"X-Custom": "value"},
+        )
+        r._set_url("https://api.example.com/data")
+        curl = r.to_curl()
+        assert "-H 'X-Custom: value'" in curl
+
+    def test_masks_authorization_header_by_default(self):
+        r = Response(
+            status=200,
+            text="",
+            headers={},
+            method="GET",
+            req_headers={"Authorization": "Bearer secret-token"},
+        )
+        r._set_url("https://api.example.com/data")
+        curl = r.to_curl()
+        assert "secret-token" not in curl
+        assert "*****" in curl
+
+    def test_reveal_secrets_shows_real_header(self):
+        r = Response(
+            status=200,
+            text="",
+            headers={},
+            method="GET",
+            req_headers={"Authorization": "Bearer secret-token"},
+        )
+        r._set_url("https://api.example.com/data")
+        curl = r.to_curl(reveal_secrets=True)
+        assert "secret-token" in curl
+
+    def test_masks_sensitive_json_body_field(self):
+        r = Response(
+            status=200,
+            text="",
+            headers={},
+            method="POST",
+            req_json={"name": "test", "password": "hunter2"},
+        )
+        r._set_url("https://api.example.com/users")
+        curl = r.to_curl()
+        assert "hunter2" not in curl
+        assert '"password":"*****"' in curl or '"password": "*****"' in curl
+
+    def test_reveal_secrets_shows_real_json_body(self):
+        r = Response(
+            status=200,
+            text="",
+            headers={},
+            method="POST",
+            req_json={"name": "test", "password": "hunter2"},
+        )
+        r._set_url("https://api.example.com/users")
+        curl = r.to_curl(reveal_secrets=True)
+        assert "hunter2" in curl
+
+    def test_json_body_adds_content_type_when_missing(self):
+        r = Response(
+            status=200, text="", headers={}, method="POST", req_json={"a": 1}
+        )
+        r._set_url("https://api.example.com/data")
+        curl = r.to_curl()
+        assert "Content-Type: application/json" in curl
+        assert "-d '{\"a\":1}'" in curl
+
+    def test_data_body_used_when_no_json(self):
+        r = Response(
+            status=200, text="", headers={}, method="POST", req_data="raw=body"
+        )
+        r._set_url("https://api.example.com/data")
+        curl = r.to_curl()
+        assert "-d 'raw=body'" in curl
+
+
 class TestResponseDefaults:
     def test_method_default_none(self):
         r = Response(status=200, text="", headers={})
