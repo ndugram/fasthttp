@@ -124,6 +124,22 @@ async def timing(request: Request, call_next):
     return response
 ```
 
+## Дебаг через `.to_curl()`
+
+И у `Request`, и у `Response` есть `.to_curl()` — удобно логировать, как
+именно выглядел запрос, не палив секреты:
+
+```python
+@app.middleware("http")
+async def log_curl(request: Request, call_next):
+    print(request.to_curl())
+    response = await call_next(request)
+    return response
+```
+
+Чувствительные заголовки и поля JSON-тела по умолчанию маскируются
+(`*****`) — `reveal_secrets=True` даёт команду, которую реально можно запустить.
+
 ## Совмещение с class-based middleware
 
 Function middleware (`@app.middleware("http")`) и `BaseMiddleware`
