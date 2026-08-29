@@ -726,3 +726,42 @@ class TestFastHTTPMiddlewareDecorator:
 
         assert result is None
         mock_client.request.assert_not_called()
+
+
+class TestRequestToCurl:
+    def test_masks_secret_header_by_default(self) -> None:
+        app = FastHTTP()
+
+        @app.get(url="https://example.com/api", tags=["x"])
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        route = app.routes[0]
+        request = Request(
+            method="GET",
+            url="https://example.com/api",
+            route=route,
+            app=app,
+            headers={"Authorization": "Bearer secret-token"},
+        )
+        curl = request.to_curl()
+        assert "secret-token" not in curl
+        assert "*****" in curl
+
+    def test_reveal_secrets(self) -> None:
+        app = FastHTTP()
+
+        @app.get(url="https://example.com/api")
+        async def handler(resp: Response) -> dict:
+            return resp.json()
+
+        route = app.routes[0]
+        request = Request(
+            method="GET",
+            url="https://example.com/api",
+            route=route,
+            app=app,
+            headers={"Authorization": "Bearer secret-token"},
+        )
+        curl = request.to_curl(reveal_secrets=True)
+        assert "secret-token" in curl
