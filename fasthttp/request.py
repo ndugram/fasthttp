@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Annotated, Any
 import httpx
 from annotated_doc import Doc
 
+from fasthttp.helpers.curl import build_curl_command
+
 if TYPE_CHECKING:
     from .app import FastHTTP
     from .routing import Route
@@ -75,6 +77,24 @@ class Request:
     def content(self) -> Any:  # noqa: ANN401
         """Read-only snapshot of the raw body/form data that will be sent, if any."""
         return self.route.data
+
+    def to_curl(self, *, reveal_secrets: bool = False) -> str:
+        """
+        Build the ``curl`` command equivalent to this outgoing request.
+
+        Sensitive headers (``Authorization``, cookies, API keys) and known
+        sensitive query params are masked by default — pass
+        ``reveal_secrets=True`` to get a command you can actually run yourself.
+        """
+
+        return build_curl_command(
+            self.method,
+            self._url,
+            self.headers,
+            self.json,
+            self.content,
+            reveal_secrets=reveal_secrets,
+        )
 
     def __repr__(self) -> str:
         return f"<Request {self.method} {self._url}>"
