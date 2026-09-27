@@ -277,3 +277,55 @@ cache.clear()
 print(cache.get_stats())
 # {'size': 0, 'max_size': 100, 'ttl': 60, 'methods': ['GET']}
 ```
+
+---
+
+## HTTPCacheMiddleware
+
+Built-in middleware that caches responses using real HTTP caching semantics
+instead of a flat TTL — `ETag`/`If-None-Match`, `Last-Modified`/`If-Modified-Since`,
+and `Cache-Control` (`max-age`, `no-cache`, `no-store`, `must-revalidate`).
+
+A stale entry with a validator is revalidated with a conditional request — a
+`304 Not Modified` reuses the cached body instead of re-downloading it. A
+response with neither a validator nor a usable `max-age`/`default_ttl` isn't
+cached at all.
+
+```python
+from fasthttp import FastHTTP, HTTPCacheMiddleware
+
+app = FastHTTP(
+    middleware=[HTTPCacheMiddleware(max_size=200)]
+)
+```
+
+### Constructor parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `default_ttl` | `float \| None` | `None` | Freshness lifetime (seconds) assumed when a response has no `Cache-Control: max-age`. `None` means only cache responses that carry an explicit `max-age`, `ETag`, or `Last-Modified` |
+| `max_size` | `int` | `100` | Maximum number of entries (LRU eviction) |
+| `cache_methods` | `list[str]` | `["GET"]` | HTTP methods to cache |
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `clear()` | Clears all cached responses |
+| `get_stats()` | Returns cache statistics |
+
+```python
+cache = HTTPCacheMiddleware()
+app = FastHTTP(middleware=[cache])
+
+# later
+cache.clear()
+print(cache.get_stats())
+# {'size': 0, 'max_size': 100, 'default_ttl': None, 'methods': ['GET']}
+```
+
+!!! note "vs. CacheMiddleware"
+    `CacheMiddleware` is a simple flat-TTL cache — use it against APIs that
+    don't send caching headers. `HTTPCacheMiddleware` respects what the
+    server actually says about cacheability, which is usually the better
+    default when the API sends `ETag`/`Cache-Control`.
