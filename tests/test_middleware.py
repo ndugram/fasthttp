@@ -10,6 +10,7 @@ from fasthttp.middleware import (
     BaseMiddleware,
     CacheEntry,
     CacheMiddleware,
+    HTTPCacheMiddleware,
     MiddlewareChain,
     MiddlewareManager,
 )
@@ -753,6 +754,183 @@ class TestCacheMiddleware:
         texts = [e.response.text for e in cache._cache.values()]
         assert "b" not in texts
         assert "a" in texts
+
+
+# ---------------------------------------------------------------------------
+# HTTPCacheMiddleware
+# ---------------------------------------------------------------------------
+
+
+class TestHTTPCacheMiddleware:
+    @pytest.mark.asyncio
+    async def test_stores_response_with_etag_and_max_age(self):
+        cache = HTTPCacheMiddleware()
+        kwargs = {"params": None}
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        resp = make_response(
+            text="fresh", headers={"etag": '"v1"', "cache-control": "max-age=60"}
+        )
+        result = await cache.response(resp)
+
+        assert result.text == "fresh"
+        assert len(cache._cache) == 1
+        entry = next(iter(cache._cache.values()))
+        assert entry.etag == '"v1"'
+        assert entry.freshness_seconds == 60.0
+
+    @pytest.mark.asyncio
+    async def test_fresh_entry_short_circuits(self):
+        cache = HTTPCacheMiddleware()
+        kwargs = {"params": None}
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        await cache.response(
+            make_response(text="v1", headers={"etag": '"v1"', "cache-control": "max-age=60"})
+        )
+
+        result_kwargs = await cache.request("GET", "https://example.com", dict(kwargs))
+
+        assert "_fasthttp_cached_response" in result_kwargs
+        assert result_kwargs["_fasthttp_cached_response"].text == "v1"
+
+    @pytest.mark.asyncio
+    async def test_stale_entry_attaches_conditional_headers(self):
+        cache = HTTPCacheMiddleware()
+        kwargs = {"params": None}
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        await cache.response(
+            make_response(
+                text="v1",
+                headers={
+                    "etag": '"v1"',
+                    "last-modified": "Wed, 21 Oct 2015 07:28:00 GMT",
+                    "cache-control": "max-age=0",
+                },
+            )
+        )
+
+        result_kwargs = await cache.request("GET", "https://example.com", dict(kwargs))
+
+        assert "_fasthttp_cached_response" not in result_kwargs
+        assert result_kwargs["headers"]["If-None-Match"] == '"v1"'
+        assert result_kwargs["headers"]["If-Modified-Since"] == "Wed, 21 Oct 2015 07:28:00 GMT"
+
+    @pytest.mark.asyncio
+    async def test_304_response_reuses_cached_body(self):
+        cache = HTTPCacheMiddleware()
+        kwargs = {"params": None}
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        await cache.response(
+            make_response(text="v1", headers={"etag": '"v1"', "cache-control": "max-age=0"})
+        )
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        result = await cache.response(make_response(status=304, text=""))
+
+        assert result.text == "v1"
+
+    @pytest.mark.asyncio
+    async def test_200_after_stale_replaces_cache(self):
+        cache = HTTPCacheMiddleware()
+        kwargs = {"params": None}
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        await cache.response(
+            make_response(text="v1", headers={"etag": '"v1"', "cache-control": "max-age=0"})
+        )
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        result = await cache.response(
+            make_response(text="v2", headers={"etag": '"v2"', "cache-control": "max-age=0"})
+        )
+
+        assert result.text == "v2"
+        entry = next(iter(cache._cache.values()))
+        assert entry.etag == '"v2"'
+
+    @pytest.mark.asyncio
+    async def test_no_store_is_not_cached(self):
+        cache = HTTPCacheMiddleware()
+        kwargs = {"params": None}
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        await cache.response(
+            make_response(text="secret", headers={"cache-control": "no-store", "etag": '"v1"'})
+        )
+
+        assert len(cache._cache) == 0
+
+    @pytest.mark.asyncio
+    async def test_no_validators_and_no_default_ttl_is_not_cached(self):
+        cache = HTTPCacheMiddleware()
+        kwargs = {"params": None}
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        await cache.response(make_response(text="plain"))
+
+        assert len(cache._cache) == 0
+
+    @pytest.mark.asyncio
+    async def test_default_ttl_used_when_no_max_age(self):
+        cache = HTTPCacheMiddleware(default_ttl=60)
+        kwargs = {"params": None}
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        await cache.response(make_response(text="v1"))
+
+        entry = next(iter(cache._cache.values()))
+        assert entry.freshness_seconds == 60
+
+    @pytest.mark.asyncio
+    async def test_must_revalidate_never_fresh(self):
+        cache = HTTPCacheMiddleware()
+        kwargs = {"params": None}
+
+        await cache.request("GET", "https://example.com", dict(kwargs))
+        await cache.response(
+            make_response(
+                text="v1",
+                headers={"etag": '"v1"', "cache-control": "max-age=3600, no-cache"},
+            )
+        )
+
+        result_kwargs = await cache.request("GET", "https://example.com", dict(kwargs))
+
+        assert "_fasthttp_cached_response" not in result_kwargs
+        assert result_kwargs["headers"]["If-None-Match"] == '"v1"'
+
+    @pytest.mark.asyncio
+    async def test_on_error_invalidates(self):
+        cache = HTTPCacheMiddleware(default_ttl=60)
+        route = make_route()
+
+        await cache.request("GET", route.url, {"params": None})
+        await cache.response(make_response(text="v1"))
+        assert len(cache._cache) == 1
+
+        await cache.request("GET", route.url, {"params": None})
+        await cache.on_error(RuntimeError("boom"), route, {})
+
+        assert len(cache._cache) == 0
+
+    def test_get_stats(self):
+        cache = HTTPCacheMiddleware(default_ttl=30, max_size=50)
+        stats = cache.get_stats()
+        assert stats == {
+            "size": 0,
+            "max_size": 50,
+            "default_ttl": 30,
+            "methods": ["GET"],
+        }
+
+    def test_clear(self):
+        cache = HTTPCacheMiddleware()
+        cache._cache["k"] = object()
+        cache.clear()
+        assert len(cache._cache) == 0
 
 
 # ---------------------------------------------------------------------------
