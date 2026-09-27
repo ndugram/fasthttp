@@ -277,3 +277,56 @@ cache.clear()
 print(cache.get_stats())
 # {'size': 0, 'max_size': 100, 'ttl': 60, 'methods': ['GET']}
 ```
+
+---
+
+## HTTPCacheMiddleware
+
+Встроенный middleware, кэширующий ответы по настоящей HTTP-семантике
+кэширования вместо плоского TTL — `ETag`/`If-None-Match`,
+`Last-Modified`/`If-Modified-Since` и `Cache-Control` (`max-age`, `no-cache`,
+`no-store`, `must-revalidate`).
+
+Устаревшая запись с валидатором ревалидируется условным запросом — `304 Not
+Modified` переиспользует закэшированное тело вместо повторной загрузки. Ответ
+без валидатора и без применимого `max-age`/`default_ttl` вообще не
+кэшируется.
+
+```python
+from fasthttp import FastHTTP, HTTPCacheMiddleware
+
+app = FastHTTP(
+    middleware=[HTTPCacheMiddleware(max_size=200)]
+)
+```
+
+### Параметры конструктора
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `default_ttl` | `float \| None` | `None` | Срок свежести (секунды), если у ответа нет `Cache-Control: max-age`. `None` означает: кэшировать только ответы с явным `max-age`, `ETag` или `Last-Modified` |
+| `max_size` | `int` | `100` | Максимальное число записей (LRU-вытеснение) |
+| `cache_methods` | `list[str]` | `["GET"]` | HTTP-методы для кэширования |
+
+### Методы
+
+| Метод | Описание |
+|-------|----------|
+| `clear()` | Очищает весь кэш |
+| `get_stats()` | Возвращает статистику кэша |
+
+```python
+cache = HTTPCacheMiddleware()
+app = FastHTTP(middleware=[cache])
+
+# позже
+cache.clear()
+print(cache.get_stats())
+# {'size': 0, 'max_size': 100, 'default_ttl': None, 'methods': ['GET']}
+```
+
+!!! note "vs. CacheMiddleware"
+    `CacheMiddleware` — простой кэш с плоским TTL, используйте его для API
+    без заголовков кэширования. `HTTPCacheMiddleware` учитывает то, что
+    сервер реально говорит о кэшируемости — обычно это лучший выбор по
+    умолчанию, если API отдаёт `ETag`/`Cache-Control`.
