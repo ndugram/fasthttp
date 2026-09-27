@@ -25,6 +25,14 @@ if TYPE_CHECKING:
     from fasthttp.types import RequestsOptional
 
 
+def generate_cache_key(method: str, url: str, params: Any) -> str:  # noqa: ANN401
+    params_json = orjson.dumps(params or {}, option=orjson.OPT_SORT_KEYS).decode()
+    if _HAVE_RUST_CACHE_KEY:
+        return _rs_cache_key(method, url, params_json)
+    key_data = f"{method}:{url}:{params_json}"
+    return hashlib.md5(key_data.encode()).hexdigest()  # noqa: S324
+
+
 class CacheEntry:
     """Cached response entry with expiration time."""
 
@@ -90,11 +98,7 @@ class CacheMiddleware(BaseMiddleware):
         )
 
     def _generate_key(self, method: str, url: str, params: Any) -> str:  # noqa: ANN401
-        params_json = orjson.dumps(params or {}, option=orjson.OPT_SORT_KEYS).decode()
-        if _HAVE_RUST_CACHE_KEY:
-            return _rs_cache_key(method, url, params_json)
-        key_data = f"{method}:{url}:{params_json}"
-        return hashlib.md5(key_data.encode()).hexdigest()  # noqa: S324
+        return generate_cache_key(method, url, params)
 
     async def request(
         self, method: str, url: str, kwargs: dict[str, Any]
