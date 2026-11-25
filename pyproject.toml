@@ -61,6 +61,9 @@ dependencies = [
 http2 = [
     "httpx[http2]>=0.28.1",
 ]
+socks = [
+    "httpx[socks]>=0.28.1",
+]
 codegen = [
     "pyyaml>=6.0",
 ]

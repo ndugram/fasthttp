@@ -6,6 +6,8 @@ from typing import Any, ClassVar
 import httpx
 import orjson
 
+from fasthttp.helpers.proxy import mask_proxy_url
+
 try:
     import readline  # noqa: F401
 
@@ -350,7 +352,7 @@ class FastHTTPRepl:
                 f"  {Colors.DIM}JSON: {orjson.dumps(kwargs['json']).decode()[:100]}{Colors.RESET}"
             )
         if kwargs.get("proxy"):
-            print(f"  {Colors.DIM}Proxy: {kwargs['proxy']}{Colors.RESET}")
+            print(f"  {Colors.DIM}Proxy: {mask_proxy_url(kwargs['proxy'])}{Colors.RESET}")
 
         url = self._check_https_url(kwargs.pop("url"))
         resp = await self.execute_request(method, url, **kwargs)

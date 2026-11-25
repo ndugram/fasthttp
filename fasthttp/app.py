@@ -5,6 +5,7 @@ import secrets
 import sys
 import time
 import uuid
+from contextlib import AsyncExitStack
 from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args, get_origin
 
 import httpx
@@ -16,6 +17,7 @@ from websockets.exceptions import ConnectionClosed as WSConnClosed
 from .client import HTTPClient
 from .events import ErrorHook, EventHooks, ExceptionHandler, RequestHook, ResponseHook
 from .graphql.client import create_graphql_client
+from .helpers.proxy import mask_proxy_url
 from .helpers.route_inspect import (
     check_annotated_parameters,
     check_annotated_return,
@@ -705,6 +707,7 @@ class FastHTTP:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
             validate_handler(func=func)
@@ -725,6 +728,7 @@ class FastHTTP:
                     raise_for_status=raise_for_status,
                     auth=auth,
                     responses=responses,
+                    proxy=proxy,
                 )
             )
             self.logger.debug("Registered route: %s %s", method, url)
@@ -839,6 +843,7 @@ class FastHTTP:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="GET",
@@ -852,6 +857,7 @@ class FastHTTP:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def query(
@@ -868,6 +874,7 @@ class FastHTTP:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a QUERY route.
 
@@ -887,6 +894,7 @@ class FastHTTP:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def post(
@@ -903,6 +911,7 @@ class FastHTTP:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="POST",
@@ -917,6 +926,7 @@ class FastHTTP:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def put(
@@ -933,6 +943,7 @@ class FastHTTP:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="PUT",
@@ -947,6 +958,7 @@ class FastHTTP:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def patch(
@@ -963,6 +975,7 @@ class FastHTTP:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="PATCH",
@@ -977,6 +990,7 @@ class FastHTTP:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def delete(
@@ -993,6 +1007,7 @@ class FastHTTP:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="DELETE",
@@ -1007,6 +1022,7 @@ class FastHTTP:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def head(
@@ -1022,6 +1038,7 @@ class FastHTTP:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="HEAD",
@@ -1035,6 +1052,7 @@ class FastHTTP:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def options(
@@ -1050,6 +1068,7 @@ class FastHTTP:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         return self._add_route(
             method="OPTIONS",
@@ -1063,6 +1082,7 @@ class FastHTTP:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def graphql(
@@ -1565,18 +1585,28 @@ class FastHTTP:
         if self.http2_enabled:
             self.logger.info("HTTP/2 enabled")
         if self.proxy:
-            self.logger.info("Proxy enabled: %s", self.proxy)
+            self.logger.info("Proxy enabled: %s", mask_proxy_url(self.proxy))
 
         start_all = time.perf_counter()
 
         sem = asyncio.Semaphore(self.concurrency) if self.concurrency else None
 
-        async with httpx.AsyncClient(
-            http2=self.http2_enabled,
-            proxy=self.proxy,
-            default_encoding=self.default_encoding,
-        ) as client:
+        async with AsyncExitStack() as stack:
+            clients: dict[str | None, httpx.AsyncClient] = {}
+
+            def client_for(route: Route) -> httpx.AsyncClient:
+                proxy = route.proxy if route.proxy is not None else self.proxy
+                if proxy not in clients:
+                    clients[proxy] = httpx.AsyncClient(
+                        http2=self.http2_enabled,
+                        proxy=proxy,
+                        default_encoding=self.default_encoding,
+                    )
+                    stack.push_async_callback(clients[proxy].aclose)
+                return clients[proxy]
+
             async def _guarded(route: Route) -> tuple[Route, float, Response | None]:
+                client = client_for(route)
                 if sem:
                     async with sem:
                         return await self._run_route(client, route)
