@@ -63,6 +63,18 @@ class OAuth2ClientCredentials:
         self.client_secret = client_secret
         self.scopes = scopes
         self.extra = extra or {}
+        self._httpx_auth: _HttpxOAuth2Auth | None = None
+
+    def build_httpx_auth(self) -> httpx.Auth:
+        """Return the httpx auth adapter for this configuration.
+
+        The adapter is built once and then reused. It owns the access token,
+        so a new adapter per request would fetch a new token every time
+        instead of caching it until it is close to expiring.
+        """
+        if self._httpx_auth is None:
+            self._httpx_auth = _HttpxOAuth2Auth(self)
+        return self._httpx_auth
 
 
 class _HttpxBearerAuth(httpx.Auth):
@@ -135,5 +147,5 @@ def resolve_auth(
     if isinstance(auth, BearerAuth):
         return _HttpxBearerAuth(auth.token)
     if isinstance(auth, OAuth2ClientCredentials):
-        return _HttpxOAuth2Auth(auth)
+        return auth.build_httpx_auth()
     return None

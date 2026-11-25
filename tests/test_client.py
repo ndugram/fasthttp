@@ -1,9 +1,11 @@
-from unittest.mock import AsyncMock, MagicMock
+from datetime import timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
 from fasthttp.__meta__ import __version__
+from fasthttp.auth import OAuth2ClientCredentials
 from fasthttp.client import HTTPClient
 from fasthttp.events import EventHooks
 from fasthttp.exceptions import FastHTTPBadStatusError
@@ -596,9 +598,7 @@ class TestExceptionHandler:
         self, mock_logger, request_configs, mock_httpx_client
     ) -> None:
         """When both a base and a specific handler are registered, the specific one wins."""
-        mock_httpx_client.request = AsyncMock(
-            side_effect=httpx.ConnectError("boom")
-        )
+        mock_httpx_client.request = AsyncMock(side_effect=httpx.ConnectError("boom"))
 
         event_hooks = EventHooks()
 
@@ -655,3 +655,131 @@ class TestExceptionHandler:
         result = await client.send(mock_httpx_client, route)
 
         assert result is None
+
+
+class TestOAuth2ClientCredentials:
+    """Tests for the OAuth2 client-credentials auth flow."""
+
+    @staticmethod
+    def _mock_response(json_body: dict, status_code: int = 200) -> httpx.Response:
+        """Build a mock response that carries an elapsed time.
+
+        httpx only sets ``Response.elapsed`` once the response stream is
+        closed, which never happens for ``MockTransport`` responses.
+        """
+        response = httpx.Response(status_code, json=json_body)
+        response.elapsed = timedelta(seconds=0.01)
+        return response
+
+    @pytest.mark.asyncio
+    async def test_access_token_is_cached_between_requests(self, mock_logger) -> None:
+        """The token endpoint is queried once and the token is reused."""
+        token_requests: list[httpx.Request] = []
+        api_requests: list[httpx.Request] = []
+
+        def token_handler(request: httpx.Request) -> httpx.Response:
+            token_requests.append(request)
+            return self._mock_response(
+                {"access_token": "access-token-1", "expires_in": 3600}
+            )
+
+        def api_handler(request: httpx.Request) -> httpx.Response:
+            api_requests.append(request)
+            return self._mock_response({"ok": True})
+
+        # The OAuth2 adapter builds its own httpx.Client for the token
+        # endpoint, so it has to be routed to the mock transport as well.
+        original_client = httpx.Client
+
+        def client_factory() -> httpx.Client:
+            return original_client(transport=httpx.MockTransport(token_handler))
+
+        auth = OAuth2ClientCredentials(
+            token_url="https://auth.example.com/oauth/token",  # noqa: S106
+            client_id="client-id",
+            client_secret="client-secret",  # noqa: S106
+        )
+
+        client = HTTPClient(
+            request_configs={"GET": {"headers": {}, "timeout": 30.0}},
+            logger=mock_logger,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(
+            method="GET",
+            url="https://api.example.com/protected",
+            handler=handler,
+            auth=auth,
+        )
+
+        with patch.object(httpx, "Client", client_factory):
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(api_handler)
+            ) as api_client:
+                for _ in range(3):
+                    result = await client.send(api_client, route)
+
+                    assert result is not None
+                    assert result.status == 200
+
+        assert len(api_requests) == 3
+        assert len(token_requests) == 1
+        assert all(
+            request.headers["authorization"] == "Bearer access-token-1"
+            for request in api_requests
+        )
+
+    @pytest.mark.asyncio
+    async def test_expired_access_token_is_refetched(self, mock_logger) -> None:
+        """A token that is already expired is fetched again for every request."""
+        token_requests: list[httpx.Request] = []
+
+        def token_handler(request: httpx.Request) -> httpx.Response:
+            token_requests.append(request)
+            return self._mock_response(
+                {"access_token": "access-token-1", "expires_in": 0}
+            )
+
+        def api_handler(request: httpx.Request) -> httpx.Response:
+            return self._mock_response({"ok": True})
+
+        original_client = httpx.Client
+
+        def client_factory() -> httpx.Client:
+            return original_client(transport=httpx.MockTransport(token_handler))
+
+        auth = OAuth2ClientCredentials(
+            token_url="https://auth.example.com/oauth/token",  # noqa: S106
+            client_id="client-id",
+            client_secret="client-secret",  # noqa: S106
+        )
+
+        client = HTTPClient(
+            request_configs={"GET": {"headers": {}, "timeout": 30.0}},
+            logger=mock_logger,
+        )
+
+        async def handler(response) -> Response:
+            return response
+
+        route = Route(
+            method="GET",
+            url="https://api.example.com/protected",
+            handler=handler,
+            auth=auth,
+        )
+
+        with patch.object(httpx, "Client", client_factory):
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(api_handler)
+            ) as api_client:
+                for _ in range(2):
+                    result = await client.send(api_client, route)
+
+                    assert result is not None
+                    assert result.status == 200
+
+        assert len(token_requests) == 2
