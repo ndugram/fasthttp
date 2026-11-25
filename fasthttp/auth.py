@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import time
 from typing import TYPE_CHECKING
 
 import httpx
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import AsyncGenerator, Generator
 
     from .types import OAuth2Scope
 
@@ -25,6 +26,17 @@ class DigestAuth:
     def __init__(self, username: str, password: str) -> None:
         self.username = username
         self.password = password
+        self._httpx_auth: httpx.DigestAuth | None = None
+
+    def build_httpx_auth(self) -> httpx.Auth:
+        """Return the httpx auth adapter for this configuration.
+
+        Reused across requests so the server's challenge is remembered and
+        later requests are sent authorized without a new 401 round trip.
+        """
+        if self._httpx_auth is None:
+            self._httpx_auth = httpx.DigestAuth(self.username, self.password)
+        return self._httpx_auth
 
 
 class BearerAuth:
@@ -100,12 +112,15 @@ class _HttpxOAuth2Auth(httpx.Auth):
         self._config = config
         self._access_token: str | None = None
         self._expires_at: float = 0.0
-        self._client = httpx.Client()
+        # Serializes token requests so parallel first requests fetch one token.
+        self._lock = asyncio.Lock()
 
-    def _ensure_token(self) -> str:
+    def _fresh_token(self) -> str | None:
         if self._access_token and time.monotonic() < self._expires_at:
             return self._access_token
+        return None
 
+    def _token_form(self) -> dict[str, str]:
         data: dict[str, str] = {
             "grant_type": "client_credentials",
             "client_id": self._config.client_id,
@@ -114,12 +129,9 @@ class _HttpxOAuth2Auth(httpx.Auth):
         if self._config.scopes:
             data["scope"] = " ".join(self._config.scopes)
         data.update(self._config.extra)
+        return data
 
-        resp = self._client.post(
-            self._config.token_url,
-            data=data,
-            headers={"Accept": "application/json"},
-        )
+    def _store_token(self, resp: httpx.Response) -> str:
         resp.raise_for_status()
         body = resp.json()
 
@@ -129,10 +141,49 @@ class _HttpxOAuth2Auth(httpx.Auth):
 
         return self._access_token
 
+    def _ensure_token(self) -> str:
+        token = self._fresh_token()
+        if token:
+            return token
+
+        # A short-lived client per token request: the token endpoint is hit
+        # rarely, and this avoids holding a client that is never closed.
+        with httpx.Client() as client:
+            resp = client.post(
+                self._config.token_url,
+                data=self._token_form(),
+                headers={"Accept": "application/json"},
+            )
+        return self._store_token(resp)
+
+    async def _aensure_token(self) -> str:
+        token = self._fresh_token()
+        if token:
+            return token
+
+        async with self._lock:
+            # Another request may have fetched the token while we waited.
+            token = self._fresh_token()
+            if token:
+                return token
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    self._config.token_url,
+                    data=self._token_form(),
+                    headers={"Accept": "application/json"},
+                )
+            return self._store_token(resp)
+
     def auth_flow(
         self, request: httpx.Request
     ) -> Generator[httpx.Request, httpx.Response, None]:
         request.headers["Authorization"] = f"Bearer {self._ensure_token()}"
+        yield request
+
+    async def async_auth_flow(
+        self, request: httpx.Request
+    ) -> AsyncGenerator[httpx.Request, httpx.Response]:
+        request.headers["Authorization"] = f"Bearer {await self._aensure_token()}"
         yield request
 
 
@@ -143,7 +194,7 @@ def resolve_auth(
     if isinstance(auth, BasicAuth):
         return httpx.BasicAuth(auth.username, auth.password)
     if isinstance(auth, DigestAuth):
-        return httpx.DigestAuth(auth.username, auth.password)
+        return auth.build_httpx_auth()
     if isinstance(auth, BearerAuth):
         return _HttpxBearerAuth(auth.token)
     if isinstance(auth, OAuth2ClientCredentials):

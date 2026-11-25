@@ -1,11 +1,14 @@
+import asyncio
+from contextlib import AbstractContextManager
 from datetime import timedelta
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
 from fasthttp.__meta__ import __version__
-from fasthttp.auth import OAuth2ClientCredentials
+from fasthttp.auth import DigestAuth, OAuth2ClientCredentials
 from fasthttp.client import HTTPClient
 from fasthttp.events import EventHooks
 from fasthttp.exceptions import FastHTTPBadStatusError
@@ -671,6 +674,42 @@ class TestOAuth2ClientCredentials:
         response.elapsed = timedelta(seconds=0.01)
         return response
 
+    @staticmethod
+    def _auth() -> OAuth2ClientCredentials:
+        return OAuth2ClientCredentials(
+            token_url="https://auth.example.com/oauth/token",  # noqa: S106
+            client_id="client-id",
+            client_secret="client-secret",  # noqa: S106
+        )
+
+    @staticmethod
+    def _route(auth: OAuth2ClientCredentials) -> Route:
+        async def handler(response) -> Response:
+            return response
+
+        return Route(
+            method="GET",
+            url="https://api.example.com/protected",
+            handler=handler,
+            auth=auth,
+        )
+
+    @staticmethod
+    def _token_client_patch(
+        token_transport: httpx.MockTransport,
+    ) -> AbstractContextManager[object]:
+        """Route the adapter's own token-endpoint client to a mock transport.
+
+        The API client is created before patching, so only the token
+        request (which builds a fresh ``httpx.AsyncClient``) is affected.
+        """
+        original_client = httpx.AsyncClient
+
+        def client_factory(**_kwargs: object) -> httpx.AsyncClient:
+            return original_client(transport=token_transport)
+
+        return patch.object(httpx, "AsyncClient", client_factory)
+
     @pytest.mark.asyncio
     async def test_access_token_is_cached_between_requests(self, mock_logger) -> None:
         """The token endpoint is queried once and the token is reused."""
@@ -687,38 +726,15 @@ class TestOAuth2ClientCredentials:
             api_requests.append(request)
             return self._mock_response({"ok": True})
 
-        # The OAuth2 adapter builds its own httpx.Client for the token
-        # endpoint, so it has to be routed to the mock transport as well.
-        original_client = httpx.Client
-
-        def client_factory() -> httpx.Client:
-            return original_client(transport=httpx.MockTransport(token_handler))
-
-        auth = OAuth2ClientCredentials(
-            token_url="https://auth.example.com/oauth/token",  # noqa: S106
-            client_id="client-id",
-            client_secret="client-secret",  # noqa: S106
-        )
-
         client = HTTPClient(
             request_configs={"GET": {"headers": {}, "timeout": 30.0}},
             logger=mock_logger,
         )
+        route = self._route(self._auth())
 
-        async def handler(response) -> Response:
-            return response
-
-        route = Route(
-            method="GET",
-            url="https://api.example.com/protected",
-            handler=handler,
-            auth=auth,
-        )
-
-        with patch.object(httpx, "Client", client_factory):
-            async with httpx.AsyncClient(
-                transport=httpx.MockTransport(api_handler)
-            ) as api_client:
+        api_client = httpx.AsyncClient(transport=httpx.MockTransport(api_handler))
+        with self._token_client_patch(httpx.MockTransport(token_handler)):
+            async with api_client:
                 for _ in range(3):
                     result = await client.send(api_client, route)
 
@@ -746,36 +762,15 @@ class TestOAuth2ClientCredentials:
         def api_handler(request: httpx.Request) -> httpx.Response:
             return self._mock_response({"ok": True})
 
-        original_client = httpx.Client
-
-        def client_factory() -> httpx.Client:
-            return original_client(transport=httpx.MockTransport(token_handler))
-
-        auth = OAuth2ClientCredentials(
-            token_url="https://auth.example.com/oauth/token",  # noqa: S106
-            client_id="client-id",
-            client_secret="client-secret",  # noqa: S106
-        )
-
         client = HTTPClient(
             request_configs={"GET": {"headers": {}, "timeout": 30.0}},
             logger=mock_logger,
         )
+        route = self._route(self._auth())
 
-        async def handler(response) -> Response:
-            return response
-
-        route = Route(
-            method="GET",
-            url="https://api.example.com/protected",
-            handler=handler,
-            auth=auth,
-        )
-
-        with patch.object(httpx, "Client", client_factory):
-            async with httpx.AsyncClient(
-                transport=httpx.MockTransport(api_handler)
-            ) as api_client:
+        api_client = httpx.AsyncClient(transport=httpx.MockTransport(api_handler))
+        with self._token_client_patch(httpx.MockTransport(token_handler)):
+            async with api_client:
                 for _ in range(2):
                     result = await client.send(api_client, route)
 
@@ -783,3 +778,142 @@ class TestOAuth2ClientCredentials:
                     assert result.status == 200
 
         assert len(token_requests) == 2
+
+    @pytest.mark.asyncio
+    async def test_concurrent_first_requests_fetch_token_once(
+        self, mock_logger
+    ) -> None:
+        """Parallel requests with an empty cache share a single token fetch."""
+        token_requests: list[httpx.Request] = []
+
+        async def token_handler(request: httpx.Request) -> httpx.Response:
+            token_requests.append(request)
+            # Yield to the event loop so the other requests reach the adapter
+            # while this token request is still in flight.
+            await asyncio.sleep(0.01)
+            return self._mock_response(
+                {"access_token": "access-token-1", "expires_in": 3600}
+            )
+
+        def api_handler(request: httpx.Request) -> httpx.Response:
+            return self._mock_response({"ok": True})
+
+        client = HTTPClient(
+            request_configs={"GET": {"headers": {}, "timeout": 30.0}},
+            logger=mock_logger,
+        )
+        route = self._route(self._auth())
+
+        api_client = httpx.AsyncClient(transport=httpx.MockTransport(api_handler))
+        with self._token_client_patch(httpx.MockTransport(token_handler)):
+            async with api_client:
+                results = await asyncio.gather(
+                    *(client.send(api_client, route) for _ in range(5))
+                )
+
+        assert all(result is not None and result.status == 200 for result in results)
+        assert len(token_requests) == 1
+
+    @pytest.mark.asyncio
+    async def test_token_is_refetched_only_after_refresh_margin(
+        self, mock_logger, monkeypatch
+    ) -> None:
+        """A token is reused until ``expires_in - 60`` seconds have passed."""
+        clock = [1000.0]
+        monkeypatch.setattr(
+            "fasthttp.auth.time", SimpleNamespace(monotonic=lambda: clock[0])
+        )
+        token_requests: list[httpx.Request] = []
+
+        def token_handler(request: httpx.Request) -> httpx.Response:
+            token_requests.append(request)
+            return self._mock_response(
+                {
+                    "access_token": f"access-token-{len(token_requests)}",
+                    "expires_in": 120,
+                }
+            )
+
+        def api_handler(request: httpx.Request) -> httpx.Response:
+            return self._mock_response({"ok": True})
+
+        client = HTTPClient(
+            request_configs={"GET": {"headers": {}, "timeout": 30.0}},
+            logger=mock_logger,
+        )
+        route = self._route(self._auth())
+
+        api_client = httpx.AsyncClient(transport=httpx.MockTransport(api_handler))
+        with self._token_client_patch(httpx.MockTransport(token_handler)):
+            async with api_client:
+                await client.send(api_client, route)  # t=0: fetch
+                clock[0] += 59
+                await client.send(api_client, route)  # t=59: still cached
+                assert len(token_requests) == 1
+
+                clock[0] += 2
+                await client.send(api_client, route)  # t=61: inside margin
+                assert len(token_requests) == 2
+
+    def test_building_auth_does_not_create_http_client(self) -> None:
+        """Creating the adapter must not open an HTTP client that is never closed."""
+        with (
+            patch.object(httpx, "Client", side_effect=AssertionError),
+            patch.object(httpx, "AsyncClient", side_effect=AssertionError),
+        ):
+            auth = self._auth()
+            assert auth.build_httpx_auth() is auth.build_httpx_auth()
+
+
+class TestDigestAuth:
+    """Tests for the HTTP Digest auth flow."""
+
+    @pytest.mark.asyncio
+    async def test_digest_challenge_is_reused_across_requests(
+        self, mock_logger
+    ) -> None:
+        """Only the first request needs the 401 challenge round trip."""
+        requests: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            if request.headers.get("authorization", "").startswith("Digest "):
+                response = httpx.Response(200, json={"ok": True})
+            else:
+                response = httpx.Response(
+                    401,
+                    headers={
+                        "WWW-Authenticate": (
+                            'Digest realm="api", nonce="abc123", qop="auth", '
+                            "algorithm=MD5"
+                        )
+                    },
+                )
+            response.elapsed = timedelta(seconds=0.01)
+            return response
+
+        client = HTTPClient(
+            request_configs={"GET": {"headers": {}, "timeout": 30.0}},
+            logger=mock_logger,
+        )
+
+        async def handler_route(response) -> Response:
+            return response
+
+        route = Route(
+            method="GET",
+            url="https://api.example.com/protected",
+            handler=handler_route,
+            auth=DigestAuth("user", "pass"),
+        )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as api:
+            for _ in range(3):
+                result = await client.send(api, route)
+
+                assert result is not None
+                assert result.status == 200
+
+        # 1 challenge (401) + 3 authorized requests; a new DigestAuth per
+        # request would repeat the challenge every time (6 requests).
+        assert len(requests) == 4
