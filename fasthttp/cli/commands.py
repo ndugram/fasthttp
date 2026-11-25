@@ -8,6 +8,7 @@ import typer
 from fasthttp.cli.client import CLIResponse, run_request
 from fasthttp.cli.codegen import CodegenError, generate_client, load_spec
 from fasthttp.cli.output import formatter
+from fasthttp.helpers.proxy import mask_proxy_url
 
 app = typer.Typer(help="FastHTTP CLI - HTTP client from command line")
 
@@ -279,7 +280,7 @@ def graphql(  # noqa: C901
         if variables:
             formatter.info(f"  Variables: {variables}")
     if proxy:
-        formatter.info(f"  Proxy: {proxy}")
+        formatter.info(f"  Proxy: {mask_proxy_url(proxy)}")
 
     try:
         resp = run_request(
@@ -345,7 +346,7 @@ def _execute_request(
         if data:
             formatter.info(f"  Data: {data}")
         if proxy:
-            formatter.info(f"  Proxy: {proxy}")
+            formatter.info(f"  Proxy: {mask_proxy_url(proxy)}")
 
     try:
         resp = run_request(

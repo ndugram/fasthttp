@@ -89,6 +89,9 @@ class Route(BaseModel):
     )
     """Response models for error status codes (e.g. {404: {"model": Error404}})."""
 
+    proxy: str | None = None
+    """Proxy URL for this route only. Defaults to the application proxy when None."""
+
     @field_validator("tags", "dependencies", mode="before")
     @classmethod
     def _coerce_none_to_list(cls, v: list | None) -> list:
@@ -159,6 +162,7 @@ class _RouteDef:
     raise_for_status: bool
     auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None
     responses: dict[int, dict[Literal["model"], type[BaseModel]]]
+    proxy: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -248,6 +252,7 @@ class Router:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         def decorator(func: Callable[..., object]) -> Callable[..., object]:
             validate_handler(func=func)
@@ -268,6 +273,7 @@ class Router:
                     raise_for_status=raise_for_status,
                     auth=auth,
                     responses=responses or {},
+                    proxy=proxy,
                 )
             )
             return func
@@ -287,6 +293,7 @@ class Router:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a GET route on the router."""
         return self._add_route(
@@ -301,6 +308,7 @@ class Router:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def query(
@@ -317,6 +325,7 @@ class Router:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a QUERY route on the router.
 
@@ -336,6 +345,7 @@ class Router:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def post(
@@ -352,6 +362,7 @@ class Router:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a POST route on the router."""
         return self._add_route(
@@ -367,6 +378,7 @@ class Router:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def put(
@@ -383,6 +395,7 @@ class Router:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a PUT route on the router."""
         return self._add_route(
@@ -398,6 +411,7 @@ class Router:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def patch(
@@ -414,6 +428,7 @@ class Router:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a PATCH route on the router."""
         return self._add_route(
@@ -429,6 +444,7 @@ class Router:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def delete(
@@ -445,6 +461,7 @@ class Router:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a DELETE route on the router."""
         return self._add_route(
@@ -460,6 +477,7 @@ class Router:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def head(
@@ -475,6 +493,7 @@ class Router:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering a HEAD route on the router."""
         return self._add_route(
@@ -489,6 +508,7 @@ class Router:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def options(
@@ -504,6 +524,7 @@ class Router:
         raise_for_status: bool = False,
         auth: BasicAuth | DigestAuth | BearerAuth | OAuth2ClientCredentials | None = None,
         responses: dict[int, dict[Literal["model"], type[BaseModel]]] | None = None,
+        proxy: str | None = None,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """Decorator for registering an OPTIONS route on the router."""
         return self._add_route(
@@ -518,6 +539,7 @@ class Router:
             raise_for_status=raise_for_status,
             auth=auth,
             responses=responses,
+            proxy=proxy,
         )
 
     def on_request(
@@ -637,6 +659,7 @@ class Router:
                     raise_for_status=rd.raise_for_status,
                     auth=rd.auth,
                     responses=rd.responses,
+                    proxy=rd.proxy,
                 )
             )
 
